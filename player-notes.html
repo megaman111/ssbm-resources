@@ -353,6 +353,12 @@
         </div>
         
         <div class="filter-section">
+            <h3>Filter by Type</h3>
+            <div class="character-icons" style="margin-bottom: 1rem;">
+                <button class="char-filter-btn active" data-type="all">All</button>
+                <button class="char-filter-btn" data-type="players">Player Notes</button>
+                <button class="char-filter-btn" data-type="concepts">Concepts/Lessons</button>
+            </div>
             <h3>Filter by Character</h3>
             <div class="character-icons">
                 <button class="char-filter-btn active" data-char="all">All</button>
@@ -399,7 +405,15 @@
         };
 
         let currentFilter = 'all';
+        let currentTypeFilter = 'all';
         let notes = [];
+
+        // Check if a note is a concept/lesson based on player name
+        function isConceptNote(note) {
+            const conceptKeywords = ['advice', 'concept', 'notes from', 'lesson', 'how to beat'];
+            const playerName = note.playerName.toLowerCase();
+            return conceptKeywords.some(keyword => playerName.includes(keyword));
+        }
 
         // Load notes from JSON file
         async function loadNotesFromFile() {
@@ -470,9 +484,17 @@
             const notes = loadNotes();
             const container = document.getElementById('notesContainer');
             
-            const filteredNotes = currentFilter === 'all' 
+            // Filter by character
+            let filteredNotes = currentFilter === 'all' 
                 ? notes 
                 : notes.filter(note => note.character === currentFilter);
+            
+            // Filter by type
+            if (currentTypeFilter === 'players') {
+                filteredNotes = filteredNotes.filter(note => !isConceptNote(note));
+            } else if (currentTypeFilter === 'concepts') {
+                filteredNotes = filteredNotes.filter(note => isConceptNote(note));
+            }
             
             if (filteredNotes.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No notes yet. Add your first player note above!</p>';
@@ -599,9 +621,18 @@
         // Filter functionality
         document.querySelectorAll('.char-filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                document.querySelectorAll('.char-filter-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                currentFilter = this.dataset.char;
+                // Check if this is a type filter or character filter
+                if (this.dataset.type) {
+                    // Type filter
+                    document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentTypeFilter = this.dataset.type;
+                } else {
+                    // Character filter
+                    document.querySelectorAll('[data-char]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFilter = this.dataset.char;
+                }
                 displayNotes();
             });
         });
