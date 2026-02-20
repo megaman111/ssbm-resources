@@ -112,10 +112,29 @@
             margin-top: 1rem;
         }
         
-        .delete-btn {
+        .note-actions {
             position: absolute;
             top: 1rem;
             right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .edit-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .edit-btn:hover {
+            background: #5568d3;
+        }
+        
+        .delete-btn {
             background: #ff4444;
             color: white;
             border: none;
@@ -127,6 +146,63 @@
         
         .delete-btn:hover {
             background: #cc0000;
+        }
+        
+        .save-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .save-btn:hover {
+            background: #45a049;
+        }
+        
+        .cancel-btn {
+            background: #999;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .cancel-btn:hover {
+            background: #777;
+        }
+        
+        .edit-mode .note-content {
+            display: none;
+        }
+        
+        .edit-mode .edit-form {
+            display: block;
+        }
+        
+        .edit-form {
+            display: none;
+        }
+        
+        .edit-form input,
+        .edit-form select,
+        .edit-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            margin-bottom: 1rem;
+        }
+        
+        .edit-form textarea {
+            min-height: 150px;
+            resize: vertical;
         }
         
         .filter-section {
@@ -295,9 +371,14 @@
                 return;
             }
             
-            container.innerHTML = filteredNotes.map((note, index) => `
-                <div class="note-card">
-                    <button class="delete-btn" onclick="deleteNote(${notes.indexOf(note)})">Delete</button>
+            container.innerHTML = filteredNotes.map((note, index) => {
+                const originalIndex = notes.indexOf(note);
+                return `
+                <div class="note-card" id="note-${originalIndex}">
+                    <div class="note-actions">
+                        <button class="edit-btn" onclick="editNote(${originalIndex})">Edit</button>
+                        <button class="delete-btn" onclick="deleteNote(${originalIndex})">Delete</button>
+                    </div>
                     <div class="note-header">
                         <img src="${characterIcons[note.character]}" alt="${note.character}">
                         <div>
@@ -306,9 +387,35 @@
                         </div>
                     </div>
                     <div class="note-content">${note.notes}</div>
+                    <div class="edit-form">
+                        <input type="text" id="edit-player-${originalIndex}" value="${note.playerName}" placeholder="Player Name">
+                        <select id="edit-char-${originalIndex}">
+                            <option value="Fox" ${note.character === 'Fox' ? 'selected' : ''}>Fox</option>
+                            <option value="Falco" ${note.character === 'Falco' ? 'selected' : ''}>Falco</option>
+                            <option value="Marth" ${note.character === 'Marth' ? 'selected' : ''}>Marth</option>
+                            <option value="Sheik" ${note.character === 'Sheik' ? 'selected' : ''}>Sheik</option>
+                            <option value="Peach" ${note.character === 'Peach' ? 'selected' : ''}>Peach</option>
+                            <option value="Jigglypuff" ${note.character === 'Jigglypuff' ? 'selected' : ''}>Jigglypuff</option>
+                            <option value="Captain Falcon" ${note.character === 'Captain Falcon' ? 'selected' : ''}>Captain Falcon</option>
+                            <option value="Samus" ${note.character === 'Samus' ? 'selected' : ''}>Samus</option>
+                            <option value="Ice Climbers" ${note.character === 'Ice Climbers' ? 'selected' : ''}>Ice Climbers</option>
+                            <option value="Pikachu" ${note.character === 'Pikachu' ? 'selected' : ''}>Pikachu</option>
+                            <option value="Yoshi" ${note.character === 'Yoshi' ? 'selected' : ''}>Yoshi</option>
+                            <option value="Luigi" ${note.character === 'Luigi' ? 'selected' : ''}>Luigi</option>
+                            <option value="Ganondorf" ${note.character === 'Ganondorf' ? 'selected' : ''}>Ganondorf</option>
+                            <option value="Dr. Mario" ${note.character === 'Dr. Mario' ? 'selected' : ''}>Dr. Mario</option>
+                            <option value="Donkey Kong" ${note.character === 'Donkey Kong' ? 'selected' : ''}>Donkey Kong</option>
+                        </select>
+                        <textarea id="edit-notes-${originalIndex}">${note.notes}</textarea>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="save-btn" onclick="saveEdit(${originalIndex})">Save</button>
+                            <button class="cancel-btn" onclick="cancelEdit(${originalIndex})">Cancel</button>
+                        </div>
+                    </div>
                     <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}</div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Add new note
@@ -345,6 +452,40 @@
                 saveNotes(notes);
                 displayNotes();
             }
+        }
+
+        // Edit note
+        function editNote(index) {
+            const noteCard = document.getElementById(`note-${index}`);
+            noteCard.classList.add('edit-mode');
+        }
+
+        // Cancel edit
+        function cancelEdit(index) {
+            const noteCard = document.getElementById(`note-${index}`);
+            noteCard.classList.remove('edit-mode');
+        }
+
+        // Save edit
+        function saveEdit(index) {
+            const playerName = document.getElementById(`edit-player-${index}`).value;
+            const character = document.getElementById(`edit-char-${index}`).value;
+            const notes = document.getElementById(`edit-notes-${index}`).value;
+
+            if (!playerName || !character || !notes) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const allNotes = loadNotes();
+            allNotes[index] = {
+                ...allNotes[index],
+                playerName,
+                character,
+                notes
+            };
+            saveNotes(allNotes);
+            displayNotes();
         }
 
         // Filter functionality
