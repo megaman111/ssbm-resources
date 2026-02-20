@@ -1,0 +1,11 @@
+INSTRUCTIONS: Remove these 3 entries from player-notes.json
+
+Remove the following entries (they've been moved to concepts.html):
+
+1. "playerName": "How to beat floaty mid tiers conceptually -- Billy Notes"
+2. "playerName": "Marth Advice and Concepts from Billy"  
+3. "playerName": "Advice from Zamu (not player notes)"
+
+These are now organized in the new Concepts & Lessons page (concepts.html).
+
+After removing them from player-notes.json, export the updated JSON from the player notes page and replace the file, then push to GitHub.
