@@ -9,46 +9,6 @@
         .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #f5f5f7; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
         .back-link:hover { background: #667eea; color: white; }
         
-        .tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            background: white;
-            padding: 1rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-        }
-        
-        .tab-btn {
-            flex: 1;
-            padding: 1rem 2rem;
-            border: 2px solid #667eea;
-            background: white;
-            color: #667eea;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .tab-btn:hover {
-            background: #f5f5f7;
-        }
-        
-        .tab-btn.active {
-            background: #667eea;
-            color: white;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
         .add-note-form {
             background: white;
             padding: 2rem;
@@ -338,18 +298,13 @@
     
     <header>
         <div class="container">
-            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Megaman's Archive</h1>
-            <p>Personal notes, gameplans, and lesson concepts</p>
+            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Player Notes - Megaman's Archive</h1>
+            <p>Personal notes and gameplans against specific players</p>
             <a href="way-of-fox.html" class="back-link">← Back to The Way of Fox</a>
         </div>
     </header>
 
     <main class="container">
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('player-notes')">Player-Specific Notes</button>
-            <button class="tab-btn" onclick="switchTab('lesson-concepts')">Lesson Concepts</button>
-        </div>
-
         <div class="export-section">
             <h3>💾 Save Your Notes</h3>
             <p style="color: #666; margin-bottom: 1rem;">After adding or editing notes, export the JSON file and replace player-notes.json in your repo, then push to GitHub.</p>
@@ -358,10 +313,8 @@
             <input type="file" id="fileInput" accept=".json" onchange="importNotes(event)">
         </div>
         
-        <!-- Player Notes Tab -->
-        <div id="player-notes-tab" class="tab-content active">
-            <div class="add-note-form">
-                <h2>Add New Player Note</h2>
+        <div class="add-note-form">
+            <h2>Add New Player Note</h2>
             <form id="noteForm">
                 <div class="form-group">
                     <label for="playerName">Player Name</label>
@@ -395,41 +348,28 @@
                     <textarea id="notes" placeholder="What does this player like to do? Tendencies, habits, gameplan notes, lessons learned..." required></textarea>
                 </div>
                 
-                    <button type="submit" class="submit-btn">Add Note</button>
-                </form>
-            </div>
-            
-            <div class="filter-section">
-                <h3>Filter by Character</h3>
-                <div class="character-icons">
-                    <button class="char-filter-btn active" data-char="all">All</button>
-                    <button class="char-filter-btn" data-char="Fox">Fox</button>
-                    <button class="char-filter-btn" data-char="Falco">Falco</button>
-                    <button class="char-filter-btn" data-char="Marth">Marth</button>
-                    <button class="char-filter-btn" data-char="Sheik">Sheik</button>
-                    <button class="char-filter-btn" data-char="Peach">Peach</button>
-                    <button class="char-filter-btn" data-char="Jigglypuff">Puff</button>
-                    <button class="char-filter-btn" data-char="Captain Falcon">Falcon</button>
-                    <button class="char-filter-btn" data-char="Samus">Samus</button>
-                    <button class="char-filter-btn" data-char="Ice Climbers">ICs</button>
-                </div>
-            </div>
-            
-            <div class="notes-container" id="notesContainer">
-                <!-- Player notes will be dynamically added here -->
+                <button type="submit" class="submit-btn">Add Note</button>
+            </form>
+        </div>
+        
+        <div class="filter-section">
+            <h3>Filter by Character</h3>
+            <div class="character-icons">
+                <button class="char-filter-btn active" data-char="all">All</button>
+                <button class="char-filter-btn" data-char="Fox">Fox</button>
+                <button class="char-filter-btn" data-char="Falco">Falco</button>
+                <button class="char-filter-btn" data-char="Marth">Marth</button>
+                <button class="char-filter-btn" data-char="Sheik">Sheik</button>
+                <button class="char-filter-btn" data-char="Peach">Peach</button>
+                <button class="char-filter-btn" data-char="Jigglypuff">Puff</button>
+                <button class="char-filter-btn" data-char="Captain Falcon">Falcon</button>
+                <button class="char-filter-btn" data-char="Samus">Samus</button>
+                <button class="char-filter-btn" data-char="Ice Climbers">ICs</button>
             </div>
         </div>
         
-        <!-- Lesson Concepts Tab -->
-        <div id="lesson-concepts-tab" class="tab-content">
-            <div class="matchup-content" style="background: #f5f5f7; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-                <h2 style="color: #667eea;">Lesson Concepts - Organized by Category</h2>
-                <p style="color: #666; margin-bottom: 1rem;">General improvement concepts from coaching sessions with top players, organized thematically.</p>
-            </div>
-            
-            <div id="lessonConceptsContainer">
-                <!-- Lesson concepts will be dynamically added here -->
-            </div>
+        <div class="notes-container" id="notesContainer">
+            <!-- Notes will be dynamically added here -->
         </div>
     </main>
 
@@ -460,24 +400,6 @@
 
         let currentFilter = 'all';
         let notes = [];
-        let currentTab = 'player-notes';
-
-        // Tab switching
-        function switchTab(tabName) {
-            currentTab = tabName;
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            
-            // Update tab content
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.getElementById(`${tabName}-tab`).classList.add('active');
-            
-            if (tabName === 'lesson-concepts') {
-                displayLessonConcepts();
-            }
-        }
 
         // Load notes from JSON file
         async function loadNotesFromFile() {
@@ -545,21 +467,15 @@
 
         // Display notes
         function displayNotes() {
-            // Filter out lesson concepts from player notes
-            const playerNotes = notes.filter(note => 
-                !note.playerName.toLowerCase().includes('advice') && 
-                !note.playerName.toLowerCase().includes('lesson') &&
-                !note.playerName.toLowerCase().includes('zamu')
-            );
-            
+            const notes = loadNotes();
             const container = document.getElementById('notesContainer');
             
             const filteredNotes = currentFilter === 'all' 
-                ? playerNotes 
-                : playerNotes.filter(note => note.character === currentFilter);
+                ? notes 
+                : notes.filter(note => note.character === currentFilter);
             
             if (filteredNotes.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No player notes yet. Add your first player note above!</p>';
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No notes yet. Add your first player note above!</p>';
                 return;
             }
             
@@ -689,98 +605,6 @@
                 displayNotes();
             });
         });
-
-        // Display lesson concepts organized by category
-        function displayLessonConcepts() {
-            const lessonNotes = notes.filter(note => 
-                note.playerName.toLowerCase().includes('advice') || 
-                note.playerName.toLowerCase().includes('lesson') ||
-                note.playerName.toLowerCase().includes('zamu')
-            );
-            
-            if (lessonNotes.length === 0) {
-                document.getElementById('lessonConceptsContainer').innerHTML = 
-                    '<p style="text-align: center; color: #999; padding: 2rem;">No lesson concepts yet.</p>';
-                return;
-            }
-            
-            // Parse and organize concepts by category
-            const categories = {
-                neutral: { title: 'Neutral Game', concepts: [] },
-                punish: { title: 'Punish Game', concepts: [] },
-                edgeguard: { title: 'Edgeguarding', concepts: [] },
-                defense: { title: 'Defense & Recovery', concepts: [] },
-                movement: { title: 'Movement & Positioning', concepts: [] },
-                mental: { title: 'Mental Game & Decision Making', concepts: [] },
-                practice: { title: 'Practice & Improvement', concepts: [] },
-                general: { title: 'General Concepts', concepts: [] }
-            };
-            
-            lessonNotes.forEach(note => {
-                const lines = note.notes.split('\n').filter(line => line.trim().startsWith('-'));
-                
-                lines.forEach(line => {
-                    const concept = line.trim().substring(1).trim();
-                    const lowerConcept = concept.toLowerCase();
-                    
-                    // Categorize based on keywords
-                    if (lowerConcept.includes('neutral') || lowerConcept.includes('dash dance') || 
-                        lowerConcept.includes('spacing') || lowerConcept.includes('approach') ||
-                        lowerConcept.includes('position') && !lowerConcept.includes('punish')) {
-                        categories.neutral.concepts.push(concept);
-                    } else if (lowerConcept.includes('combo') || lowerConcept.includes('punish') || 
-                               lowerConcept.includes('upthrow') || lowerConcept.includes('waveshine') ||
-                               lowerConcept.includes('tech chase') || lowerConcept.includes('follow up')) {
-                        categories.punish.concepts.push(concept);
-                    } else if (lowerConcept.includes('edgeguard') || lowerConcept.includes('ledge') ||
-                               lowerConcept.includes('recovery') && lowerConcept.includes('opponent')) {
-                        categories.edgeguard.concepts.push(concept);
-                    } else if (lowerConcept.includes('defense') || lowerConcept.includes('shield') ||
-                               lowerConcept.includes('recovery') || lowerConcept.includes('di ') ||
-                               lowerConcept.includes('sdi') || lowerConcept.includes('cc ') ||
-                               lowerConcept.includes('crouch cancel')) {
-                        categories.defense.concepts.push(concept);
-                    } else if (lowerConcept.includes('movement') || lowerConcept.includes('wavedash') ||
-                               lowerConcept.includes('dash back') || lowerConcept.includes('full hop') ||
-                               lowerConcept.includes('fullhop') || lowerConcept.includes('platform')) {
-                        categories.movement.concepts.push(concept);
-                    } else if (lowerConcept.includes('mental') || lowerConcept.includes('decision') ||
-                               lowerConcept.includes('recognize') || lowerConcept.includes('awareness') ||
-                               lowerConcept.includes('focus') || lowerConcept.includes('attention') ||
-                               lowerConcept.includes('think') || lowerConcept.includes('gameplan')) {
-                        categories.mental.concepts.push(concept);
-                    } else if (lowerConcept.includes('practice') || lowerConcept.includes('unclepunch') ||
-                               lowerConcept.includes('training') || lowerConcept.includes('drill') ||
-                               lowerConcept.includes('work on') || lowerConcept.includes('improve')) {
-                        categories.practice.concepts.push(concept);
-                    } else {
-                        categories.general.concepts.push(concept);
-                    }
-                });
-            });
-            
-            // Display organized concepts
-            let html = '';
-            Object.keys(categories).forEach(key => {
-                const category = categories[key];
-                if (category.concepts.length > 0) {
-                    html += `
-                        <div class="matchup-content" style="background: #f5f5f7; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
-                            <h2 style="color: #667eea; border-bottom: 3px solid #667eea; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">
-                                ${category.title}
-                            </h2>
-                            <div class="source-section" style="background: white; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #667eea;">
-                                <ul style="margin-left: 1.5rem;">
-                                    ${category.concepts.map(concept => `<li style="margin-bottom: 0.75rem; line-height: 1.6;">${concept}</li>`).join('')}
-                                </ul>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-            
-            document.getElementById('lessonConceptsContainer').innerHTML = html;
-        }
 
         // Initial load
         loadNotesFromFile();
