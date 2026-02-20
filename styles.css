@@ -1,0 +1,247 @@
+@font-face {
+    font-family: 'ITC Galliard Std';
+    src: url('https://use.typekit.net/af/4e3d44/00000000000000007735e609/30/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3') format('woff2'),
+         url('https://use.typekit.net/af/4e3d44/00000000000000007735e609/30/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3') format('woff'),
+         url('https://use.typekit.net/af/4e3d44/00000000000000007735e609/30/a?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #000;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+#video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+}
+
+#video-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.7) 0%, rgba(118, 75, 162, 0.7) 100%);
+    z-index: -1;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+header {
+    background: rgba(245, 245, 247, 0.98);
+    padding: 2rem 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-bottom: 2rem;
+    backdrop-filter: blur(10px);
+}
+
+header h1 {
+    font-family: 'ITC Galliard Std', Georgia, serif;
+    font-size: 2.5rem;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+header p {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    background: #f5f5f7;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border: 2px solid #667eea;
+}
+
+.back-link:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+main {
+    padding-bottom: 3rem;
+}
+
+.category {
+    background: #f5f5f7;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.category h2 {
+    font-family: 'ITC Galliard Std', Georgia, serif;
+    color: #667eea;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.resources {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.resource-card {
+    background: rgba(248, 249, 250, 0.95);
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+.resource-card:hover {
+    background: #f5f5f7;
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    border-color: rgba(102, 126, 234, 0.8);
+}
+
+.resource-card h3 {
+    font-family: 'ITC Galliard Std', Georgia, serif;
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.resource-card p {
+    color: #666;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.resource-card a {
+    display: inline-block;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.resource-card a:hover {
+    color: #764ba2;
+}
+
+footer {
+    background: rgba(245, 245, 247, 0.95);
+    padding: 1.5rem 0;
+    text-align: center;
+    color: #666;
+    margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    .resources {
+        grid-template-columns: 1fr;
+    }
+    
+    .category {
+        padding: 1.5rem;
+    }
+}
+
+/* Matchup Page Styles */
+.matchup-content {
+    background: #f5f5f7;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.matchup-content h2 {
+    font-family: 'ITC Galliard Std', Georgia, serif;
+    color: #667eea;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.source-section {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.source-section:last-child {
+    margin-bottom: 0;
+}
+
+.source-section h3 {
+    font-family: 'ITC Galliard Std', Georgia, serif;
+    color: #333;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.source-section ul {
+    margin-left: 1.5rem;
+    margin-bottom: 0;
+}
+
+.source-section li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.source-section p {
+    margin-bottom: 0.75rem;
+    line-height: 1.6;
+}
+
+.source-section p:last-child {
+    margin-bottom: 0;
+}
+
+.source-section strong {
+    color: #667eea;
+    font-weight: 600;
+}

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Way of Fox - Melee Resources Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #333;
+            text-decoration: none;
+            font-weight: 600;
+            background: rgba(220, 220, 220, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: 2px solid rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+        .back-link:hover {
+            background: rgba(240, 240, 240, 1);
+            border-color: rgba(102, 126, 234, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .intro-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .search-box {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+        }
+        .matchup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .matchup-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            cursor: pointer;
+        }
+        .matchup-card:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+            border-color: rgba(102, 126, 234, 0.8);
+        }
+        .matchup-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .stock-icon {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+        }
+        .matchup-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .doc-viewer {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .doc-viewer iframe {
+            width: 100%;
+            height: 800px;
+            border: none;
+            border-radius: 8px;
+        }
+        .matchup-links {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .matchup-links h2 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        .matchup-links p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <video id="video-background" autoplay loop muted playsinline>
+        <source src="MainMenuLoop720p24fps.webm" type="video/webm">
+    </video>
+    <div id="video-overlay"></div>
+    
+    <header>
+        <div class="container">
+            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 36px; height: 36px; vertical-align: middle; margin-right: 0.5rem;"> The Way of Fox</h1>
+            <p>Comprehensive Fox matchup knowledge from top players</p>
+            <a href="index.html" class="back-link">← Back to Resources Hub</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="intro-section">
+            <h2>About This Resource</h2>
+            <p>The Way of Fox is a compilation of notes from content created by Leffen, Fiction, Billybopeep, The Fox Cookbook, and other top Fox players. This document organizes matchup-specific knowledge, percent-based concepts, and general strategies.</p>
+            <p style="margin-top: 1rem;"><strong>Sources:</strong> Fox Deconstructed (Leffen), Fiction's coaching, Billybopeep's analysis, The Fox Cookbook, Druggedfox lessons, and community knowledge</p>
+        </section>
+
+        <section class="search-box">
+            <input type="text" id="searchInput" placeholder="Search for matchups, techniques, or concepts..." onkeyup="filterMatchups()">
+        </section>
+
+        <h2 style="color: white; margin-bottom: 1rem; text-align: center;">Select a Matchup</h2>
+        
+        <div class="matchup-grid" id="matchupGrid">
+            <a href="matchups/fox.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" class="stock-icon"> Fox</h3>
+                <p>Ditto knowledge, neutral game, edgeguarding, and FD punish game</p>
+            </a>
+            <a href="matchups/falco.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/dbyctg5.png" alt="Falco" class="stock-icon"> Falco</h3>
+                <p>Dealing with lasers, punish game, platform movement, and edgeguarding</p>
+            </a>
+            <a href="matchups/marth.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/HJT5ZTS.png" alt="Marth" class="stock-icon"> Marth</h3>
+                <p>Whiff punishing, juggling, edgeguarding, and Marth killer setups</p>
+            </a>
+            <a href="matchups/sheik.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" class="stock-icon"> Sheik</h3>
+                <p>Chaingrab, tech chases, needle avoidance, and stage control</p>
+            </a>
+            <a href="matchups/puff.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/AzFEkw2.png" alt="Jigglypuff" class="stock-icon"> Jigglypuff</h3>
+                <p>Camping, rest punishes, percent-based play, and stage selection</p>
+            </a>
+            <a href="matchups/falcon.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/fcaKRdi.png" alt="Captain Falcon" class="stock-icon"> Captain Falcon</h3>
+                <p>Punishing approaches, edgeguarding, and avoiding knee setups</p>
+            </a>
+            <a href="matchups/peach.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" class="stock-icon"> Peach</h3>
+                <p>Dealing with CC, float heights, turnips, and waveshine setups</p>
+            </a>
+            <a href="matchups/ics.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/iHFuxww.png" alt="Ice Climbers" class="stock-icon"> Ice Climbers</h3>
+                <p>Desyncs, separating climbers, Nana AI, and wobbling avoidance</p>
+            </a>
+            <a href="matchups/samus.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/Yd9DP9r.png" alt="Samus" class="stock-icon"> Samus</h3>
+                <p>Dealing with CC, missiles, up-B, and platform control</p>
+            </a>
+            <a href="matchups/luigi.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/uM1DTyz.png" alt="Luigi" class="stock-icon"> Luigi</h3>
+                <p>Wavedash mixups, avoiding down-smash, and edgeguarding</p>
+            </a>
+            <a href="matchups/pikachu.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/0GZF02r.png" alt="Pikachu" class="stock-icon"> Pikachu</h3>
+                <p>Up-throw setups, dealing with up-air, and edgeguarding quick attack</p>
+            </a>
+            <a href="matchups/yoshi.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/XskW1p3.png" alt="Yoshi" class="stock-icon"> Yoshi</h3>
+                <p>Double jump armor, egg escapes, and platform play</p>
+            </a>
+            <a href="matchups/ganon.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/l9xQfyT.png" alt="Ganondorf" class="stock-icon"> Ganondorf</h3>
+                <p>Edgeguarding, avoiding power moves, and combo game</p>
+            </a>
+            <a href="matchups/doc.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/okOuokD.png" alt="Dr. Mario" class="stock-icon"> Dr. Mario</h3>
+                <p>Dealing with pills, cape, and recovery mixups</p>
+            </a>
+            <a href="matchups/dk.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/2hdsXlA.png" alt="Donkey Kong" class="stock-icon"> Donkey Kong</h3>
+                <p>Avoiding cargo throw, edgeguarding up-B, and punish game</p>
+            </a>
+            <a href="matchups/doubles.html" class="matchup-card" style="text-decoration: none; color: inherit;">
+                <h3><img src="https://i.imgur.com/2WVNM7m.png" alt="Doubles" class="stock-icon"> Doubles</h3>
+                <p>Team combos, 2v1 situations, and doubles-specific strategies</p>
+            </a>
+        </div>
+
+        <section class="matchup-links">
+            <h2>Quick Navigation</h2>
+            <p>Click any matchup card above to view the organized matchup guide. Each page contains detailed information from top Fox players including Leffen, Fiction, Billybopeep, and The Fox Cookbook.</p>
+        </section>
+
+        <section class="doc-viewer">
+            <h2 style="color: #667eea; margin-bottom: 1rem;">Full Document</h2>
+            <p style="margin-bottom: 1rem; color: #666;">Browse the complete Way of Fox document below, or <a href="https://docs.google.com/document/d/17rQswbenX1ac_zKPZLYGQHn9GrFzFR7Ppq1rrMioMEo/edit?usp=sharing" target="_blank" style="color: #667eea;">open in Google Docs</a> for the original version.</p>
+            <iframe src="https://docs.google.com/document/d/17rQswbenX1ac_zKPZLYGQHn9GrFzFR7Ppq1rrMioMEo/preview"></iframe>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>The Way of Fox - Compiled knowledge from the Melee community</p>
+        </div>
+    </footer>
+
+    <script>
+        // Comprehensive search index with keywords/concepts from each matchup
+        const matchupKeywords = {
+            'fox': ['ditto', 'mirror', 'neutral', 'drill', 'fadeback', 'full hop', 'running shine', 'edgeguard', 'tech chase', 'platform', 'fd punish', 'chaingrab', 'waveshine', 'up throw', 'up air', 'shine grab', 'dash dance', 'movement', 'positioning', 'fiction', 'leffen'],
+            'falco': ['laser', 'shield pressure', 'dair', 'shine', 'platform', 'punish', 'edgeguard', 'side b', 'double jump', 'up tilt', 'bair', 'full hop', 'powershield', 'take laser', 'goldilocks zone', 'approaching', 'billy', 'druggedfox', 'shield management', 'three ranges'],
+            'marth': ['whiff punish', 'juggle', 'edgeguard', 'marth killer', 'grab', 'chaingrab', 'up throw', 'dtilt', 'fair', 'dash dance', 'tether range', 'side b', 'recovery', 'di', 'slide off', 'up smash', 'crouch', 'range management'],
+            'sheik': ['chaingrab', 'tech chase', 'needle', 'grab', 'platform', 'up throw', 'up air', 'ftilt', 'fair', 'boost grab', 'dash attack', 'down smash', 'cc', 'the 3', '1-3 mixup', 'fiction', 'neutral strategy', 'updown laser', 'full hop', 'nair', 'running shine', 'wake up shine'],
+            'puff': ['rest', 'camp', 'laser', 'bair', 'grab', 'up throw', 'up air', 'kill percent', 'edgeguard', 'platform', 'pound', 'dash attack', 'crouch', 'shield', 'tech trap', 'di', 'stage control', 'patience', 'spacing'],
+            'falcon': ['knee', 'punish', 'edgeguard', 'grab', 'up air', 'stomp', 'raptor boost', 'gentleman', 'shield', 'cc', 'platform', 'tech chase', 'di', 'movement', 'dash dance', 'billy rules', 'zones', 'threat range'],
+            'peach': ['cc', 'crouch cancel', 'float', 'fair', 'down smash', 'dash attack', 'turnip', 'grab', 'waveshine', 'up tilt', 'platform', 'edgeguard', 'up b', 'airdodge', 'percent based', 'float height', 'low float', 'mid float', 'high float', 'neutral strategy', 'billy rules', 'cookbook'],
+            'ics': ['ice climbers', 'wobble', 'desync', 'nana', 'popo', 'separate', 'grab', 'blizzard', 'platform', 'edgeguard', 'shine', 'up air', 'kill nana'],
+            'samus': ['cc', 'crouch cancel', 'missile', 'charge shot', 'up b', 'platform', 'down smash', 'grab', 'edgeguard', 'dtilt', 'down tilt', 'up air', 'running shield', 'laser', 'bomb', 'ftilt', 'up smash', 'kill percent', 'cookbook'],
+            'luigi': ['wavedash', 'down smash', 'grab', 'edgeguard', 'up b', 'misfire', 'nair', 'platform', 'cc', 'crouch cancel'],
+            'pikachu': ['up throw', 'up air', 'quick attack', 'edgeguard', 'thunder', 'nair', 'grab', 'platform', 'recovery'],
+            'yoshi': ['double jump', 'armor', 'egg', 'platform', 'parry', 'down smash', 'grab', 'edgeguard', 'nair'],
+            'ganon': ['edgeguard', 'power move', 'fair', 'down air', 'grab', 'tech chase', 'platform', 'recovery', 'combo'],
+            'doc': ['pill', 'cape', 'up b', 'recovery', 'grab', 'fair', 'down smash', 'edgeguard', 'platform'],
+            'dk': ['cargo throw', 'grab', 'up b', 'edgeguard', 'punish', 'bair', 'platform', 'recovery'],
+            'doubles': ['teams', '2v1', 'team combo', 'formation', 'positioning', 'support', 'carry', 'hunting', 'trading', 'knockdown percent', 'projectile', 'stage selection', 'double fox', 'fox falco', 'fox falcon', 'fox peach', 'fox puff', 'floaties', 'nmw', 'philosophy']
+        };
+
+        function filterMatchups() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase().trim();
+            const grid = document.getElementById('matchupGrid');
+            const cards = grid.getElementsByClassName('matchup-card');
+
+            if (filter === '') {
+                // Show all cards if search is empty
+                for (let i = 0; i < cards.length; i++) {
+                    cards[i].style.display = "";
+                }
+                return;
+            }
+
+            // Search through each card
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const href = card.getAttribute('href');
+                
+                // Extract matchup name from href (e.g., "matchups/fox.html" -> "fox")
+                const matchupName = href.split('/')[1].split('.')[0];
+                
+                // Get visible text content
+                const text = card.textContent || card.innerText;
+                
+                // Get keywords for this matchup
+                const keywords = matchupKeywords[matchupName] || [];
+                
+                // Check if filter matches visible text OR any keyword
+                const matchesText = text.toLowerCase().indexOf(filter) > -1;
+                const matchesKeyword = keywords.some(keyword => keyword.toLowerCase().indexOf(filter) > -1);
+                
+                if (matchesText || matchesKeyword) {
+                    card.style.display = "";
+                } else {
+                    card.style.display = "none";
+                }
+            }
+        }
+    </script>
+</body>
+</html>

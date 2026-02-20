@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fox Doubles - The Way of Fox</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #f5f5f7; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+        .back-link:hover { background: #667eea; color: white; }
+        .matchup-content { background: #f5f5f7; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 2rem; }
+        .matchup-content h2 { color: #667eea; border-bottom: 3px solid #667eea; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+        .source-section { margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea; }
+        .source-section h3 { color: #333; margin-bottom: 1rem; }
+        .source-section ul { margin-left: 1.5rem; }
+        .source-section li { margin-bottom: 0.5rem; line-height: 1.6; }
+        .source-section strong { color: #667eea; }
+    </style>
+</head>
+<body>
+    <video id="video-background" autoplay loop muted playsinline>
+        <source src="../MainMenuLoop720p24fps.webm" type="video/webm">
+    </video>
+    <div id="video-overlay"></div>
+    
+    <header>
+        <div class="container">
+            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Fox Doubles</h1>
+            <p>Team combos and 2v1 situations</p>
+            <a href="../way-of-fox.html" class="back-link">← Back to Matchups</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="matchup-content">
+            <h2>Resources</h2>
+            <div class="source-section">
+                <ul>
+                    <li><a href="https://ssbm-doubles-guide.com/" target="_blank">Zodd's SSBM Doubles Guide</a> - Comprehensive doubles fundamentals</li>
+                    <li><a href="https://docs.google.com/document/d/1KZm9xh1rzjRbIZ6SujIOoz4WJ7YLLm98XTbPgXKaHNg/edit?tab=t.0" target="_blank">Zuppy's Doubles Tips</a> - Trading, building knockdown percent, projectiles, and more</li>
+                    <li><a href="https://desertsnoopy.nekoweb.org/guides/Teams_102_by_NMW_Fundamental_Concepts_391.html" target="_blank">NMW's Teams Guide 102</a> - Fundamental concepts and advanced positioning</li>
+                    <li><a href="https://desertsnoopy.nekoweb.org/guides/NMWs_Advanced_Guide_to_Doubles_392.html" target="_blank">NMW's Advanced Guide to Doubles</a> - Time management, risk/reward, and team strategies</li>
+                    <li><a href="https://docs.google.com/document/d/1MTFQPoXTUZ7l4Owm2inXlhucKaVyVTLDZYq-C5joTwg/edit" target="_blank">darkatma's Time Axis of Teams</a> - Understanding time as a resource in doubles</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <div class="source-section" style="background: #e8f4f8; border-left: 4px solid #667eea;">
+                <p style="font-style: italic; margin: 0 0 1rem 0; font-size: 1.05rem; line-height: 1.8;">Note: While these concepts apply broadly to doubles play, they are especially valuable for Fox players due to Fox's speed, versatility, and central role in most team compositions.</p>
+                <p style="margin: 0 0 1rem 0; font-size: 1rem; line-height: 1.8;">This is a collection of all the information I think is really important if you want to take a deep dive into a comprehensive approach to teams. Teams is a complicated but really fun mode with a lot of nuances that at first seem random but can be made less random with good awareness and coordination.</p>
+                <p style="margin: 0; font-size: 1rem; line-height: 1.8;">It should also be noted that a good singles player will only amplify their skill as a doubles player. Simply being able to hold your own in singles neutral and then also having these concepts in your pocket will help you excel with many types of teammates.</p>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Quick Start Guide - RunRiot</h2>
+            <div class="source-section">
+                <p style="margin-bottom: 1rem;">This is a very surface level guide to doubles. This is a list of things you should start focusing on first so that it isn't an overwhelming task. Once you start to understand the basics you can begin to look into the guides below for some more in-depth explanations. Keep in mind there will always be exceptions, but this is a nice easy explanation of things to start with if you are new to the format.</p>
+                <p style="margin-bottom: 1.5rem; font-style: italic;">This is a very general list. These are not strict rules but rather a starting point.</p>
+            </div>
+            <div class="source-section">
+                <h3>The Do's</h3>
+                <ul>
+                    <li>Stay close to your teammate but don't overlap with them</li>
+                    <li>Rely on your teammate to help you defensively</li>
+                    <li>React for team combos</li>
+                    <li>Use projectiles or throws to stop bad situations</li>
+                    <li>Be smart about positioning and preventing worst case scenario</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>The Don'ts</h3>
+                <ul>
+                    <li>Don't cross over or stand on your teammate, and don't go for things they are already accomplishing</li>
+                    <li>Don't use projectiles in the direction of your teammate (unless it is to assist in a disadvantageous position)</li>
+                    <li>Don't hold or push someone to ledge when your teammate needs it</li>
+                    <li>Don't throw away a stock to try to save someone who has a very slim chance of coming back (remember, each team has 8 stocks they share)</li>
+                    <li>Don't try to use moves to defend yourself or use moves as panic options</li>
+                    <li>Don't overextend because you don't trust a teammate to do something</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Doubles Neutral Game - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Neutral in Doubles</h3>
+                <ul>
+                    <li>The doubles neutral game is similar to singles - it's about adjusting positioning to force an opening on the opponents</li>
+                    <li>The fight for positioning while keeping risk/reward in mind for both you and your teammate is what makes up doubles neutral</li>
+                    <li>The tools you use to achieve solid positioning will vary by character and team composition, but should always be something you look to improve and understand</li>
+                    <li>Teams awareness goes a long way towards decision making for achieving good position</li>
+                    <li>Think of your neutral game as a combined goal for you and your teammate - your neutral isn't separate</li>
+                    <li>Your goal and gameplan should ideally function as a unit with your teammate</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Center Stage Control - RunRiot</h2>
+            <div class="source-section">
+                <h3>Why Center Stage Matters</h3>
+                <ul>
+                    <li>Controlling center stage is the first thing that can truly give you a huge advantage as a teams player</li>
+                    <li>Center stage allows you to box the other team out</li>
+                    <li>You can reach your teammate quicker from center</li>
+                    <li>Center allows you to abuse space more effectively</li>
+                    <li>Increases survivability as a team</li>
+                    <li>Makes doubles a much more structured format than you might be accustomed to</li>
+                    <li>Every single good team will be thinking about how to take center and be very cautious of leaving that space</li>
+                    <li><strong>Most important: Controlling center gives you a CHOICE in the gamestate</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Spacing with Your Teammate - RunRiot</h2>
+            <div class="source-section">
+                <h3>The "Roll Distance" Rule</h3>
+                <ul>
+                    <li>Keep about a roll distance away from your teammate as a general rule of thumb</li>
+                    <li>This spacing depends on how much space the character needs, but it's a good baseline</li>
+                    <li>This is often referred to as maintaining your "side"</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Key Rules for Teammate Spacing</h3>
+                <ul>
+                    <li><strong>Almost NEVER cross over your teammate</strong> - there are exceptions, but in general let your teammate keep their position</li>
+                    <li>This reduces confusion because it keeps your position structured and productive</li>
+                    <li>Close enough to assist your teammate but far enough to give them the space they need</li>
+                    <li>If you stay too close, your teammate can't comfortably interact with the situation</li>
+                    <li>If you are too far away, you cannot assist them or damage control if they start being punished</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Platform Usage - RunRiot</h2>
+            <div class="source-section">
+                <h3>General Platform Strategy</h3>
+                <ul>
+                    <li>Platforms allow you to stay safer when facing a lot of danger, such as spawn invincibility or an unfavorable 2v1</li>
+                    <li>Platforms become important when facing characters that are slower or can't challenge them as well</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Top Platform Control</h3>
+                <ul>
+                    <li>The top platform is much like the top of the key - on top platform you can truly control the gamestate</li>
+                    <li>You can access every position on the stage in a reasonable amount of time</li>
+                    <li>Can stop high percent team combos as they usually occupy the height of the top platform</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Side Platforms</h3>
+                <ul>
+                    <li>Side platforms are smaller versions of top platform control</li>
+                    <li>They serve a similar purpose but with more limited coverage</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Damage Control - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Damage Control</h3>
+                <ul>
+                    <li>Damage control is positioning that allows you to disrupt a beneficial situation the opponents might have</li>
+                    <li>Keep in mind which moves you use and the timings - some moves are much better and lower risk</li>
+                    <li>Make sure you do not put yourself in danger when attempting damage control</li>
+                    <li>Be very mindful when trying to control a negative situation as it can often become much worse if not a good decision</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Best Moves for Damage Control</h3>
+                <ul>
+                    <li>Pikachu's up air</li>
+                    <li>Fox shine/drill</li>
+                    <li>Peach up-B</li>
+                    <li><strong>Projectiles are the most prominent damage control tools</strong> - they disrupt with usually no repercussion for using them</li>
+                    <li>The negative of projectiles is they can be blocked</li>
+                    <li>Projectiles are the best at controlling a situation to give advantage to your team</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Damage Control Warnings</h3>
+                <ul>
+                    <li>Badly placed projectiles are very dangerous as they can completely stop an advantage your teammate might have</li>
+                    <li>Some of the best damage control by the ledge is just not getting involved</li>
+                    <li><strong>Don't become a part of the damage if it isn't worth the risk</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Positioning vs Team Compositions - RunRiot</h2>
+            <div class="source-section">
+                <h3>Three Categories of Team Compositions</h3>
+                <ul>
+                    <li><strong>2 Slower/Stationary Characters</strong></li>
+                    <li><strong>2 Space Taking Characters</strong></li>
+                    <li><strong>1 of Each</strong></li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>General Strategy by Character Type</h3>
+                <ul>
+                    <li>In general, you want to abuse the weaknesses of each type of character</li>
+                    <li>Sandwiching every composition is not always a good idea</li>
+                    <li>Creating space at the cost of a punish can be a very good choice</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Space Taking Characters</h3>
+                <ul>
+                    <li>Example: Captain Falcon is a space taking character</li>
+                    <li>Preventing him from being productive by sandwiching him is very useful</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Slower/Stationary Characters</h3>
+                <ul>
+                    <li>Example: A character like Samus who enjoys controlling interactions</li>
+                    <li>Becomes very non-threatening when thrown away</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Example: Fox/Sheik vs Fox/Fox at Low Percent</h3>
+                <ul>
+                    <li>Throwing a Fox away to 2v1 the other can buy enough time to create an opening</li>
+                    <li>This is better than trying to sandwich two low percent fastfallers and getting reversaled</li>
+                    <li>You will start to understand the exceptions when you keep these principles in mind</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Target Switching - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Target Switching</h3>
+                <ul>
+                    <li>Target switching is something almost exclusive to doubles and may take the longest to truly master</li>
+                    <li>It's the interaction by one person to win neutral against two people by abusing the unpredictability of being able to threaten both of them</li>
+                    <li>Target switching is a habit you can pick up on - keep in mind if someone is target switching to the same tempo</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>As the Single Person</h3>
+                <ul>
+                    <li>Awareness to see the whole screen is key</li>
+                    <li>You need to be able to understand when you can pick your spots</li>
+                    <li>Be able to track both opponents at the same time (although you should probably do this anyway)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Starting a Punish - RunRiot</h2>
+            <div class="source-section">
+                <h3>Time Considerations</h3>
+                <ul>
+                    <li>In singles the combo goes as long as you can make it, but in doubles it is the exact opposite (barring a 2v1)</li>
+                    <li>The faster and more efficient the punish is, the harder it is for the opponent's teammate to stop it in time</li>
+                    <li>There are many more things you need to consider to make sure the punish is very solid in doubles</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Teammate Availability</h3>
+                <ul>
+                    <li>You must consider if your teammate is available to help</li>
+                    <li><strong>If your teammate is in a bad situation, you might give up your punish altogether</strong></li>
+                    <li>If your teammate is doing a combo themselves, then you both have the freedom to do individual combos</li>
+                    <li>If your teammate is with you and boxing out the opponent, or the other opponent can't reach, then your teammate can help you</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Value of Knockdowns</h3>
+                <ul>
+                    <li>Knockdowns are incredibly useful in doubles</li>
+                    <li>The knocked down opponent cannot help or interact for that amount of time</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Punish Columns - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Punish Columns</h3>
+                <ul>
+                    <li>Punish columns describe positioning during a team combo</li>
+                    <li>A team combo generally has the victim go back and forth between teammates while rising in height</li>
+                    <li>This relates back to letting hitstun breathe - you have more time than you think</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Spacing by Percent</h3>
+                <ul>
+                    <li>Start close to your teammate at lower percent to pass them back and forth</li>
+                    <li>Get farther apart as the percent gets higher</li>
+                    <li><strong>No two teammates should hardly ever be in the same column</strong></li>
+                    <li>Horizontal combos are generally much safer and easier to execute than vertical ones</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Tech Chase Columns</h3>
+                <ul>
+                    <li>Punish columns also exist for tech chases</li>
+                    <li>You can discuss with your teammate who takes the in place options</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>React in Team Combos</h3>
+                <ul>
+                    <li>Please react in team combos - you have more time than you think</li>
+                    <li>Don't rush or panic, let the hitstun breathe</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Knockback Stacking - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Knockback Stacking</h3>
+                <ul>
+                    <li>This topic is important to recognize during a team combo</li>
+                    <li>Knockback stacking is necessary to understand for team combos and getting pick-ups on punishes</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>How Knockback Stacking Works</h3>
+                <ul>
+                    <li><strong>Within 10 frames:</strong> Moves that hit within 10 frames of hitstun starting will send with the knockback of the latest move hit</li>
+                    <li>Applications are mostly for saving (using a weak move to save from Puff's rest) or combo extension with the weak move's hitbox</li>
+                    <li><strong>11 frames and onwards:</strong> Moves that hit 11 frames and onwards after hitstun starting will stack the vectors of the moves</li>
+                    <li>This lets you do stacking shenanigans to extend combos or hit harder than you normally would if you plan for the stacking</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Team Tech Chasing - RunRiot</h2>
+            <div class="source-section">
+                <h3>The Challenge of Team Tech Chasing</h3>
+                <ul>
+                    <li>This is the most difficult part of teams punish without discussing it with your teammate beforehand</li>
+                    <li>With no prior communication, it's very difficult to know who will take the in-place options without overlap</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Ground Tech Chase Coverage</h3>
+                <ul>
+                    <li>Ideally, one person will take each away option and whichever person you decide will take the middle</li>
+                    <li>You can decide you will be the "tech chaser" for a couple of reasons:</li>
+                    <li><strong>Character:</strong> Speed and grab range give more leniency</li>
+                    <li><strong>Reaction time:</strong> Who has faster or more consistent reactions</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Platform Tech Chasing</h3>
+                <ul>
+                    <li>Platform tech chasing is similar to ground tech chasing</li>
+                    <li>The person who takes the middle option will be whoever the opponent is closest to on either side of the platform</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Top Platform Tech Chasing</h3>
+                <ul>
+                    <li>For the top platform, if possible should be done the same way as side platforms</li>
+                    <li>Sometimes compositions only have one character who can make it there in time</li>
+                    <li>In that case, that character should do an individual tech chase</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Grabs in Doubles - RunRiot</h2>
+            <div class="source-section">
+                <h3>Why Grabs Are Essential</h3>
+                <ul>
+                    <li>Grabs are just as essential if not more so in doubles</li>
+                    <li>Shielding is a really good defensive option in doubles - it allows stalling for time while holding a position</li>
+                    <li>Light shield can make it difficult to get shield pokes or push them to a more favorable spot</li>
+                    <li>Shielding allows their teammate to help them by hitting their shield to force you to give up the punish or shield</li>
+                    <li>Because of this, grabs become much more important to keep opponents from gaining these advantages</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Grab Applications</h3>
+                <ul>
+                    <li>Many situations where grabs lead to kill confirms or nuanced situations like grab release</li>
+                    <li>Generally grab is the single best way to prevent someone from keeping that position</li>
+                    <li>There are no options defensively that beat grab other than avoiding it (not including using a hitbox)</li>
+                    <li>If you want to force someone away from ledge, grab forces them to give up that position by avoiding it or being grabbed and thrown away</li>
+                    <li>Grabs are generally the safest option in a 2v1 to guarantee a kill confirm</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Hold Times and Kill Confirms</h3>
+                <ul>
+                    <li>Hold times are relatively long, especially at higher percents</li>
+                    <li>There are a lot of true kill confirms from holding someone</li>
+                    <li>Most character's grabs tend to be low risk and low commitment</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Grab Release</h3>
+                <ul>
+                    <li>Grab release is a good situation to keep in mind</li>
+                    <li>If a teammate is holding someone while facing the ledge, hitting them with a move causes a grab release</li>
+                    <li>The person who was grabbed is sent away at a downward angle</li>
+                    <li>This is especially good against fastfallers, as they fall further down and have a hard time recovering</li>
+                    <li>This can be done with any move but is especially good with low percent moves and projectiles</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Throws in Doubles - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Throw Options</h3>
+                <ul>
+                    <li>Throws are a unique part of the punish game</li>
+                    <li>There are so many variations and choices for throws that it's important to understand how you can use your character's throws to achieve the goal</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Passing Throws</h3>
+                <ul>
+                    <li>If the goal is to pass to your teammate, make sure to grab in the direction for the better passing throw if given the option</li>
+                    <li>Example: At higher percent you want to pass with Fox backthrow instead of forward throw to avoid the deadweight, making it easier for the teammate to pass them back</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Low Percent Throw Strategy</h3>
+                <ul>
+                    <li>At really low percents, you might want to do a quick move after your throw to build percent so they don't fall out of the combo</li>
+                    <li>Example: You might consider upthrow upsmash with Fox first before passing so that a fastfaller would not fall to the ground too fast before trying to pass at zero percent</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Knockdown Throws</h3>
+                <ul>
+                    <li>Throws that cause a knockdown are very good</li>
+                    <li>Tech chasing is a lot easier with two people</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Throwing Offstage</h3>
+                <ul>
+                    <li>Throwing offstage can be a very good option if the edgeguard is executed correctly</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Throw Invincibility</h3>
+                <ul>
+                    <li>For all throws, as soon as the throw starts you gain 8 frames of invulnerability</li>
+                    <li>This especially comes in handy when holding someone "hostage" and the opponent trying to help their teammate is predictable</li>
+                    <li>This is useful when you get a grab knowing you might be punished - you can use the throw invulnerability to protect yourself</li>
+                    <li>The person you grabbed still has a chance to be hit by that move during your invulnerability</li>
+                    <li>Faster grabs are much better due to every grab giving 8 frames of invulnerability</li>
+                    <li>The closer the grab is to 8 frames long, the higher ratio of invulnerability the throw will have</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Grab States - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Grab States</h3>
+                <ul>
+                    <li>One of the more subtle parts of teams is understanding grab states</li>
+                    <li>There are two states of when someone is grabbed in Melee:</li>
+                    <li><strong>Air grab:</strong> When the character grabbed does not have their feet touching the ground</li>
+                    <li><strong>Ground grab:</strong> When the character has at least one foot touching the ground</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Why Grab States Matter</h3>
+                <ul>
+                    <li>Certain moves act differently to an opponent depending whether they are in the air or on the ground</li>
+                    <li>Example: Fox's up tilt on Captain Falcon (grounded) will knock him out of the grab and over Fox's head</li>
+                    <li>Example: Fox's up tilt on Jigglypuff (aerial) does not cause the grab to break because they are in the air during the grab</li>
+                    <li>This is because Fox's up tilt has more base knockback on a grounded opponent compared to an aerial opponent</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Spikes and Meteors</h3>
+                <ul>
+                    <li>Spikes/Meteors will knock a grounded opponent up</li>
+                    <li>An aerial opponent will get knocked down into a tech chase</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>What Determines Grab Break</h3>
+                <ul>
+                    <li>Percent is NOT a factor for if someone will break out of a grab from a hit</li>
+                    <li>ONLY the move staling and the base knockback of the move itself determine this</li>
+                    <li>Some characters will always end up in a grounded state when grabbed</li>
+                    <li>Other characters are dependent on who they are grabbed by</li>
+                    <li>The grabber height, the grabbee height, and the grab itself all play a role in what happens</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Video Resource</h3>
+                <ul>
+                    <li><a href="https://youtu.be/DVWve_O5Qqw?list=PL0vnsPOq4FD37x4d_yhRfS9yrziqCWGQ4" target="_blank">PewPewU's Grab States Explanation</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Hitboxes on Throws - "Deadweight" - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Deadweight</h3>
+                <ul>
+                    <li>Some throws, especially at higher percents, can cause the person being thrown to have a hitbox and collide with other players</li>
+                    <li>This is referred to as "deadweight"</li>
+                    <li>All throws have an initial hitbox that can hit other players, but this list shows when the person getting thrown themselves turn into a hitbox</li>
+                    <li>Heavy section was tested on Captain Falcon, light section tested on Jigglypuff</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Fox Throw Deadweight Percents</h3>
+                <ul>
+                    <li><strong>Forward throw:</strong> ~44% (heavy), ~41% (light)</li>
+                    <li><strong>Up throw:</strong> 0% (both)</li>
+                    <li><strong>Back throw:</strong> 0% (both)</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Sheik Throw Deadweight Percents</h3>
+                <ul>
+                    <li><strong>Forward throw:</strong> ~34% (heavy), ~31% (light)</li>
+                    <li><strong>Up throw:</strong> 0% (both)</li>
+                    <li><strong>Back throw:</strong> ~33% (heavy), ~30% (light)</li>
+                    <li><strong>Down throw:</strong> 0% (both)</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Falco Throw Deadweight Percents</h3>
+                <ul>
+                    <li><strong>Forward throw:</strong> ~41% (heavy), ~40% (light)</li>
+                    <li><strong>Up throw:</strong> 0% (both)</li>
+                    <li><strong>Back throw:</strong> 0% (both)</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Marth Throw Deadweight Percents</h3>
+                <ul>
+                    <li><strong>Forward throw:</strong> ~7% (heavy), ~5% (light)</li>
+                    <li><strong>Up throw:</strong> 0% (both)</li>
+                    <li><strong>Back throw:</strong> 0% (both)</li>
+                    <li><strong>Down throw:</strong> ~8% (heavy), ~6% (light)</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Captain Falcon Throw Deadweight Percents</h3>
+                <ul>
+                    <li><strong>Forward throw:</strong> ~32% (heavy), ~30% (light)</li>
+                    <li><strong>Up throw:</strong> 0% (both)</li>
+                    <li><strong>Back throw:</strong> ~35% (heavy), ~33% (light)</li>
+                    <li><strong>Down throw:</strong> 0% (both)</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Peach Throw Deadweight Percents</h3>
+                <ul>
+                    <li><strong>Forward throw:</strong> ~31% (heavy), ~29% (light) - This throw always has an extra hitbox as soon as the slap connects</li>
+                    <li><strong>Up throw:</strong> 0% (both)</li>
+                    <li><strong>Back throw:</strong> 0% (both) - Lasts a very long time</li>
+                    <li><strong>Down throw:</strong> ~55% (heavy), ~53% (light)</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Jigglypuff Throw Deadweight Percents</h3>
+                <ul>
+                    <li><strong>Forward throw:</strong> Never</li>
+                    <li><strong>Up throw:</strong> 0% (both) - Lasts a very long time</li>
+                    <li><strong>Back throw:</strong> 0% (both) - Lasts a very long time</li>
+                    <li><strong>Down throw:</strong> 0% (both) - Lasts a very long time</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Height for Combos - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Combo Height</h3>
+                <ul>
+                    <li>Height for combos is a very overlooked part of doubles combos</li>
+                    <li>It is very important to keep height in mind when passing to your teammate</li>
+                    <li>Consider if it is possible for them to reach it</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Height Considerations by Team Composition</h3>
+                <ul>
+                    <li>Example: If teaming with Peach as Falco, you have to be very careful if you shine that they will not be too high for the Peach to reach them</li>
+                    <li><strong>The lower to the ground the better if you have the room</strong></li>
+                    <li><strong>The higher the better if trying to pass around the victim's teammate trying to help</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>2v1 Infinites and Setups - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding 2v1 Infinites</h3>
+                <ul>
+                    <li>Certain characters/compositions have access to infinites that can be used for safe and consistent damage in 2v1 situations</li>
+                    <li>These setups are especially useful when you have a guaranteed stock advantage</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Fox 2v1 Infinites</h3>
+                <ul>
+                    <li>Shine drill while teammate is holding</li>
+                    <li>Down tilt wobbling while teammate alternates pummels</li>
+                    <li>Shine infinite with double Fox on characters that don't get knocked down</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Other Character 2v1 Infinites</h3>
+                <ul>
+                    <li><strong>Sheik:</strong> Rapid jab while teammate is holding</li>
+                    <li><strong>Yoshi:</strong> Down tilt wobbling while teammate alternates pummels</li>
+                    <li><strong>Pikachu:</strong> Rapid jab while teammate is holding</li>
+                    <li><strong>Link and Young Link:</strong> Rapid jab while teammate is holding</li>
+                    <li><strong>Game & Watch:</strong> Rapid jab while teammate is holding</li>
+                    <li><strong>Mewtwo:</strong> Shadow Ball while teammate is holding / Rapid jab while teammate is holding</li>
+                    <li><strong>Ness:</strong> Rapid down tilt while teammate is holding</li>
+                    <li><strong>Pichu:</strong> Rapid jab while teammate is holding</li>
+                    <li><strong>Bowser:</strong> Fully depleted flames while teammate is holding</li>
+                    <li><strong>Kirby:</strong> Rapid jab while teammate is holding</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Team Edgeguarding - RunRiot</h2>
+            <div class="source-section">
+                <h3>Three Types of Team Edgeguards</h3>
+                <ul>
+                    <li>One person onstage, one person on ledge</li>
+                    <li>One person going offstage, one person on ledge</li>
+                    <li>Both players onstage, but one covering ledge</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>One Person Onstage, One Person on Ledge</h3>
+                <ul>
+                    <li>Most traditional edgeguard and the most consistent</li>
+                    <li>Holding ledge and forcing someone onstage is invaluable due to most characters having a period of vulnerability when landing onstage</li>
+                    <li>Characters that take time offstage are much more vulnerable to characters on the ledge</li>
+                    <li>Allows the team to cover every option with a ledge roll and a hitbox onstage</li>
+                    <li>Allows the easiest time preventing the opponent's teammate from coming to assist</li>
+                    <li>The person onstage can wall the teammate while the person on the ledge takes over the edgeguard</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>One Person Going Offstage, One Person on Ledge</h3>
+                <ul>
+                    <li>A little riskier but is usually better for quicker kills</li>
+                    <li>Prime example: A shine spike attempt - one of the fastest kill confirms offstage but requires a commitment</li>
+                    <li>Ideally the person on the ledge comes up from ledge and protects the person who went offstage</li>
+                    <li>Most likely the best option when taking a stock is very crucial to the state of the game</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Both Players Onstage, One Covering Ledge</h3>
+                <ul>
+                    <li>Very rarely better than the other two, but there are advantages</li>
+                    <li>Most likely the least risky option but is also the easiest to avoid</li>
+                    <li>This option is the easiest to set up in a short amount of time</li>
+                    <li>Example: Peach is slow but can make up for it by having one of the best ledge covering moves into a strong move</li>
+                    <li>This position allows for quick readjustments if needed</li>
+                    <li>Better for characters with poor ledge options</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Percent-Based Edgeguard Strategy</h3>
+                <ul>
+                    <li>How low the percent of the person being edgeguarded is can affect what method you use to edgeguard them</li>
+                    <li>Because time is so valuable in doubles, if given the option you should choose to get an edgeguard as quickly as possible with the resources your team has</li>
+                    <li>Generally this is accomplished by having a member go offstage and secure the kill quickly</li>
+                    <li>Another option: Stall the person with a repeatable edgeguard to build damage while your teammate protects you</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>The Importance of Grabbing Ledge</h3>
+                <ul>
+                    <li>Grabbing the ledge is invaluable in an edgeguard</li>
+                    <li>This removes not only their ability to stay safe, but some characters will use ledge invincibility to force you to give up a position you may want to keep</li>
+                    <li>If you are ever in doubt regarding time or options, just hold ledge and reduce the chance of them finding a safe option</li>
+                    <li>This is especially good for covering high recoveries as it prevents them from getting a drift back</li>
+                    <li>Which character grabs ledge can be situational, but if given the choice you should have someone predetermined to grab ledge if there is an option</li>
+                    <li>If there is not enough time, any character grabbing ledge is fine too</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Preventing Teammate Interference</h3>
+                <ul>
+                    <li>This is the process of preventing the teammate of someone being edgeguarded from salvaging the stock or creating a reversal</li>
+                    <li>Obviously there's preventing the person onstage from physically reaching their teammate - this is generally a neutral situation in your favor since they are forced to approach</li>
+                    <li>More complex is preventing help from projectiles</li>
+                    <li>The awareness to block or eat projectiles is very important when securing an edgeguard</li>
+                    <li><strong>Light shielding is one of the best ways to block projectiles</strong> - the shield is physically much bigger and can block more projectiles</li>
+                    <li>If you are light shielding and predicting them to jump over to avoid the shield, you can stuff the jump with an aerial or put yourself in the path</li>
+                    <li>Eating the projectile is usually very worth the trade - for example, eating a full set of needles in exchange for a stock is a very good trade</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Stalling Opponents</h3>
+                <ul>
+                    <li>This is useful when there is a beneficial situation that you want your teammate to be able to keep</li>
+                    <li>Being able to stall to keep them from helping is very effective and can generally turn into a great situation</li>
+                    <li>Chaingrabbing, moves that send upwards, and grabs with pummels paired with a throw away from the situation can all be very good methods of keeping someone preoccupied</li>
+                    <li>There are also characters that can stall someone offstage, such as Fox drilling from ledge over and over to keep them from coming back but preventing them from dying</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Screen Awareness and Downtime - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding When to Look Away</h3>
+                <ul>
+                    <li>This takes time to get used to and varies a lot by character</li>
+                    <li>A good way to find out when you are safe to look somewhere else is to consider what would be "downtime" in Melee</li>
+                    <li>The reason this varies by character is because some characters create downtime with hitstun in different ways</li>
+                    <li>The more comfortable you are with your character and the more you understand what you need to focus on, the more you can understand when your focus can be directed elsewhere</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Character-Specific Examples</h3>
+                <ul>
+                    <li><strong>Falco shine on a fastfaller:</strong> Gives more than enough time to react to the DI and then look away while readjusting for the next shine or aerial</li>
+                    <li><strong>Captain Falcon stomp:</strong> Allows you to understand the entire game state while you get your confirm</li>
+                    <li>After hitting a move and reacting to the DI, you can then look across the screen to see the other situation</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Improving at Teams: Taking Time into Consideration - darkatma</h2>
+            <div class="source-section">
+                <h3>Time vs Singles Considerations</h3>
+                <ul>
+                    <li>One of the major differences between teams and singles is the consideration of time</li>
+                    <li>In singles, we mainly consider damage output and positional advantage when making decisions during a combo</li>
+                    <li>In teams, these two points have to be considered in relation to time</li>
+                    <li>A Falco can spend ten seconds pillaring and racking up damage in singles, but the longer a combo extends in teams, the more likely the opponent's teammate will hop in and interrupt</li>
+                    <li>Sheik can downthrow techchase over and over in singles, but downthrow takes up a whole second and is easily interruptible in teams</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Character Viability in Teams</h3>
+                <ul>
+                    <li>When we re-examine each character's options in relation to time, we can see why certain characters are better or worse in teams compared to singles</li>
+                    <li><strong>Worse in teams:</strong> Falco's solo combos take too long to rack up damage, Marth's standard edgeguards take too long, and Samus often takes too long to recover (allowing her teammate to get double teamed during her absence)</li>
+                    <li><strong>Better in teams:</strong> Ganon's ability to deal a lot of damage quickly, while being less likely to be comboed for an extended period of time</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Why Team Combos Are Effective</h3>
+                <ul>
+                    <li>When we start thinking about time as a factor, it makes sense why team combos are so effective</li>
+                    <li>Your teammate can stack damage on the opponent while you are still in your attack animation, and while your opponent is still in the hitstun of the attack</li>
+                    <li>Once they volley the opponent back towards you, you are ready to do your next attack and send the opponent back towards your teammate</li>
+                    <li>An entire teams death combo can happen within seconds, compared to the relatively longer amount of time for a singles death combo</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Optimizing Combos for Teams</h3>
+                <ul>
+                    <li>An understanding of how to optimize your combos for teams will help you improve drastically</li>
+                    <li>Players who can do short, simple combos that put the opponent in a poor position are at an advantage</li>
+                    <li>Poor positions include: being zoned out from helping their teammate, or being set up for team combos</li>
+                    <li>This is better than players who opt for longer, more delicate strings that invite room for error or take too long to set up edgeguards</li>
+                    <li>Marth and Falco supports who can send the opponent off the stage for an early kill are better teams players than ones who juggle their opponents for twenty hits</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Offensive Uses of Time</h3>
+                <ul>
+                    <li>Teammates that take longer to kill should hog the ledge while their teammate covers the high/stage option - this reduces the edgeguard cycle time</li>
+                    <li>Fox's upsmash is less useful than his dsmash or fsmash if the opponent is not in kill percent for edgeguarding, but upsmash may buy enough time on floaties to set up team combos on the other opponent while they recover</li>
+                    <li>Edgeguarding from the stage instead of going off stage usually leaves you vulnerable for a much shorter time, but sometimes going deep for an edgeguard and letting your teammate cover you makes it so that the edgeguard is much less interruptible by the opponent's teammate</li>
+                    <li>Jigglypuff's rest is a much safer attack to throw out because your opponent will commonly not have enough (or any) time to set up a solid punish as long as your teammate is in a relatively neutral state</li>
+                    <li>Doing team combos rather than singles combos when you get an opening increases damage output per the time you have allotted</li>
+                    <li>Knocking a floaty away and then using the 4-5 seconds of their slow recovery to team combo their teammate instead</li>
+                    <li>When spawning, choosing to fight the opponent currently engaging your teammate instead of the other opponent may maximize your damage output and grant you more stage control by the end of your spawn invincibility</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Defensive Uses of Time</h3>
+                <ul>
+                    <li>Fox and Falco can repeatedly shine off stage to buy time for their teammate to come save them - it even works between stocks</li>
+                    <li>Good teams players tend to recover high to buy time for their teammate to help</li>
+                    <li>A player on stage can grab the opponent and hold them to prevent the opponent from edgeguarding</li>
+                    <li>Blocking against Sheik is stronger because her throw game is slow damage accumulation and is likely to be interrupted</li>
+                    <li>Ledgestalling or otherwise being evasive after your teammate gets killed or sent far away - your partner can 'rescue' you with their respawn invincibility</li>
+                    <li>Recovering high gives your teammate time to break up edgeguards whereas recovering low makes it difficult for your teammate to help you out</li>
+                    <li>Recovering high can give you multiple cycles of recovery which buys even more time</li>
+                    <li>Walling out the other opponent when your teammate has a relatively guaranteed edgeguard, buying them time to complete it</li>
+                    <li>As a floaty support, staying close to center stage makes it so you have the shortest time needed to help your teammate, and ensures you are not easy to ignore by the opposing team - this is why stage control is so important</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Gameplans vs Certain Characters - RunRiot</h2>
+            <div class="source-section">
+                <h3>Understanding Character-Specific Gameplans</h3>
+                <ul>
+                    <li>This is a more specific explanation on how to think about certain characters and matchups</li>
+                    <li>Keep in mind that this is viewed through the lens of Fox and the way Fox's strengths take advantage of weaknesses or strategies will be different than other characters</li>
+                    <li>Rather than following this guide verbatim, try to understand the weaknesses in characters being explained and apply your own character strengths to take advantage of them</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Fox</h3>
+                <ul>
+                    <li>Try to understand what options you pick that Fox can truly punish you for</li>
+                    <li>Stay diagonal above him (outside of fullhop bair range) or do moves in place to wall him</li>
+                    <li>The best way to play against Fox is to understand the risk/reward from his perspective</li>
+                    <li>Short range and a combo weight can make his decisions much more risky in most cases</li>
+                    <li>Being aware of his threat zone can make him seem much more manageable</li>
+                    <li><strong>Forcing Fox out of center stage is the most key thing to look for</strong></li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Sheik</h3>
+                <ul>
+                    <li>Sheik's weaknesses come from taking advantage of her not being able to commit very well</li>
+                    <li>There is a space right outside of her short hop fair, short hop bair, boost grab, or dash attack that gives her a very hard time</li>
+                    <li>Sheik can have a hard time versus lower percent characters, though it can be somewhat negated in a lot of cases</li>
+                    <li>She can also have a hard time coming down</li>
+                    <li>Tend to wait for her to commit - she does very well off of her teammate's opening but can struggle to get her own, especially at lower percents</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Falco</h3>
+                <ul>
+                    <li>Falco is one of the easier characters to understand but can still be hard to deal with</li>
+                    <li>Play platforms almost entirely against Falco - this gives him a hard time hitting you and gives you freedom to prevent him from being productive</li>
+                    <li><strong>Two methods for handling lasers:</strong></li>
+                    <li>Method 1: Stay in a range where he can't shoot lasers across the stage (like Peach/Marth matchup where you prevent turnip pulls) - relies heavily on two 1v1s</li>
+                    <li>Method 2: Let him approach and then sandwich him - more positioning based and works well with platforms</li>
+                    <li>Let the Falco take center and move around him, then carefully punish him while avoiding his long lasting moves</li>
+                    <li>Try to physically block lasers a lot - they are usually very telegraphed</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Marth</h3>
+                <ul>
+                    <li>Marth falls into a very specific category: an "ignore character"</li>
+                    <li>Look for his threat range and whether or not he is forced to approach</li>
+                    <li>His lack of projectile and somewhat hard time approaching can make it hard on Marth to control interactions</li>
+                    <li>He has poor out of shield and can't cover both sides of him</li>
+                    <li>However, Marth's strengths are extremely strong: hard punishes and a good wall</li>
+                    <li>Try to force Marth to do something he is weakest at and then punish him in a way he can struggle with</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Peach</h3>
+                <ul>
+                    <li>This one can be tough to execute - it's really just a matter of taking advantage of movement</li>
+                    <li>Stay outside of Peach's threat ranges if you recognize that she will be in a space</li>
+                    <li>She controls her approaching space very well so do not contest it</li>
+                    <li>Float is one of the most powerful tools in doubles</li>
+                    <li>Be aware of her slow movement and her options out of float</li>
+                    <li>Focus on team punishes and positioning rather than traditional combos - you tend to get more off of them</li>
+                    <li>If you throw her away, her movement is so slow she takes a long time to get back</li>
+                    <li>If you team combo, she has a much harder time getting out compared to Fox upthrow upair</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Captain Falcon</h3>
+                <ul>
+                    <li>There is one single job to beating Falcon: Be aware of his SHFFL aerials and give him as little space as possible</li>
+                    <li>There are very few situations you would want to ignore Falcon, if any at all</li>
+                    <li>He is a huge target with not great OoS options, needing space</li>
+                    <li>Punishes usually take little time making it necessary to be in his range to interrupt those</li>
+                    <li><strong>Be safe, but hold W (move forward)</strong></li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Jigglypuff</h3>
+                <ul>
+                    <li>This is a format that doesn't translate well to characters with lower movement speed, especially with no projectiles</li>
+                    <li>Jigglypuff is similar to Marth in the way to play it: Ignore if controlling space, approach if they are forced to approach</li>
+                    <li>Hold teammates hostage in these slower matchups and the Puff has to choose to be unproductive or force an approach they have a hard time winning</li>
+                    <li>Be aware of rest on yourself and your teammate and obviously don't give her anything for free</li>
+                    <li>Hit her teammate and play like you want to time out the Puff</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Understanding 2v1 vs Smother</h3>
+                <ul>
+                    <li>The difference between 2v1 and smother is that 2v1 is more waiting outside the threat zone for something to punish</li>
+                    <li>Smother is preemptive and won't let them get started</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Team Composition Gameplans</h3>
+                <ul>
+                    <li><strong><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> Fox/Fox:</strong> Create space and hold center as best as possible without getting opened up</li>
+                    <li><strong><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 20px; height: 20px; vertical-align: middle;"> Fox/Falco:</strong> Smother <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 16px; height: 16px; vertical-align: middle;"> Falco or take advantage of <img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 16px; height: 16px; vertical-align: middle;"> Fox while Falco is being unproductive. Play platforms a lot against Falco here</li>
+                    <li><strong><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 20px; height: 20px; vertical-align: middle;"> Fox/Sheik:</strong> Stay outside <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 16px; height: 16px; vertical-align: middle;"> Sheik threat range and 2v1 <img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 16px; height: 16px; vertical-align: middle;"> Fox, don't commit offstage especially in this MU</li>
+                    <li><strong><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 20px; height: 20px; vertical-align: middle;"> Fox/Marth:</strong> 2v1 <img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 16px; height: 16px; vertical-align: middle;"> Fox, avoid <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 16px; height: 16px; vertical-align: middle;"> Marth until he approaches and be aware of throw setups to teammate</li>
+                    <li><strong><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 20px; height: 20px; vertical-align: middle;"> Fox/Peach:</strong> 2v1 <img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 16px; height: 16px; vertical-align: middle;"> Fox, avoid <img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 16px; height: 16px; vertical-align: middle;"> Peach unless they are over committing</li>
+                    <li><strong><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 20px; height: 20px; vertical-align: middle;"> Fox/Falcon:</strong> Smother <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 16px; height: 16px; vertical-align: middle;"> Falcon and abuse <img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 16px; height: 16px; vertical-align: middle;"> Fox lack of range when he comes to support</li>
+                    <li><strong><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/AzFEkw2.png" alt="Puff" style="width: 20px; height: 20px; vertical-align: middle;"> Fox/Puff:</strong> 2v1 <img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 16px; height: 16px; vertical-align: middle;"> Fox hard ignore <img src="https://i.imgur.com/AzFEkw2.png" alt="Puff" style="width: 16px; height: 16px; vertical-align: middle;"> Puff, just be aware of rest</li>
+                    <li><strong><img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 20px; height: 20px; vertical-align: middle;"> Sheik/Falco:</strong> Smother <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 16px; height: 16px; vertical-align: middle;"> Falco and catch <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 16px; height: 16px; vertical-align: middle;"> Sheik's approach</li>
+                    <li><strong><img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/AzFEkw2.png" alt="Puff" style="width: 20px; height: 20px; vertical-align: middle;"> Sheik/Puff:</strong> 2v1 <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 16px; height: 16px; vertical-align: middle;"> Sheik ignore <img src="https://i.imgur.com/AzFEkw2.png" alt="Puff" style="width: 16px; height: 16px; vertical-align: middle;"> Puff, just be aware of rest</li>
+                    <li><strong><img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 20px; height: 20px; vertical-align: middle;"> Sheik/Marth:</strong> 2v1 <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 16px; height: 16px; vertical-align: middle;"> Sheik and force <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 16px; height: 16px; vertical-align: middle;"> Marth to approach</li>
+                    <li><strong><img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 20px; height: 20px; vertical-align: middle;"> Falco/Marth:</strong> Smother <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 16px; height: 16px; vertical-align: middle;"> Falco and force <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 16px; height: 16px; vertical-align: middle;"> Marth to approach</li>
+                    <li><strong><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 20px; height: 20px; vertical-align: middle;"> Peach/Sheik:</strong> 2v1 <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 16px; height: 16px; vertical-align: middle;"> Sheik and try to force <img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 16px; height: 16px; vertical-align: middle;"> Peach to approach while being aware of float approaches</li>
+                    <li><strong><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 20px; height: 20px; vertical-align: middle;"> Peach/Falco:</strong> Smother <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 16px; height: 16px; vertical-align: middle;"> Falco and hit <img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 16px; height: 16px; vertical-align: middle;"> Peach when she is forced to approach</li>
+                    <li><strong><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/AzFEkw2.png" alt="Puff" style="width: 20px; height: 20px; vertical-align: middle;"> Peach/Puff:</strong> Hold center and 2v1 either character that is closer while boxing the other out</li>
+                    <li><strong><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 20px; height: 20px; vertical-align: middle;"> Peach/Falcon:</strong> Smother <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 16px; height: 16px; vertical-align: middle;"> Falcon and catch <img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 16px; height: 16px; vertical-align: middle;"> Peach on approach</li>
+                    <li><strong><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 20px; height: 20px; vertical-align: middle;"> Peach/Marth:</strong> Sandwich <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 16px; height: 16px; vertical-align: middle;"> Marth if possible; if <img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 16px; height: 16px; vertical-align: middle;"> Peach is in front, open up Peach and wait for Marth to try to force an approach to help</li>
+                    <li><strong><img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 20px; height: 20px; vertical-align: middle;"> Falcon/Falco:</strong> Either 2v1 <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 16px; height: 16px; vertical-align: middle;"> Falcon while being aware of lasers, or smother <img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 16px; height: 16px; vertical-align: middle;"> Falco while being aware of threat ranges for Falcon</li>
+                    <li><strong><img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 20px; height: 20px; vertical-align: middle;"> Falcon/Sheik:</strong> Smother <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 16px; height: 16px; vertical-align: middle;"> Falcon while being aware of <img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" style="width: 16px; height: 16px; vertical-align: middle;"> Sheik's approaches and needles</li>
+                    <li><strong><img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 20px; height: 20px; vertical-align: middle;"> Falcon/Marth:</strong> Smother <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 16px; height: 16px; vertical-align: middle;"> Falcon and force <img src="https://www.ssbwiki.com/images/5/54/MarthHeadSSBM.png" alt="Marth" style="width: 16px; height: 16px; vertical-align: middle;"> Marth to approach</li>
+                    <li><strong><img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 20px; height: 20px; vertical-align: middle;"> <img src="https://i.imgur.com/AzFEkw2.png" alt="Puff" style="width: 20px; height: 20px; vertical-align: middle;"> Falcon/Puff:</strong> Smother <img src="https://i.imgur.com/fcaKRdi.png" alt="Falcon" style="width: 16px; height: 16px; vertical-align: middle;"> Falcon, ignore <img src="https://i.imgur.com/AzFEkw2.png" alt="Puff" style="width: 16px; height: 16px; vertical-align: middle;"> Puff, be aware of rest</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Core Philosophy - Zodd</h2>
+            <div class="source-section">
+                <h3>Time is Your Most Important Resource</h3>
+                <ul>
+                    <li>In doubles, when you land a hit, you earn position, an opportunity to follow up, and time to eye the whole screen</li>
+                    <li>Look at everyone on the screen every time you don't have a guaranteed follow up</li>
+                    <li>Grabs, tech chases, or vertical launchers should allow you to look at the whole screen</li>
+                    <li>Many times, after landing a hit, you should immediately run across the stage and 2v1 or help your teammate recover</li>
+                    <li>It's much better to get a guaranteed kill than to try to continue a tech chase or combo with a reset</li>
+                    <li>Helping recoveries should generally be prioritized over getting kills</li>
+                    <li>Try to always be looking at your teammate - this will give you way more time to get in position for a pass</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Feel the Urgency</h3>
+                <ul>
+                    <li>Using time efficiently means you often have to drop what you are doing in favor of another opportunity</li>
+                    <li>Don't play neutral unnecessarily</li>
+                    <li>Once one person is offstage, everyone should collapse on that ledge</li>
+                    <li>If you are waiting for someone to land after you launched them vertically, you are messing up - don't wait</li>
+                    <li>Unless you've hit two floaties high in the air or far off stage, there is always something useful you can do</li>
+                    <li>Baiting is much worse in doubles; brute force is favored</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Team Combos - Zodd</h2>
+            <div class="source-section">
+                <h3>Always Hit/Pass to Your Teammate</h3>
+                <ul>
+                    <li>You should almost always pass to your teammate unless your next punish move will KILL (either off the top or the side)</li>
+                    <li>Fox should almost always up throw → bair to pass to their teammate because his forward/back throws are not good</li>
+                    <li>Jigglypuff team combos should almost always go for grab into hold to guarantee a rest kill</li>
+                    <li>If your teammate is occupied by their own combo, edge guarding, or getting hit themselves, respond accordingly</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Combo at Full Hop Height</h3>
+                <ul>
+                    <li>You want to combo in such a way where the opponent is high enough % to be hit/passed horizontally with just a full hop attack</li>
+                    <li>It's much easier to pass back and forth with alternating full hop attacks</li>
+                    <li>Short hop height combos give way less time to position and less time to react</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Determine Whose "Turn" It Is</h3>
+                <ul>
+                    <li>This can be determined by the proximity of the enemy relative to you and your teammate</li>
+                    <li>If a teammate launches an enemy directly above them and they're able to continue, they should go for the follow-up</li>
+                    <li>If the opponent DIs away and ends up closer to the other teammate, let them continue the combo as it is now in their space</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Back Up When Your Opponent is About to Pass</h3>
+                <ul>
+                    <li>When you are next to your teammate and an opponent gets popped up and they are about to hit the enemy towards you, run AWAY from your teammate in the same direction the enemy is being passed to</li>
+                    <li>This makes it much easier to follow-up as the travel time gives you more time to react</li>
+                    <li>Think about a football player going for a long pass - they start running before the ball is even thrown</li>
+                    <li>The higher % someone is, the higher/faster/farther they will fly, so you need to compensate by running back even farther</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Let the Hit Stun Breathe</h3>
+                <ul>
+                    <li>When you or your teammate land a launching move, don't both follow-up at the same time</li>
+                    <li>If that happens, your combo ends immediately as you are both stuck in lag from hitting the same person</li>
+                    <li>There are a lot of frames of hit stun that can be used before passing back to allow your teammate to recover from their move's animation lag</li>
+                    <li>Pass back and forth rhythmically until the next hit kills</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Move Selection for Team Combos</h3>
+                <ul>
+                    <li>Use numerous mid to weak knockback moves, sending the opponent to your partner - play ping pong with them</li>
+                    <li>Try not to hit them too far past your partner - keep them between the two of you</li>
+                    <li>On FD, use more horizontal moves because there is nowhere to escape to</li>
+                    <li>On other stages, you may want to carry the opponent up the platforms to continue your combo</li>
+                    <li>Moves with lateral knockback are generally better for teams combos, whereas vertical knockback is often preferred in singles</li>
+                    <li>Look for combos that send to top platform and finish with up smash</li>
+                    <li>Up tilt is very important, especially off of throws - great combo starter</li>
+                    <li>If there is time, charge the up smash off of your teammate's grab - hits do less damage/knockback out of grab, so charge is very useful</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>2v1 Situations and Edgeguarding - Zodd</h2>
+            <div class="source-section">
+                <h3>DO NOT PRIORITIZE EDGE GUARDS</h3>
+                <ul>
+                    <li>GO FOR THE 2v1 after hitting someone off stage, especially FLOATIES that are NOT EDGE GUARDABLE</li>
+                    <li>Puff, Peach, Samus recoveries take a very long time, but these characters are almost always going to make it back regardless</li>
+                    <li>Instead, you can go for a 2v1 or help your teammate which can net you WAY MORE</li>
+                    <li>These characters are NOT worth edge guarding EVER in teams unless it's a final last stock 2v1</li>
+                    <li>Even trying to edge guard spacies when they have several recovery option mixups, you are better off going for a 2v1 attempt</li>
+                    <li>A 2v1 from an experienced team is way more valuable than an edge guard attempt</li>
+                    <li>Having an opponent at high % isn't bad because they are going to get put into a situation where they have to recover more, giving more opportunities for 2v1 scenarios</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Why Edgeguarding is Generally Worse in Teams</h3>
+                <ul>
+                    <li>If the enemy team is experienced, they can make it quite difficult for someone to edge guard them</li>
+                    <li>They can stall their recoveries and wait for their teammate to come save them</li>
+                    <li>Falco lasers and sheik needles can help interrupt edge guards or save their teammates</li>
+                    <li>Think about how long it takes for marth to dthrow dtilt a fox and then go off with fair or reverse up B - now think about how much LESS time it takes for an enemy fox to run over and shine</li>
+                    <li>If someone goes for an extended edge guard, it is very likely it will be interrupted</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>When Edge Guards CAN Be Worth It</h3>
+                <ul>
+                    <li>The enemy has very limited recovery options that can be guaranteed/easily covered by you alone (they can only go to ledge)</li>
+                    <li>The enemy teammate that is on stage is occupied (getting comboed by your teammate, also recovering, dead, etc)</li>
+                    <li>Your teammate is in a position where they can/will wall off the enemy from trying to interrupt the edge guard</li>
+                    <li>If it is a 2v1 scenario where there are only three players on the screen, you should always edge guard with your teammate</li>
+                    <li>If your teammate has an easy edgeguard, let them go for it - be a body to protect them while their teammate comes to attempt to save. Literally standing there and light shielding can be a good strategy vs falco lasers</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Team Ledge Guard Coordination</h3>
+                <ul>
+                    <li>One player should always cover the ledge and the other should always cover on stage recoveries</li>
+                    <li>Whoever is closer to the ledge should grab it, and the other person covers on stage recovery</li>
+                    <li>If you have the freedom to choose who grabs the ledge, whoever has a more guaranteed killing move should cover the on stage option</li>
+                    <li>2v1 ledge guards are largely guaranteed - it's almost always better to take the guaranteed kill rather than being greedy and trying to get two</li>
+                    <li>Someone should always grab edge and roll</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Formation and Positioning - NMW</h2>
+            <div class="source-section">
+                <h3>Defense to Offense Spectrum</h3>
+                <ul>
+                    <li>Don't switch from defense to offense - there's a spectrum of defense, neutral, and offense</li>
+                    <li>If you are on defense, you are in an intrinsically bad position to start offense</li>
+                    <li>When you are shielding, on knockdown, or on the ledge, you have infinitely fewer options than someone with freedom of movement</li>
+                    <li>If your front line is forced to play defense, this is time for him to rotate out and let the back line start offense</li>
+                    <li>After recovering from defense to neutral, you can choose to immediately rotate back in</li>
+                    <li>Notable exceptions include Fox's invincible ledgedash and shine OOS when your teammate's options are too slow</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Basic Rhythm</h3>
+                <ul>
+                    <li>Most compositions have a fairly strong preference for which character should be in front and which should be in back</li>
+                    <li>When your front line goes in, the backup follows and improves positioning by being close behind</li>
+                    <li>If the front player loses the neutral, the back line goes in and tries to hold as much space as possible</li>
+                    <li>One exchange is generally enough time for your front line to have regained his footing</li>
+                    <li>The job of the support is basically to buy time until the carry is back on his feet</li>
+                    <li>Switching between front line and backline should be a choreographed dance</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Optimal Positioning</h3>
+                <ul>
+                    <li>In neutral, players will be arranged X X Y Y (teams stay together)</li>
+                    <li>X Y X Y situation can create decimating team combos on a sandwiched player, but requires confidence and precision</li>
+                    <li>X YY X situation means X players are separated and YY controls center stage - ideal for teams with a zoning character</li>
+                    <li>XYYX creates a team sandwich where the Y team has no space and can be pressured on both sides</li>
+                    <li>Stay about a Falcon dashdance or Marth tipper fsmash range away from your teammate</li>
+                    <li>Don't break formation for no reason - maintaining position is of utmost importance</li>
+                    <li>One person attacking at a time is generally preferable</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Cover Options Together</h3>
+                <ul>
+                    <li>Don't overlap with your teammate - this is most relevant in ledge play</li>
+                    <li>Start extremely simple to make coordination easy, then expand with more complex options</li>
+                    <li>At high levels of play, most of the time someone hits their teammate, it is the fault of the person who got hit for not correctly covering options together</li>
+                    <li>Crossing streams/jumping over your teammate, going off stage for ledge guards, and trying to follow up after your teammate lands a launcher are common things that mess up coordination</li>
+                    <li>Cover any tech roll towards you, and ignore the rest</li>
+                    <li>On platforms, cover all the options with your teammate every time - whoever is closer to center covers the inward option, whoever can get to the outside faster covers that one</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Center Stage Control</h3>
+                <ul>
+                    <li>If you lose stage positioning and are cornered/off stage in a 1v2, you are almost certainly doomed</li>
+                    <li>Worse yet, you obligate your partner to try to get you out of the bad situation</li>
+                    <li>This potentially leads to both of you cornered or off stage, and regaining your footing is like climbing a mountain</li>
+                    <li>When you have an opponent sandwiched, space attacks on both sides of them</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Support vs Carry Roles - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li>If you are playing a support role, you should spend 90% of your time watching your teammate</li>
+                    <li>When you are in formation, this will let you react to any development</li>
+                    <li>If you are taking the lead, you will need to watch your opponents the vast majority of the time</li>
+                    <li>The carry is playing on reaction to opponents, whereas the support is playing on reaction to the carry</li>
+                    <li>Opportunities for big conversions are frequently dropped because the carry player is not cognizant of what their support has set up</li>
+                    <li>Support players who don't cover options with their teammate are literally useless</li>
+                    <li>A good support should be ready to punish laggy moves that hit his teammate or his teammate's shield</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Hunting Strategy - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li>When you are against a fast faller, a Marth, or anyone teaming with a floatie, you will have a preference to kill these characters</li>
+                    <li>If you are focused on killing one person, you are on the hunt</li>
+                    <li>You don't want your opponent to sniff out that you are on the hunt - if they know you've mentally committed, they can make the cost too high</li>
+                    <li>You should almost never hunt floaties - if they are just trying to stay safe, they are not contributing meaningfully</li>
+                    <li>It is much easier to keep them away and punish them when they try to come in than to attack them on defense</li>
+                    <li>If they are out of the fray, they are useless, so there is no need to kill them</li>
+                    <li>People open themselves up to being hit when they approach, so just punish the floatie once he tries to get into the fray</li>
+                    <li>Mask your hunt by moving deceptively and by switching targets whenever opportune</li>
+                    <li>If someone is at 200% and 4 stocks while their teammate is at 0% and 2 stocks, it's still almost always better to double team the person at 0</li>
+                    <li>Double team the fastfaller - Falco, Fox, then Falcon should be the preference</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Trading and Punishing - Zuppy</h2>
+            <div class="source-section">
+                <ul>
+                    <li>Trades on key moves: Fox up smash, dash attacks, Marth f smash, etc</li>
+                    <li>When your teammate gets hit by a laggy move like a grab, dash attack or smash attack, punish the end lag to gain an opening and prevent a punish on your teammate</li>
+                    <li>You can choose to punish these moves with strong hitboxes (fox up smash, peach/sheik dash attack/down smash, falcon knee, falco dair, rest etc)</li>
+                    <li>There is a chance you might get punished by their teammate for choosing a laggy move, so doing like a fox nair and then getting out can be really strong</li>
+                    <li>If your move that might be unsafe (fox up smash) can kill them and the stock count is even or better for you, take the RISK if you know the kill is secured</li>
+                    <li>Suicide edgeguards can be really good in teams - often times someone will be at low % and your stock is past 100% and it's worth the trade</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Building Knockdown Percent Together - Zuppy</h2>
+            <div class="source-section">
+                <ul>
+                    <li>Fighting opponents at 0 is really hard by yourself due to the universal answer to CC is grab, and grabs are slow in teams</li>
+                    <li>Try to get in between the character you are sandwiching with your teammate (roughly pokeball stadium length) away from your teammate</li>
+                    <li>This position is strong because you aren't likely to clash with your teammate's hitboxes and it's hard for the person trapped to escape</li>
+                    <li>Short hop aerials are really good for sandwiching because you can drift with them and spacies can shine after them</li>
+                    <li>Once you have a knockdown it's much easier to fight by yourself and also pass to your teammate for big combos</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Knowing When to Back Off - Zuppy</h2>
+            <div class="source-section">
+                <ul>
+                    <li>Don't extend the fox waveshine follow up and maybe wavedash in place/backwards if you are running into their teammate's arms</li>
+                    <li>When your teammate is dead and you are waiting for a respawn, it's best to light shield, camp plats or ledge stall until you can play again safely</li>
+                    <li>When the opposing team has an invincible angel platform respawn, back off from the edgeguard and avoid them at all costs</li>
+                    <li>When someone comes down with invincibility, you have to respect it - run away</li>
+                    <li>Use a lot of lightshield in 2v1 situations, especially on platforms</li>
+                    <li>You don't need to fight out of your shield yourself all the time when getting pressured - hold light shield and let your teammate attack through you sometimes</li>
+                    <li>When your partner is getting pressured, hit his shield and force whoever is pressuring him to shield</li>
+                    <li>When your partner is cornered or trying to recover, attack whoever is pressuring him</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Helping Your Teammate - NMW</h2>
+            <div class="source-section">
+                <h3>Saving Recoveries</h3>
+                <ul>
+                    <li>When your (non-floaty) partner is recovering, run to his side of the stage and hold position</li>
+                    <li>If not possible, grab the ledge and use whatever stalling possible to hold it until your partner is there</li>
+                    <li>Shine stall off stage to give time for teammate to interrupt</li>
+                    <li>If you combo someone offstage while an opponent does the same to your partner, it's usually best to save your teammate</li>
+                    <li>Holding ledge vs sheik recovering and peach comes over down smash is so bad for you - make sure to get out of that position if your teammate cannot fend off peach</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Interrupting Combos on Your Teammate</h3>
+                <ul>
+                    <li>When your partner is getting comboed, swing in that direction with your bread and butter spacing moves</li>
+                    <li>If you hit both your teammate and the opponent, then your teammate is no longer getting comboed</li>
+                    <li>Sometimes when your partner gets a grab, you are not properly spaced to hit only your opponent - if your partner can survive too, then just take the kill</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Double Invincibility</h3>
+                <ul>
+                    <li>When you die and your partner is going to die imminently, wait for them to die before dropping from the respawn platform - double invincibility is amazing</li>
+                    <li>If you can time it such that your invincibility timers are perfectly staggered (not overlapping but immediately following each other), this tends to be ideal</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Common Blunders to Avoid - Zuppy</h2>
+            <div class="source-section">
+                <ul>
+                    <li><strong>Catapult blunders:</strong> Airborne shine sending peach in an actionable state that could potentially move peach over to your teammate</li>
+                    <li><strong>Falco laser timing:</strong> Falco lasers do less stun than end lag of some laggy moves - be careful of stopping smash attacks ESPECIALLY PEACH AND SHEIK DOWN SMASH</li>
+                    <li><strong>Forcing scrambles:</strong> Forcing yourself into an up close scramble to save your teammate in a bad spot - sometimes you just gotta watch them die and wait your turn</li>
+                    <li><strong>Throwing towards recovery:</strong> Throwing opposing team off stage towards the side your teammate is recovering can be a potential blunder - this also applies to hitting a light shield so they are able to grab ledge and edgeguard your teammate</li>
+                    <li><strong>Pushing someone onto the edge while your partner is recovering:</strong> Someone is ledge guarding your teammate, you try to pressure them, they shield and your attack hits them onto the edge, messing up your partner's recovery. Try to go for a grab in this situation instead</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Projectile Basics in Teams - Zuppy</h2>
+            <div class="source-section">
+                <h3>General Projectile Rules</h3>
+                <ul>
+                    <li>If you are facing away from your teammate, your projectiles can't hit them</li>
+                    <li>Your teammate can duck under, jump over, spotdodge etc your projectiles to help assist approaches</li>
+                    <li>Laser above teammate is 8-10 frames - fox can't jump, you can use shine/grab approaches for the laser to help assist</li>
+                    <li>Recovering high is very good to help sheik needle and laser assists</li>
+                    <li>Full stack needles WILL hit your teammate somehow if they are in front of you, no matter how many bodies are between you two</li>
+                    <li>Generally if you can punish with an aerial, smash attack, grab, or dash attack, it's better than shooting a projectile in terms of trading</li>
+                    <li>Projectiles are best in front of your teammate in A(A)BB positioning or in B(A)AB positioning shooting to the left to protect your control</li>
+                    <li>Don't spam projectiles stupidly - don't use projectiles because you can, do them because they are going to be good</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Interrupting Combos</h3>
+                <ul>
+                    <li>Lasers and needles can help interrupt team combos especially on throw combos, but less useful vs peach down smash</li>
+                    <li>Samus missiles and peach turnips can actually prevent continued punishes on your teammate consistently though</li>
+                    <li>Laser resets are really good on tech chases</li>
+                    <li>Lasering your own teammate is good on moves with a lot of lag like peach/sheik down smash, puff rest etc</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Defending Against Projectiles</h3>
+                <ul>
+                    <li>Light shield blocks short hop lasers and shine can reflect them - it's very good when Falco wants to prevent edgeguards by assisting the recovery/hitting the edgeguarder to interrupt them</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Playing 1v2 - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li>To be good at 1v2, you need to be as threatening as you can while as noncommittal as possible</li>
+                    <li>Don't over commit on the person at high percent and don't over commit on ledge guards that expose you once you finish them</li>
+                    <li>Move a lot - moves have lag, movement doesn't</li>
+                    <li>Try as hard as you can to be slippery and to make it unclear which opponent you will attack</li>
+                    <li>Being predictable will get you locked down - once you aren't moving, you are probably dead</li>
+                    <li>Crossups are especially good in 1v2, though be wary of potentially putting yourself in sandwich situations</li>
+                    <li>Avoid shielding and for the love of god, don't grab</li>
+                    <li>If you feel threatened, move or shield. Maybe attack. Never spot dodge</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Risk/Reward in Teams - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li>The system is skewed dramatically from singles</li>
+                    <li>Characters like Marth, Falco, or Sheik cannot do their protracted followups in teams like they can in singles</li>
+                    <li>In singles, laggy finishing moves are high risk, high reward. In teams, they are low risk, high reward</li>
+                    <li>Throw out your finishing moves much more liberally</li>
+                    <li>Even if you do get hit off stage, most easily ledge guardable characters in singles can make it back to the stage with a good partner</li>
+                    <li>It's almost always best to just go for your hardest punish as fast as possible rather than extended combos/tech chases/chain grabs</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Common Team Compositions - NMW</h2>
+            <div class="source-section">
+                <h3>Double Fox</h3>
+                <ul>
+                    <li>Maintain a certain distance from each other and help when needed</li>
+                    <li>Possibly okay to basically play singles until a big launcher happens and then look for team combos</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Fox/Falco</h3>
+                <ul>
+                    <li>Probably the only team where Falco can really thrive</li>
+                    <li>Let the Fox do the approaching, and should the Fox hit someone toward the Falco, the Falco can probably get a big combo started</li>
+                    <li>Falco makes it a giant pain to ledge guard Fox</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Fox/Falcon</h3>
+                <ul>
+                    <li>This team is fast and packs a punch</li>
+                    <li>Between shine, Fox's usmash, and knee, you have most of the best killing moves in the game on the fastest characters</li>
+                    <li>Use your mobility to your advantage - take to the top platform when feeling scared</li>
+                    <li>Grab combos are brutal, ledge guards should generally end in one hit</li>
+                    <li>You can go to Yoshi's to smother opponents or Dreamland to abuse mobility</li>
+                    <li>Against double spacies, the Falcon should not approach much - take advantage of his knee and speed, not his neutral game</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Fox/Peach</h3>
+                <ul>
+                    <li>Fox is the best carry and Peach is an amazing support</li>
+                    <li>Zone, ledge guard, and save your teammate with Peach</li>
+                    <li>Peach's dsmash is great for creating chaos when people get an opening on the Fox</li>
+                    <li>Sheik can down smash puff's shield, which locks her down so we can pressure her</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Fox/Puff</h3>
+                <ul>
+                    <li>Similar to Fox/Peach, but with more kill power</li>
+                    <li>Puff can go deeper off stage because of multiple jumps</li>
+                    <li>Grab+rest is ridiculously good, and Fox's speed and shinegrab make him great at getting grabs</li>
+                    <li>Rest is amazing for punishing rolls - tech rolling into the stage means rolling into a rest</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Double Floaties</h3>
+                <ul>
+                    <li>Turns the teams meta upside down - their stocks are inherently harder to take</li>
+                    <li>If playing against them, you need to play super cautious and just win the neutral game almost every time</li>
+                    <li>If you are the double floaties team, your goal is to stay alive long enough to get a brutal opening on your opponents</li>
+                    <li>Watch HBox and Plup for the best double floaty play</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Stage Selection - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li><strong>Final Destination:</strong> The Battlefield of doubles - by far the most common starter. Favors good teamwork because team combos cannot be escaped via platforms, team ledge guards are simplified, and reestablishing team formation can be near impossible because there is no way to circumvent zoning characters</li>
+                    <li><strong>Dreamland:</strong> Has a lot of ground space, high top platform, plenty of room to move around on platforms, and huge blast zones. The boons for mobile characters often outweigh the survivability buff for floaties. Having an incredible amount of space to maneuver makes it easier for fast characters to pick their spots and reset to neutral with ease. Can still be good for floaties because of blast zones. Wispy complicates team ledge guards</li>
+                    <li><strong>Yoshi's Story:</strong> Fighting in close quarters favors teams with better teamwork. Team coverage on platform tech chases are ridiculously easy because of small platforms at low heights. Randall and wall jumps significantly alter recovery possibilities. Small blast zones buff characters with strong kill power. Hitboxes cover way more of this stage than any other. It is easier to close distance here, so if you are getting camped and want to force them to fight, consider Yoshi's. Double Peach and Peach Sheik are teams you want to ban this stage against</li>
+                    <li><strong>Pokemon Stadium:</strong> Does not loan itself to strategic advantages as much as other stages. Stadium gives transformations which favor Fox and big swings. Walls destroy the correlation between losing a stock and having high percent</li>
+                    <li><strong>Battlefield:</strong> Has a high top platform, allowing characters with good vertical mobility to choose their spots carefully. Nerfs Fox recovery. The only middle sized stage</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Common Mistakes to Avoid - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li><strong>Trying too hard to follow up:</strong> Sometimes at the cost of highly advantageous positioning. Back off, regroup, maintain cohesion</li>
+                    <li><strong>Not collapsing on your partner quickly enough:</strong> If your partner earns stage positioning, you must move with them quickly</li>
+                    <li><strong>Crowding your teammate:</strong> Stay out of the range of any hitboxes they are likely to use if they are in front</li>
+                    <li><strong>Going for grabs in inappropriate situations:</strong> Dashdance grab is the worst strategy in teams. Don't go for grabs in 1v2 or in 2v2 when neither team is separated</li>
+                    <li><strong>Exposing yourself to 1v2 situations:</strong> Don't cross up the other team's front line often unless you're an amazing Fox player or S2J</li>
+                    <li><strong>Not capitalizing on 2v1s:</strong> Don't run away and try to hit the floaty at 150%. Annihilate fast fallers as fast as you can</li>
+                    <li><strong>Rolling into the other team:</strong> Both out of shield and on knockdowns - this is an easy way to get yourself killed</li>
+                    <li><strong>Not taking your partner's stock:</strong> 2v1 is basically hopeless if your opponents have decent teamwork</li>
+                    <li><strong>Ledgehop aerials:</strong> Generally it's better to let your partner try to create space for you than to do something risky from the ledge</li>
+                    <li><strong>Recovering to the ledge:</strong> Good players hold onto the ledge in teams - don't expect them to try to get off</li>
+                    <li><strong>Letting go of the ledge:</strong> You should hold onto the ledge - taking away recovery to the ledge makes it dramatically easier for your partner to cover remaining options</li>
+                    <li><strong>Not helping a recovering partner:</strong> Develop your map awareness and watch everyone on the screen</li>
+                    <li><strong>Trying to recover when it's hopeless:</strong> If your partner is getting comboed on the stage, kill yourself as fast as possible to get back in the fray sooner</li>
+                    <li><strong>Reading tech rolls into your partner's zone:</strong> This is their zone. Let them cover it</li>
+                    <li><strong>Going for the right option too late:</strong> Don't try to make up for not seeing something quickly enough by doing something that's too optimistic once you react</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Fundamental Easy Strategies - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li>When pressuring, try to alternate hitboxes on their shield, react to a roll, or grab them</li>
+                    <li>Read missed techs - it's harder to keep track of everything in doubles, so guessing a missed tech often leads to a kill</li>
+                    <li>Read tech rolls toward their teammate - in teams, tech rolling toward one's partner is a highly prominent defensive habit</li>
+                    <li>If you pay attention to singles interactions, it should be even easier to pick up on habits</li>
+                    <li>Test your opponents for weaknesses before trying to hit them</li>
+                    <li>The more opportunities you give an opponent to do something dumb, the higher likelihood that they will do something dumb</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Mindset and Philosophy - NMW</h2>
+            <div class="source-section">
+                <ul>
+                    <li>The only way to beat someone with strong neutral and dirty punish is to also have strong neutral and dirty punish</li>
+                    <li>You don't have to win this position. You can win the next position</li>
+                    <li>To punish well, sometimes we must hit → move → react</li>
+                    <li>It is better to believe that they are too far away and get hit than making commitments from too far away</li>
+                    <li>Protect yourself, know how to kill, then outplay</li>
+                    <li>If you aren't sure what's happening, disengage (especially vs Falco)</li>
+                    <li>"My opponent isn't going to let me kill them. What are they going to do to avoid being killed?"</li>
+                    <li>It is important to have your decisions agree with your position. You can't dash back and be aggressive; it doesn't work</li>
+                    <li>Try your best, and have fun doing so. Look at the opponent, make active decisions, and enjoy the journey!</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>The Way of Fox - Doubles Guide</p>
+        </div>
+    </footer>
+</body>
+</html>

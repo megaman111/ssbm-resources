@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fox vs Ice Climbers - The Way of Fox</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #f5f5f7; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+        .back-link:hover { background: #667eea; color: white; }
+        .matchup-content { background: #f5f5f7; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 2rem; }
+        .matchup-content h2 { color: #667eea; border-bottom: 3px solid #667eea; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+        .source-section { margin-bottom: 2rem; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea; }
+        .source-section h3 { color: #333; margin-bottom: 1rem; }
+        .source-section ul { margin-left: 1.5rem; }
+        .source-section li { margin-bottom: 0.5rem; line-height: 1.6; }
+        .source-section strong { color: #667eea; }
+    </style>
+</head>
+<body>
+    <video id="video-background" autoplay loop muted playsinline>
+        <source src="../MainMenuLoop720p24fps.webm" type="video/webm">
+    </video>
+    <div id="video-overlay"></div>
+    
+    <header>
+        <div class="container">
+            <h1><img src="https://i.imgur.com/iHFuxww.png" alt="Ice Climbers" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Fox vs Ice Climbers</h1>
+            <p>Separating climbers, Nana AI, and desyncs</p>
+            <a href="../way-of-fox.html" class="back-link">← Back to Matchups</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="matchup-content">
+            <h2>General Concepts</h2>
+            <div class="source-section">
+                <h3>Nana States</h3>
+                <ul>
+                    <li>Nana has 2 primary states of being: Connected and disconnected</li>
+                    <li><strong>Connected:</strong> Her inputs are coming from the player</li>
+                    <li><strong>Disconnected:</strong> The AI is taking over</li>
+                    <li>Nana, when connected, gets the exact same inputs, just 6 frames later</li>
+                    <li>Every frame that nana is connected, regardless of whether she is on the ground or in the air, she is acted on by a force that attracts her to popo's position</li>
+                    <li>Nana is forced to look the same direction that popo was looking 5 frames prior</li>
+                    <li>Desyncs are still in the connected state, the inputs just act on whoever is actionable</li>
+                    <li>Nana cannot connect out of the teeter animation</li>
+                    <li>Squall hammer (side B) and Belay (up B) force connection</li>
+                </ul>
+            </div>
+            <div class="source-section">
+                <h3>Connection Requirements</h3>
+                <ul>
+                    <li>To connect, 3 things must be true: Both climbers must be on the ground, Climbers must be within the connection distance, Climbers must have nearly equivalent momentum</li>
+                    <li>Climbers can connect even on different platforms as long as they are grounded and nearby</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Nana AI Behavior</h2>
+            <div class="source-section">
+                <ul>
+                    <li>Nana's CPU level is determined by popo's damage</li>
+                    <li>When disconnected, the AI may go into a "chase state" where she just wants to get back to popo</li>
+                    <li>If she reaches the spot, she waits for popo to land so she can reconnect</li>
+                    <li>If she is in hitlag, she is disconnected</li>
+                    <li>She will never attack while in recovery mode</li>
+                    <li>She will always try to land on randall rather than the main stage</li>
+                    <li>She has an attack mode where she can attack or dodge</li>
+                    <li>She will only throw out a move if it is in range</li>
+                    <li><strong>At level 0:</strong> She pretty much just jabs</li>
+                    <li><strong>At level 3:</strong> She gains blizzard</li>
+                    <li><strong>At level 4:</strong> She gets aerials</li>
+                    <li><strong>At level 6 (~120%):</strong> She may even grab</li>
+                    <li>If she's trying to wait to reconnect and an opponent shows up, she might swing</li>
+                    <li>She cannot go straight to attack from hitlag or recovery</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Strategy & Concepts</h2>
+            <div class="source-section">
+                <ul>
+                    <li>Ice climbers are weak against the outer edge of side platform</li>
+                    <li>After a shine, we can get a running double shine</li>
+                    <li>After they full hop up air, ICs have two primary options: Fair (Hard to space around with both hammers around, Will smack you if you try to run up CC the dair), Dair (Can be CC'd, Can't really whiff punish)</li>
+                    <li>Between stocks, go to the far edge of a platform</li>
+                    <li>Weird things happen with hitting their shield. It's possible to hit both shields at different times, causing double hitlag</li>
+                    <li>Nana can buffer a frame perfect grab on shield by holding A during shield stun</li>
+                    <li>Use drill when they aren't shielding, like whiff punishing fair after they use FH up air</li>
+                    <li>Can full hop shine vs up air as a mixup to waiting for them to come down</li>
+                    <li>Nana cannot fast fall or tech</li>
+                    <li>If you up throw, popo is forced to double jump</li>
+                    <li>It is best to throw them offstage if possible</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Playstyles</h2>
+            <div class="source-section">
+                <ul>
+                    <li>There are 2 main styles of play: Full hop over them and shine, Up tilt / Get them in the air some how</li>
+                    <li>If nana is recovering, short hop → shine → shinestall</li>
+                    <li>Don't stand near Nana for too long; she may swing</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Three Important Situational Goals</h2>
+            <div class="source-section">
+                <ul>
+                    <li>Fox pulls nana and kills her instantly</li>
+                    <li>Fox gets popo alone and nana just stands around useless while you beat up the main climber</li>
+                    <li>Fox combos nana and every time popo tries to save her, you hit him for it</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="matchup-content">
+            <h2>Additional Tips</h2>
+            <div class="source-section">
+                <ul>
+                    <li>Look to edgeguard using full hop Bair</li>
+                    <li>Falling up air is stronger than drill if they whiff</li>
+                    <li>Don't try to dash dance punish. Being on the ground too much or too long is dangerous</li>
+                    <li>FD and Stadium are strong for ICs because there is no top platform to escape to</li>
+                    <li>We kind of have to camp sopo really hard</li>
+                    <li>If they ledgedash, we must respect it and keep our distance, while pressuring them to approach</li>
+                    <li>Use full hop to beat down smash / grab / other grounded options</li>
+                    <li>Against up throw, we can slight DI behind and jump out</li>
+                    <li>It is sometimes better to stay on a platform for a while than it is to switch platforms often</li>
+                    <li>On battlefield if you JC shine nana offstage, waveland on platform → run off shine should catch nana's recovery</li>
+                    <li>If popo is 0-20%, she will getup attack</li>
+                    <li>Hold away during ledge handoffs to avoid throw f smash</li>
+                    <li>If they are on platform, you can dash dance or get under them and up tilt</li>
+                    <li>If they have to side B from below, nana can't grab edge, and neither can popo</li>
+                    <li>Falling up air, especially on the back of their shield is really strong</li>
+                    <li>Do not jump and land in center stage</li>
+                    <li>On FD, stay grounded, use lots of shine</li>
+                    <li>Never up tilt nana; popo will destroy us in many cases</li>
+                    <li>Go to edge between stocks</li>
+                    <li>Waveshine → walk → shine rather than dash JC shine because Popo can get us sometimes for the dash JC shine. Being caught without double jump is really bad</li>
+                    <li>Popo is very likely to Fair while coming down</li>
+                    <li>To edgehog Nana, either getup attack or roll</li>
+                    <li>If you see blizzard, just wait</li>
+                    <li>Neutral is largely about using shine to split them up effectively</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>The Way of Fox - Ice Climbers Matchup Guide</p>
+        </div>
+    </footer>
+</body>
+</html>
