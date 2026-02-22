@@ -73,7 +73,7 @@ Content is compiled from various community sources. Please respect the original 
 
 ## Viewing the Site
 
-Visit the live site at: `https://[your-username].github.io/ssbm-resources/`
+Visit the live site at: `https://megaman111.github.io/ssbm-resources/`
 
 Or run locally by opening `index.html` in your browser (this will show the main SSBM Resources hub).
 

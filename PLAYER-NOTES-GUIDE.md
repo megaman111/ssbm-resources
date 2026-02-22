@@ -29,7 +29,7 @@ git push
 ### 4. Changes Go Live
 - GitHub Pages will automatically update (1-2 minutes)
 - Your notes are now accessible from any device
-- Anyone visiting the site will see the updated notes
+- Anyone visiting the site will see the updated noteshttps://www.youtube.com/playlist?list=PLjlNZeFuqCNF_MPoXHWJ-wMe1liFvKqBW
 
 ## Import Notes
 
