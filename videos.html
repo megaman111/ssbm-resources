@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Resources - The Way of Fox</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #f5f5f7; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+        .back-link:hover { background: #667eea; color: white; }
+        
+        .video-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .video-section h2 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .video-section h3 {
+            color: #764ba2;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .video-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .video-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .video-card h4 {
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        
+        .video-card p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .video-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #667eea;
+            transition: all 0.2s;
+        }
+        
+        .video-link:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .channel-link {
+            display: block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        
+        .channel-link:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <video id="video-background" autoplay loop muted playsinline>
+        <source src="MainMenuLoop720p24fps.webm" type="video/webm">
+    </video>
+    <div id="video-overlay"></div>
+    
+    <header>
+        <div class="container">
+            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Video Resources</h1>
+            <p>Curated video guides and tutorials for Fox players</p>
+            <a href="way-of-fox.html" class="back-link">← Back to The Way of Fox</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="video-section">
+            <h2>General Fox Techniques</h2>
+            <div class="video-grid">
+                <div class="video-card">
+                    <h4>Hax$ - Fox Drill Guide</h4>
+                    <p>Comprehensive guide on Fox's drill shine and drill applications</p>
+                    <a href="https://www.youtube.com/watch?v=_ctpRdcmDhY" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>Hax$ - Movement Optimizations</h4>
+                    <p>Advanced movement techniques and optimization strategies</p>
+                    <a href="https://youtu.be/CdY2N3gQ8CE" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>Hax$ - The 3 Shine Timings</h4>
+                    <p>Understanding and executing the three different shine timing windows</p>
+                    <a href="https://youtu.be/Ax-UNICc7D0" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>Hax$ - Ledgedashing</h4>
+                    <p>Complete guide to ledgedashing technique and applications</p>
+                    <a href="https://youtu.be/FzOctYnwwuc" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>KJH - Fox Privilege Video Archive</h4>
+                    <p>Understanding Fox's unique advantages and tools</p>
+                    <a href="https://youtu.be/QP2_0r9bht0" target="_blank" class="video-link">Watch Video</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="video-section">
+            <h2>Matchup Guides</h2>
+            
+            <h3><img src="https://i.imgur.com/dbyctg5.png" alt="Falco" style="width: 24px; height: 24px; vertical-align: middle;"> Fox vs Falco</h3>
+            <div class="video-grid">
+                <div class="video-card">
+                    <h4>KJH - Top 5 Tips vs Falco</h4>
+                    <p>Essential tips for the Fox vs Falco matchup</p>
+                    <a href="https://www.youtube.com/watch?v=8yWWmXpkdq0" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>KJH - Dealing with Falco Laser (32 min)</h4>
+                    <p>In-depth guide on handling Falco's laser game</p>
+                    <a href="https://youtu.be/fiMwYP0b0zo" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>KJH - Surviving Falco Dair at Low %</h4>
+                    <p>Tutorial on DI and survival vs Falco's down air</p>
+                    <a href="https://youtu.be/DydlLxggSQU" target="_blank" class="video-link">Watch Video</a>
+                </div>
+            </div>
+
+            <h3><img src="https://i.imgur.com/HJT5ZTS.png" alt="Marth" style="width: 24px; height: 24px; vertical-align: middle;"> Fox vs Marth</h3>
+            <div class="video-grid">
+                <div class="video-card">
+                    <h4>KJH - 5 Fox vs Marth Tips</h4>
+                    <p>Key strategies for fighting Marth</p>
+                    <a href="https://www.youtube.com/watch?v=Rlpm2hLxAwA" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>KJH - Slideoff Dair vs Marth</h4>
+                    <p>Advanced edgeguarding technique against Marth</p>
+                    <a href="https://youtu.be/Fu-zkKQ-uS8" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>Cody Schwab - Fox vs Marth Flowchart</h4>
+                    <p>Decision tree and flowchart for the Marth matchup</p>
+                    <a href="https://youtu.be/gGsxOlV8aBw" target="_blank" class="video-link">Watch Video</a>
+                </div>
+            </div>
+
+            <h3><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" style="width: 24px; height: 24px; vertical-align: middle;"> Fox vs Peach</h3>
+            <div class="video-grid">
+                <div class="video-card">
+                    <h4>Zuppy - How to Beat Peach as Fox</h4>
+                    <p>Comprehensive Peach matchup guide</p>
+                    <a href="https://youtu.be/l2p2-uwwk0c" target="_blank" class="video-link">Watch Video</a>
+                </div>
+                <div class="video-card">
+                    <h4>Zuppy - Fox vs Peach Ledge Trapping</h4>
+                    <p>Ledge trap setups and edgeguarding Peach</p>
+                    <a href="https://youtu.be/SM4uYhcd_hA" target="_blank" class="video-link">Watch Video</a>
+                </div>
+            </div>
+
+            <h3><img src="https://i.imgur.com/Yd9DP9r.png" alt="Samus" style="width: 24px; height: 24px; vertical-align: middle;"> Fox vs Samus</h3>
+            <div class="video-grid">
+                <div class="video-card">
+                    <h4>KJH - Fox vs Samus Tips</h4>
+                    <p>Essential strategies for the Samus matchup</p>
+                    <a href="https://youtu.be/tVaiWWFOHYo" target="_blank" class="video-link">Watch Video</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="video-section">
+            <h2>SSBM Tutorials Channel</h2>
+            <p style="margin-bottom: 1.5rem; color: #666;">Comprehensive collection of Melee tutorials covering fundamentals, advanced techniques, and matchup-specific content.</p>
+            <a href="https://www.youtube.com/@SSBMTutorials/videos" target="_blank" class="channel-link">
+                📺 Visit SSBM Tutorials Channel
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>Video Resources - The Way of Fox</p>
+        </div>
+    </footer>
+</body>
+</html>
