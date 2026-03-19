@@ -314,15 +314,8 @@ window.runEnforcer = async (playerIndex) => {
         const mod = await loadEnforcer();
         if (!mod) throw new Error('Enforcer WASM failed to load');
         const game = new mod.SlpGame(new Uint8Array(replayRawBytes));
-        // Check if handwarmer or too short
         if (game.isHandwarmer()) {
             showEnforcerResult(playerIndex, null, 'Handwarmer detected — skipping analysis.');
-            game.free();
-            btn.textContent = origText; btn.disabled = false;
-            return;
-        }
-        if (!game.isSlpMinVersion()) {
-            showEnforcerResult(playerIndex, null, 'SLP version too old for enforcer analysis.');
             game.free();
             btn.textContent = origText; btn.disabled = false;
             return;
