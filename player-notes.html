@@ -1307,7 +1307,7 @@ function setAttachedReplay(note, base64) {
     catch { alert('Storage full — .slp may be too large for browser storage (~5MB limit).'); return false; }
 }
 function removeAttachedReplay(note) { try { localStorage.removeItem(slpKey(note)); } catch {} }
-function hasAttachedReplay(note) { return !!getAttachedReplay(note); }
+function hasAttachedReplay(note) { return !!getAttachedReplay(note) || !!note.replayFile; }
 
 // ===== Notes state =====
 let currentFilter = 'all';
@@ -1334,7 +1334,7 @@ function exportNotes() {
     a.href = url; a.download = 'player-notes.json';
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
-    alert('Notes exported! Replace player-notes.json in your repo, then commit and push.');
+    alert('Notes exported! Replace player-notes.json in your repo.\nIf you have attached .slp replays, copy them to the replays/ folder too.\nThen commit and push so others can see them.');
 }
 window.exportNotes = exportNotes;
 
@@ -1420,6 +1420,7 @@ window.triggerAttach = idx => {
 window.detachReplay = idx => {
     if (confirm('Remove attached replay from this note?')) {
         removeAttachedReplay(notes[idx]);
+        delete notes[idx].replayFile;
         displayNotes();
     }
 };
@@ -1428,9 +1429,15 @@ async function handleAttachFile(event) {
     const file = event.target.files[0];
     if (!file || pendingAttachIdx === null) return;
     const note = notes[pendingAttachIdx];
+    // Save filename to note for remote access
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    note.replayFile = safeName;
     const reader = new FileReader();
     reader.onload = e => {
-        if (setAttachedReplay(note, e.target.result)) displayNotes();
+        if (setAttachedReplay(note, e.target.result)) {
+            displayNotes();
+            console.log(`Replay attached as "${safeName}". Copy this .slp to replays/ folder and export notes for remote access.`);
+        }
     };
     reader.readAsDataURL(file);
 }
@@ -1516,6 +1523,7 @@ window.openReplayModal = async idx => {
 
     const stored = getAttachedReplay(note);
     if (stored) {
+        // Load from localStorage (local machine)
         document.getElementById('replayLoadArea').style.display = 'none';
         const status = document.getElementById('replayStatus');
         status.style.display = 'block';
@@ -1525,13 +1533,32 @@ window.openReplayModal = async idx => {
             const binary = atob(base64);
             const uint8 = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) uint8[i] = binary.charCodeAt(i);
-            await initReplayFromBuffer(uint8, note.playerName + '.slp');
+            await initReplayFromBuffer(uint8, note.replayFile || (note.playerName + '.slp'));
         } catch(err) {
             status.textContent = `❌ Error: ${err.message}`;
             document.getElementById('replayLoadArea').style.display = 'block';
             document.getElementById('replayFilenameHint').textContent = 'Stored replay failed — try re-attaching';
             document.getElementById('replayLoadLabel').textContent = '📂 Re-attach .slp File';
             document.getElementById('replayLoadMsg').textContent = 'The stored replay could not be loaded.';
+        }
+    } else if (note.replayFile) {
+        // No localStorage data — fetch from repo (remote visitors / phone)
+        document.getElementById('replayLoadArea').style.display = 'none';
+        const status = document.getElementById('replayStatus');
+        status.style.display = 'block';
+        status.textContent = '⏳ Fetching replay from server...';
+        try {
+            const resp = await fetch('./replays/' + encodeURIComponent(note.replayFile));
+            if (!resp.ok) throw new Error(`Replay file not found on server (${resp.status})`);
+            const buffer = await resp.arrayBuffer();
+            const uint8 = new Uint8Array(buffer);
+            await initReplayFromBuffer(uint8, note.replayFile);
+        } catch(err) {
+            status.textContent = `❌ ${err.message}`;
+            document.getElementById('replayLoadArea').style.display = 'block';
+            document.getElementById('replayFilenameHint').textContent = note.replayFile;
+            document.getElementById('replayLoadLabel').textContent = '📂 Attach .slp File';
+            document.getElementById('replayLoadMsg').textContent = 'Replay not available on server — attach locally or wait for it to be pushed.';
         }
     } else {
         document.getElementById('replayStatus').style.display = 'none';
@@ -1676,6 +1703,8 @@ window.loadSlpFile = async event => {
         const uint8 = new Uint8Array(buffer);
         // Save to localStorage so it auto-loads next time
         if (activeNoteIdx !== null) {
+            const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+            notes[activeNoteIdx].replayFile = safeName;
             const reader = new FileReader();
             reader.onload = e2 => { setAttachedReplay(notes[activeNoteIdx], e2.target.result); displayNotes(); };
             reader.readAsDataURL(file);
