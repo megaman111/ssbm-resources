@@ -2258,9 +2258,7 @@ function buildStickMapSVG(jx, jy, color) {
 }
 
 window.toggleStickMap = (playerIdx) => {
-    console.log('toggleStickMap called, playerIdx:', playerIdx, 'current:', stickMapPlayerIdx);
     stickMapPlayerIdx = (stickMapPlayerIdx === playerIdx) ? null : playerIdx;
-    console.log('stickMapPlayerIdx now:', stickMapPlayerIdx);
     renderFrame(currentFrame);
 };
 window.closeStickMap = () => {
@@ -2314,9 +2312,8 @@ function updateControllerPanel(frameIdx) {
             html += `<button class="savestate-btn" onclick="downloadSavestate(${player.playerIndex})">Download savestate</button>`;
         }
         html += `</div><div class="controller-svg-wrap" style="position:relative;">${buildControllerSVG(pre, color, i)}
-        <div class="stickmap-click-target" data-stickmap="${i}" style="position:absolute;left:6%;top:35%;width:24%;height:24%;border-radius:50%;cursor:pointer;z-index:5;background:rgba(255,0,0,0.15);"></div>`;
+        <div class="stickmap-click-target" data-stickmap="${i}" style="position:absolute;left:6%;top:35%;width:24%;height:24%;border-radius:50%;cursor:pointer;z-index:5;"></div>`;
         // Stick map overlay: if this player's stick map is open, render it
-        if (stickMapPlayerIdx !== null) console.log('checking stickmap for player', i, 'stickMapPlayerIdx:', stickMapPlayerIdx);
         if (stickMapPlayerIdx === i) {
             const jx = pre?.joystickX ?? 0;
             const jy = pre?.joystickY ?? 0;
@@ -2330,21 +2327,21 @@ function updateControllerPanel(frameIdx) {
     html += '</div>';
     panel.innerHTML = html;
     panel.style.display = 'block';
-
-    // Event delegation for stick map toggle
-    panel.querySelectorAll('.stickmap-click-target').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleStickMap(parseInt(el.getAttribute('data-stickmap')));
-        });
-    });
-    panel.querySelectorAll('.stickmap-close').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            closeStickMap();
-        });
-    });
 }
+
+// Persistent delegated click handler for stick map (survives innerHTML rebuilds)
+document.addEventListener('click', (e) => {
+    const target = e.target.closest('.stickmap-click-target');
+    if (target) {
+        const idx = parseInt(target.getAttribute('data-stickmap'));
+        if (!isNaN(idx)) toggleStickMap(idx);
+        return;
+    }
+    if (e.target.closest('.stickmap-close')) {
+        closeStickMap();
+        return;
+    }
+});
 
 // Savestate download using @gcpreston/tm_replay_wasm
 window.downloadSavestate = async (playerIndex) => {
