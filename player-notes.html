@@ -275,6 +275,128 @@ async function loadSavestateWasm() {
     }
 }
 
+// ===== SLP Enforcer (lazy-loaded WASM) =====
+let enforcerModule = null;
+let enforcerReady = false;
+async function loadEnforcer() {
+    if (enforcerReady) return enforcerModule;
+    try {
+        enforcerModule = await import('https://esm.sh/slp-enforcer@2.3.0');
+        // init() needs the WASM binary URL
+        const wasmUrl = 'https://unpkg.com/slp-enforcer@2.3.0/pkg/web/libenforcer_wasm_bg.wasm';
+        await enforcerModule.default(wasmUrl);
+        enforcerReady = true;
+        return enforcerModule;
+    } catch (e) {
+        console.error('Failed to load SLP Enforcer:', e);
+        return null;
+    }
+}
+
+window.runEnforcer = async (playerIndex) => {
+    if (!replayRawBytes) { alert('No replay loaded.'); return; }
+    const btn = event.target;
+    const origText = btn.textContent;
+    btn.textContent = 'Loading...';
+    btn.disabled = true;
+    try {
+        const mod = await loadEnforcer();
+        if (!mod) throw new Error('Enforcer WASM failed to load');
+        const game = new mod.SlpGame(new Uint8Array(replayRawBytes));
+        // Check if handwarmer or too short
+        if (game.isHandwarmer()) {
+            showEnforcerResult(playerIndex, null, 'Handwarmer detected — skipping analysis.');
+            game.free();
+            btn.textContent = origText; btn.disabled = false;
+            return;
+        }
+        if (!game.isSlpMinVersion()) {
+            showEnforcerResult(playerIndex, null, 'SLP version too old for enforcer analysis.');
+            game.free();
+            btn.textContent = origText; btn.disabled = false;
+            return;
+        }
+        const result = game.analyzePlayer(playerIndex);
+        game.free();
+        showEnforcerResult(playerIndex, result, null);
+    } catch (e) {
+        console.error('Enforcer error:', e);
+        alert('Enforcer error: ' + e.message);
+    }
+    btn.textContent = origText; btn.disabled = false;
+};
+
+function showEnforcerResult(playerIndex, result, message) {
+    // Remove any existing overlay
+    const existing = document.getElementById('enforcerOverlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'enforcerOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+    let html = '<div style="background:#1a1a2e;border:1px solid #334;border-radius:12px;padding:1.5rem;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;color:#ccc;font-family:monospace;font-size:0.85rem;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><span style="font-size:1.1rem;color:#fff;">🔍 SLP Enforcer</span><button onclick="this.closest(\'#enforcerOverlay\').remove()" style="background:none;border:none;color:#888;font-size:1.2rem;cursor:pointer;">&times;</button></div>';
+
+    if (message) {
+        html += `<div style="color:#ffa;">${message}</div>`;
+    } else if (result) {
+        const player = replaySettings?.players?.find(p => p.playerIndex === playerIndex);
+        const pName = player ? (CHAR_NAMES[player.characterId] || `P${player.port+1}`) : `Player ${playerIndex}`;
+        const port = player ? player.port + 1 : '?';
+
+        html += `<div style="margin-bottom:0.75rem;"><span style="color:#aaa;">Player:</span> <span style="color:#fff;">${pName} (P${port})</span></div>`;
+        html += `<div style="margin-bottom:0.75rem;"><span style="color:#aaa;">Controller:</span> <span style="color:#fff;">${result.controller_type}</span></div>`;
+
+        const legalColor = result.is_legal ? '#4f4' : '#f44';
+        const legalText = result.is_legal ? '✅ LEGAL' : '❌ ILLEGAL';
+        html += `<div style="margin-bottom:1rem;font-size:1.1rem;color:${legalColor};font-weight:bold;">${legalText}</div>`;
+
+        // Show individual checks
+        const checks = [];
+        if (result.controller_type === 'Box') {
+            if (result.travel_time) checks.push({ name: 'Travel Time', r: result.travel_time });
+            if (result.disallowed_cstick) checks.push({ name: 'Disallowed C-Stick', r: result.disallowed_cstick });
+            if (result.crouch_uptilt) checks.push({ name: 'Crouch Uptilt', r: result.crouch_uptilt });
+            if (result.sdi) checks.push({ name: 'SDI', r: result.sdi });
+            if (result.input_fuzzing) {
+                const fz = result.input_fuzzing;
+                const fzPass = fz.pass;
+                checks.push({ name: 'Input Fuzzing', r: { result: fzPass, details: fz.violations || [] }, extra: `LLR: ${fz.llr_score?.toFixed(2) ?? 'N/A'} | Events: ${fz.total_fuzz_events ?? 0}` });
+            }
+        } else {
+            if (result.goomwave) checks.push({ name: 'Goomwave', r: result.goomwave });
+            if (result.uptilt_rounding) checks.push({ name: 'Uptilt Rounding', r: result.uptilt_rounding });
+        }
+
+        checks.forEach(c => {
+            const pass = c.r.result;
+            const icon = pass ? '✅' : '❌';
+            const color = pass ? '#4f4' : '#f44';
+            html += `<div style="margin-bottom:0.5rem;padding:0.5rem;background:#111;border-radius:6px;border-left:3px solid ${color};">`;
+            html += `<div>${icon} <span style="color:#fff;">${c.name}</span></div>`;
+            if (c.extra) html += `<div style="color:#888;font-size:0.75rem;margin-top:0.2rem;">${c.extra}</div>`;
+            if (c.r.details && c.r.details.length > 0) {
+                html += `<div style="color:#f88;font-size:0.75rem;margin-top:0.3rem;">`;
+                c.r.details.slice(0, 10).forEach(v => {
+                    html += `<div>Frame ${v.metric}: ${v.reason}</div>`;
+                });
+                if (c.r.details.length > 10) html += `<div>...and ${c.r.details.length - 10} more</div>`;
+                html += `</div>`;
+            }
+            html += `</div>`;
+        });
+
+        if (checks.length === 0) {
+            html += `<div style="color:#888;">No specific checks available for this controller type.</div>`;
+        }
+    }
+    html += '</div>';
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+}
+
 const ANIM_BASE = './animation-zips';
 
 // ===== Character data =====
@@ -2314,6 +2436,8 @@ function updateControllerPanel(frameIdx) {
         // Stick map toggle button
         const smActive = stickMapPlayerIdx === i;
         html += `<button class="savestate-btn stickmap-toggle" onclick="toggleStickMap(${i})" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
+        // Enforcer button
+        html += `<button class="savestate-btn" onclick="runEnforcer(${player.playerIndex})" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
 
         html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, i)}</div></div>`;
         // Stick map overlay: if this player's stick map is open, render it below the card
