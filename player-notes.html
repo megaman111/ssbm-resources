@@ -1258,8 +1258,8 @@ function renderFrame(frameIdx) {
     if (frameIdx === 0) console.log('[render] players:', JSON.stringify(players.map(p=>({port:p.port,charId:p.characterId,tag:p.displayName||p.nametag}))), 'frame keys sample:', Object.keys(frame.players||{}).slice(0,4));
 
     players.forEach((player, i) => {
-        const pFrame = frame.players?.[player.port];
-        if (!pFrame) { console.warn(`[render] No frame data for player ${i}, port=${player.port}, keys=`, Object.keys(frame.players||{})); return; }
+        const pFrame = frame.players?.[player.playerIndex];
+        if (!pFrame) { console.warn(`[render] No frame data for player ${i}, playerIndex=${player.playerIndex}, port=${player.port}, keys=`, Object.keys(frame.players||{})); return; }
         const post = pFrame.post;
         const pre = pFrame.pre;
         const data = post || pre;
@@ -1276,7 +1276,7 @@ function renderFrame(frameIdx) {
         const tag = player.displayName || player.nametag || `P${player.port+1}`;
         const facing = data.facingDirection ?? 1;
         const actionStateId = post?.actionStateId ?? pre?.actionStateId ?? 14;
-        const actionStateCounter = post?.actionStateFrameCounter ?? pre?.actionStateFrameCounter ?? 0;
+        const actionStateCounter = post?.actionStateCounter ?? 0;
 
         // Shadow ellipse on ground (ground is at y=0 for all stages)
         ctx.save();
