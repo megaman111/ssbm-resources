@@ -180,13 +180,28 @@
                             <canvas id="stockTimeline" height="28"></canvas>
                         </div>
                         <div class="replay-info-bar" id="replayInfoBar"></div>
-                        <div style="font-size:0.7rem;color:#555;padding:0.25rem 0;">Keys: Space/K=play/pause · ←→=frame · Shift+←→=10f · J/L=±1s · 0-9=jump · D=debug · F=fullscreen</div>
+                        <div style="padding:0.25rem 0;">
+                            <button class="ctrl-btn" onclick="toggleShortcuts()" title="Keyboard shortcuts (?)" style="font-size:0.8rem;">⌨ Shortcuts</button>
+                        </div>
                     </div>
                     <div class="replay-right">
                         <div id="controllerPanel" style="display:none;"></div>
                     </div>
                 </div>
                 <div id="clipsPanel" class="clips-panel" style="display:none;"></div>
+                <div id="shortcutsOverlay" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;" onclick="if(event.target===this)toggleShortcuts()">
+                    <div style="background:#1a1a2e;border:1px solid #334;border-radius:12px;padding:1.5rem;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;color:#ccc;font-family:monospace;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                            <span style="font-size:1.1rem;color:#a78bfa;font-weight:700;">Playback Shortcuts</span>
+                            <button onclick="toggleShortcuts()" style="background:none;border:none;color:#888;font-size:1.2rem;cursor:pointer;">&times;</button>
+                        </div>
+                        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                            <thead><tr><th style="text-align:left;padding:0.3rem 0.5rem;color:#fff;border-bottom:1px solid #334;">Shortcut</th><th style="text-align:left;padding:0.3rem 0.5rem;color:#fff;border-bottom:1px solid #334;">Description</th></tr></thead>
+                            <tbody id="shortcutsTableBody"></tbody>
+                        </table>
+                        <div style="text-align:right;margin-top:1rem;"><button onclick="toggleShortcuts()" style="background:#2d2d4e;color:#ccc;border:1px solid #555;padding:0.4rem 1rem;border-radius:6px;cursor:pointer;">Close</button></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2260,7 +2275,11 @@ document.addEventListener('keydown', e => {
     if (e.key === ' ') { e.preventDefault(); togglePlayback(); }
     else if (e.key === 'ArrowRight') stepFrame(e.shiftKey ? 10 : 1);
     else if (e.key === 'ArrowLeft') stepFrame(e.shiftKey ? -10 : -1);
-    else if (e.key === 'Escape') closeReplayModal();
+    else if (e.key === 'Escape') {
+        const sc = document.getElementById('shortcutsOverlay');
+        if (sc && sc.style.display !== 'none') { sc.style.display = 'none'; return; }
+        closeReplayModal();
+    }
     else if (e.key === 'd' || e.key === 'D') { debugMode = !debugMode; renderFrame(currentFrame); }
     else if (e.key === 'f' || e.key === 'F') {
         const modal = document.getElementById('replayModal');
@@ -2270,12 +2289,60 @@ document.addEventListener('keydown', e => {
     else if (e.key === 'j') stepFrame(-60);  // back 1 second
     else if (e.key === 'k') togglePlayback();
     else if (e.key === 'l') stepFrame(60);   // forward 1 second
+    else if (e.key === '.') { if (isPlaying) togglePlayback(); stepFrame(1); }
+    else if (e.key === ',') { if (isPlaying) togglePlayback(); stepFrame(-1); }
+    else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const speeds = [0.25, 0.5, 1, 2, 4];
+        const ci = speeds.indexOf(playbackSpeed);
+        if (ci > 0) { setSpeed(speeds[ci - 1]); document.getElementById('speedSelect').value = speeds[ci - 1]; }
+    }
+    else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const speeds = [0.25, 0.5, 1, 2, 4];
+        const ci = speeds.indexOf(playbackSpeed);
+        if (ci < speeds.length - 1) { setSpeed(speeds[ci + 1]); document.getElementById('speedSelect').value = speeds[ci + 1]; }
+    }
+    else if (e.key === '=' || e.key === '+') zoomIn();
+    else if (e.key === '-' || e.key === '_') zoomOut();
+    else if (e.key === '?') toggleShortcuts();
     // Number keys: jump to percentage of replay
     else if (e.key >= '0' && e.key <= '9') {
         const pct = parseInt(e.key) / 10;
         seekToFrame(Math.floor(pct * (totalFrames - 1)));
     }
 });
+
+const SHORTCUT_LIST = [
+    ['Space / K', 'Toggle pause'],
+    ['F', 'Toggle fullscreen'],
+    ['← / J', 'Rewind (1 frame / 1 second)'],
+    ['→ / L', 'Skip ahead (1 frame / 1 second)'],
+    ['Shift + ← / →', 'Skip 10 frames'],
+    ['0 – 9', 'Jump to xx%. e.g. 3 = 30%'],
+    ['.', 'Next frame (pauses if playing)'],
+    [',', 'Previous frame (pauses if playing)'],
+    ['↑', 'Slow speed'],
+    ['↓', 'Fast speed'],
+    ['+ / =', 'Zoom in'],
+    ['- / _', 'Zoom out'],
+    ['D', 'Toggle debug overlay'],
+    ['?', 'Show this shortcuts panel'],
+    ['Esc', 'Close shortcuts / Close viewer'],
+];
+
+window.toggleShortcuts = () => {
+    const ov = document.getElementById('shortcutsOverlay');
+    if (!ov) return;
+    if (ov.style.display === 'flex') { ov.style.display = 'none'; return; }
+    const tbody = document.getElementById('shortcutsTableBody');
+    if (tbody && !tbody.hasChildNodes()) {
+        tbody.innerHTML = SHORTCUT_LIST.map(([key, desc]) =>
+            `<tr><td style="padding:0.35rem 0.5rem;border-bottom:1px solid #222;"><span style="background:#2d2d4e;border:1px solid #555;border-radius:4px;padding:0.15rem 0.4rem;font-size:0.8rem;color:#fff;white-space:nowrap;">${key}</span></td><td style="padding:0.35rem 0.5rem;border-bottom:1px solid #222;color:#aaa;">${desc}</td></tr>`
+        ).join('');
+    }
+    ov.style.display = 'flex';
+};
 
 // ===== CONTROLLER VISUALIZATION =====
 // Store the raw .slp bytes for savestate generation
