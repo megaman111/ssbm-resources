@@ -2683,7 +2683,7 @@ function buildClipsPanel() {
         </div>`;
     }
 
-    const frameClick = (f) => `onclick="seekToFrame(${f});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${f})"`;
+    const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${t})"`; };
 
     let html = '<div style="font-size:0.95rem;color:#a78bfa;font-weight:700;margin-bottom:0.5rem;">📋 Clips</div>';
 
@@ -2789,7 +2789,7 @@ window.showActionClips = (actionName) => {
     const ranges = detectedClips.actionRanges[actionName];
     const players = replaySettings.players;
     const portColor = (port) => PLAYER_COLORS[(players.findIndex(p => p.port === port)) % PLAYER_COLORS.length] || '#888';
-    const frameClick = (f) => `onclick="seekToFrame(${f});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${f})"`;
+    const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${t})"`; };
 
     let html = `<div style="max-height:200px;overflow-y:auto;margin-bottom:0.4rem;">`;
     ranges.slice(0, 100).forEach(r => {
