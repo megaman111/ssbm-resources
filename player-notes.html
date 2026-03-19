@@ -284,120 +284,157 @@ const CHAR_ZIP = {
     20:'falco',21:'young_link',22:'dr_mario',23:'roy',24:'pichu',25:'ganondorf'
 };
 
-// Action state ID -> animation name mappings (from slippilab character files)
-// Covers the most common action states. Falls back to 'Wait' if not found.
-const ACTION_MAP = {
-    // Universal
-    0:'DeadDown',1:'DeadLeft',2:'DeadRight',3:'DeadUp',4:'DeadUpStar',5:'DeadUpStarIce',
-    6:'DeadUpFall',7:'DeadUpFallHitCamera',8:'DeadUpFallHitCameraFlat',9:'DeadUpFallIce',
-    10:'DeadUpFallIceHitCamera',11:'DeadUpFallIceHitCameraFlat',
-    14:'Sleep',15:'Rebirth',16:'RebirthWait',
-    17:'Wait',18:'WalkSlow',19:'WalkMiddle',20:'WalkFast',
-    21:'Turn',22:'TurnRun',23:'Dash',24:'Run',25:'RunDirect',26:'RunBrake',
-    27:'KneeBend',28:'JumpF',29:'JumpB',30:'JumpAerialF',31:'JumpAerialB',
-    32:'Fall',33:'FallF',34:'FallB',35:'FallAerial',36:'FallAerialF',37:'FallAerialB',
-    38:'FallSpecial',39:'FallSpecialF',40:'FallSpecialB',
-    41:'DamageFall',
-    42:'Squat',43:'SquatWait',44:'SquatRv',
-    45:'LandingLight',46:'LandingHeavy',47:'Landing',48:'LandingFallSpecial',
-    49:'Attack11',50:'Attack12',51:'Attack13',52:'Attack100Start',53:'Attack100Loop',54:'Attack100End',
-    55:'AttackDash',56:'AttackS3Hi',57:'AttackS3HiS',58:'AttackS3S',59:'AttackS3LwS',60:'AttackS3Lw',
-    61:'AttackHi3',62:'AttackLw3',
-    63:'AttackS4Hi',64:'AttackS4HiS',65:'AttackS4S',66:'AttackS4LwS',67:'AttackS4Lw',
-    68:'AttackHi4',69:'AttackLw4',
-    70:'AttackAirN',71:'AttackAirF',72:'AttackAirB',73:'AttackAirHi',74:'AttackAirLw',
-    75:'LandingAirN',76:'LandingAirF',77:'LandingAirB',78:'LandingAirHi',79:'LandingAirLw',
-    80:'DamageHi1',81:'DamageHi2',82:'DamageHi3',
-    83:'DamageN1',84:'DamageN2',85:'DamageN3',
-    86:'DamageLw1',87:'DamageLw2',88:'DamageLw3',
-    89:'DamageAir1',90:'DamageAir2',91:'DamageAir3',
-    92:'DamageFlyHi',93:'DamageFlyN',94:'DamageFlyLw',95:'DamageFlyTop',96:'DamageFlyRoll',
-    97:'LightGet',98:'HeavyGet',99:'LightThrowF',100:'LightThrowB',101:'LightThrowHi',102:'LightThrowLw',
-    103:'LightThrowDash',104:'LightThrowDrop',105:'LightThrowAirF',106:'LightThrowAirB',
-    107:'LightThrowAirHi',108:'LightThrowAirLw',
-    109:'HeavyThrowF',110:'HeavyThrowB',111:'HeavyThrowHi',112:'HeavyThrowLw',
-    113:'LightThrowF4',114:'LightThrowB4',115:'LightThrowHi4',116:'LightThrowLw4',
-    117:'LightThrowAirF4',118:'LightThrowAirB4',119:'LightThrowAirHi4',120:'LightThrowAirLw4',
-    121:'HeavyThrowF4',122:'HeavyThrowB4',123:'HeavyThrowHi4',124:'HeavyThrowLw4',
-    125:'SwordSwing1',126:'SwordSwing3',127:'SwordSwing4',128:'SwordSwingDash',
-    129:'ItemSwing1',130:'ItemSwing3',131:'ItemSwing4',132:'ItemSwingDash',
-    133:'ItemThrowF',134:'ItemThrowB',135:'ItemThrowHi',136:'ItemThrowLw',
-    137:'ItemThrowDash',138:'ItemThrowDrop',139:'ItemThrowAirF',140:'ItemThrowAirB',
-    141:'ItemThrowAirHi',142:'ItemThrowAirLw',
-    143:'ItemScrew',144:'ItemScrewAir',
-    145:'DamageScrew',146:'DamageScrewAir',
-    147:'GuardOn',148:'Guard',149:'GuardOff',150:'GuardSetOff',151:'GuardReflect',
-    152:'DownBoundU',153:'DownWaitU',154:'DownDamageU',155:'DownAttackU',156:'DownFowardU',
-    157:'DownBackU',158:'DownSpotU',159:'DownBoundD',160:'DownWaitD',161:'DownDamageD',
-    162:'DownAttackD',163:'DownFowardD',164:'DownBackD',165:'DownSpotD',166:'Passive',
-    167:'PassiveStandF',168:'PassiveStandB',169:'PassiveWall',170:'PassiveWallJump',171:'PassiveCeil',
-    172:'ShieldBreakFly',173:'ShieldBreakFall',174:'ShieldBreakDownU',175:'ShieldBreakDownD',
-    176:'ShieldBreakStandU',177:'ShieldBreakStandD',178:'FuraFura',179:'Furafura',
-    180:'CatchPull',181:'ThrownF',182:'ThrownB',183:'ThrownHi',184:'ThrownLw',
-    185:'ThrownLwWomen',186:'Pass',187:'Ottotto',188:'OttottoWait',
-    189:'FlyReflectWall',190:'FlyReflectCeil',191:'StopWall',192:'StopCeil',193:'MissFoot',
-    194:'CliffCatch',195:'CliffWait',196:'CliffClimbSlow',197:'CliffClimbQuick',
-    198:'CliffAttackSlow',199:'CliffAttackQuick',200:'CliffEscapeSlow',201:'CliffEscapeQuick',
-    202:'CliffJumpSlow1',203:'CliffJumpSlow2',204:'CliffJumpQuick1',205:'CliffJumpQuick2',
-    206:'AppealR',207:'AppealL',
-    208:'ShoulderedWait',209:'ShoulderedWalkSlow',210:'ShoulderedWalkMiddle',211:'ShoulderedWalkFast',
-    212:'ShoulderedTurn',213:'ThrownFF',214:'ThrownFB',215:'ThrownFHi',216:'ThrownFLw',
-    217:'CaptureCaptain',218:'CaptureYoshi',219:'YoshiEgg',220:'CaptureKoopa',221:'CaptureDamageKoopa',
-    222:'CaptureWaitKoopa',223:'ThrownKoopaF',224:'ThrownKoopaB',225:'CaptureKoopaAir',
-    226:'CaptureDamageKoopaAir',227:'CaptureWaitKoopaAir',228:'ThrownKoopaAirF',229:'ThrownKoopaAirB',
-    230:'CaptureKirby',231:'CaptureWaitKirby',232:'ThrownKirbyStar',233:'ThrownCopyStar',
-    234:'ThrownKirby',235:'BarrelWait',236:'Bury',237:'BuryWait',238:'BuryJump',
-    239:'DamageSong',240:'DamageSongWait',241:'DamageSongRv',242:'DamageIce',243:'DamageIceJump',
-    244:'CaptureLeader',245:'CaptureWaitLeader',246:'ThrownLeaderF',247:'ThrownLeaderB',
-    248:'CaptureWaitLeader2',249:'ThrownLeaderF2',250:'ThrownLeaderB2',
-    251:'WallDamage',252:'CliffWait2',253:'CliffJumpSlow1',254:'CliffJumpSlow2',
-    // Special moves start at 341 for most chars — handled by per-char maps below
-};
+// Action state ID -> animation name (from slippilab's actionNameById)
+// Source: https://github.com/frankborden/slippilab/blob/main/src/common/ids.ts
+const ACTION_NAMES = [
+    'DeadDown','DeadLeft','DeadRight','DeadUp','DeadUpStar','DeadUpStarIce',
+    'DeadUpFall','DeadUpFallHitCamera','DeadUpFallHitCameraFlat','DeadUpFallIce',
+    'DeadUpFallHitCameraIce','Sleep','Rebirth','RebirthWait',
+    'Wait','WalkSlow','WalkMiddle','WalkFast',
+    'Turn','TurnRun','Dash','Run','RunDirect','RunBrake',
+    'KneeBend','JumpF','JumpB','JumpAerialF','JumpAerialB',
+    'Fall','FallF','FallB','FallAerial','FallAerialF','FallAerialB',
+    'FallSpecial','FallSpecialF','FallSpecialB',
+    'DamageFall',
+    'Squat','SquatWait','SquatRv',
+    'SquatF','SquatB',
+    'Landing','LandingFallSpecial',
+    'Attack11','Attack12','Attack13','Attack100Start','Attack100Loop','Attack100End',
+    'AttackDash',
+    'AttackS3Hi','AttackS3HiS','AttackS3S','AttackS3LwS','AttackS3Lw',
+    'AttackHi3','AttackLw3',
+    'AttackS4Hi','AttackS4HiS','AttackS4S','AttackS4LwS','AttackS4Lw',
+    'AttackHi4','AttackLw4',
+    'AttackAirN','AttackAirF','AttackAirB','AttackAirHi','AttackAirLw',
+    'LandingAirN','LandingAirF','LandingAirB','LandingAirHi','LandingAirLw',
+    'DamageHi1','DamageHi2','DamageHi3',
+    'DamageN1','DamageN2','DamageN3',
+    'DamageLw1','DamageLw2','DamageLw3',
+    'DamageAir1','DamageAir2','DamageAir3',
+    'DamageFlyHi','DamageFlyN','DamageFlyLw','DamageFlyTop','DamageFlyRoll',
+    'LightGet','HeavyGet',
+    'LightThrowF','LightThrowB','LightThrowHi','LightThrowLw',
+    'LightThrowDash','LightThrowDrop',
+    'LightThrowAirF','LightThrowAirB','LightThrowAirHi','LightThrowAirLw',
+    'HeavyThrowF','HeavyThrowB','HeavyThrowHi','HeavyThrowLw',
+    'LightThrowF4','LightThrowB4','LightThrowHi4','LightThrowLw4',
+    'LightThrowAirF4','LightThrowAirB4','LightThrowAirHi4','LightThrowAirLw4',
+    'HeavyThrowF4','HeavyThrowB4','HeavyThrowHi4','HeavyThrowLw4',
+    'SwordSwing1','SwordSwing3','SwordSwing4','SwordSwingDash',
+    'ItemSwing1','ItemSwing3','ItemSwing4','ItemSwingDash',
+    'ItemThrowF','ItemThrowB','ItemThrowHi','ItemThrowLw',
+    'ItemThrowDash','ItemThrowDrop',
+    'ItemThrowAirF','ItemThrowAirB','ItemThrowAirHi','ItemThrowAirLw',
+    'ItemScrew','ItemScrewAir',
+    'DamageScrew','DamageScrewAir',
+    'ItemDeadU','ItemDeadL','ItemDeadD','ItemDeadR',
+    'GuardOn','Guard','GuardOff','GuardSetOff','GuardReflect',
+    'DownBoundU','DownWaitU','DownDamageU','DownStandU','DownAttackU','DownFowardU',
+    'DownBackU','DownSpotU',
+    'DownBoundD','DownWaitD','DownDamageD','DownStandD','DownAttackD','DownFowardD',
+    'DownBackD','DownSpotD',
+    'Passive','PassiveStandF','PassiveStandB','PassiveWall','PassiveWallJump','PassiveCeil',
+    'ShieldBreakFly','ShieldBreakFall','ShieldBreakDownU','ShieldBreakDownD',
+    'ShieldBreakStandU','ShieldBreakStandD',
+    'FuraFura',
+    'Catch','CatchPull','CatchDash','CatchDashPull','CatchWait','CatchAttack','CatchCut',
+    'ThrowF','ThrowB','ThrowHi','ThrowLw',
+    'CapturePulledHi','CaptureWaitHi','CaptureDamageHi','CapturePulledLw','CaptureWaitLw','CaptureDamageLw','CaptureCut','CaptureJump',
+    'CatchPull','ThrownF','ThrownB','ThrownHi','ThrownLw',
+    'ThrownLwWomen','Pass','Ottotto','OttottoWait',
+    'FlyReflectWall','FlyReflectCeil','StopWall','StopCeil','MissFoot',
+    'CliffCatch','CliffWait','CliffClimbSlow','CliffClimbQuick',
+    'CliffAttackSlow','CliffAttackQuick','CliffEscapeSlow','CliffEscapeQuick',
+    'CliffJumpSlow1','CliffJumpSlow2','CliffJumpQuick1','CliffJumpQuick2',
+    'AppealR','AppealL',
+    'ShoulderedWait','ShoulderedWalkSlow','ShoulderedWalkMiddle','ShoulderedWalkFast',
+    'ShoulderedTurn','ThrownFF','ThrownFB','ThrownFHi','ThrownFLw',
+    'CaptureCaptain','CaptureYoshi','YoshiEgg','CaptureKoopa','CaptureDamageKoopa',
+    'CaptureWaitKoopa','ThrownKoopaF','ThrownKoopaB','CaptureKoopaAir',
+    'CaptureDamageKoopaAir','CaptureWaitKoopaAir','ThrownKoopaAirF','ThrownKoopaAirB',
+    'CaptureKirby','CaptureWaitKirby','ThrownKirbyStar','ThrownCopyStar',
+    'ThrownKirby','BarrelWait','Bury','BuryWait','BuryJump',
+    'DamageSong','DamageSongWait','DamageSongRv','DamageIce','DamageIceJump',
+    'CaptureMewtwo','CaptureMewtwoAir','ThrownMewtwo','ThrownMewtwoAir',
+    'WarpStarJump','WarpStarFall','HammerWait','HammerWalk','HammerTurn','HammerKneeBend',
+    'HammerFall','HammerJump','HammerLanding',
+    'KinokoGiantStart','KinokoGiantStartAir','KinokoGiantEnd','KinokoGiantEndAir',
+    'KinokoSmallStart','KinokoSmallStartAir','KinokoSmallEnd','KinokoSmallEndAir',
+    'Entry','EntryStart','EntryEnd',
+    'DamageIce','DamageIceJump',
+    'CaptureMasterhand','CapturedamageMasterhand','CapturewaitMasterhand','ThrownMasterhand',
+    'CaptureKirbyYoshi','KirbyYoshiEgg',
+    'CaptureLeadead','CaptureLikelike','DownReflect',
+    'CaptureCrazyhand','CapturedamageCrazyhand','CapturewaitCrazyhand','ThrownCrazyhand',
+    'BarrelCannonWait',
+];
 
-// Per-character special move overrides (actionStateId -> animName)
-// These are the character-specific action states (341+)
-const CHAR_SPECIALS = {
-    2: { // Fox
-        341:'SpecialN',342:'SpecialNHit',343:'SpecialNReflect',
-        344:'SpecialS',345:'SpecialSEnd',
-        346:'SpecialHi',347:'SpecialHiStart',348:'SpecialHiEnd',349:'SpecialHiFall',
-        350:'SpecialLw',351:'SpecialLwStart',352:'SpecialLwEnd',
-    },
-    20: { // Falco
-        341:'SpecialN',342:'SpecialNHit',343:'SpecialNReflect',
-        344:'SpecialS',345:'SpecialSEnd',
-        346:'SpecialHi',347:'SpecialHiStart',348:'SpecialHiEnd',349:'SpecialHiFall',
-        350:'SpecialLw',351:'SpecialLwStart',352:'SpecialLwEnd',
+// Per-character animation name overrides (actionName -> zipAnimName)
+// From slippilab's character files — maps action names that differ from zip filenames
+const CHAR_ANIM_MAP = {
+    2: { // Fox (internal ID = 1 in slippilab, but we use external IDs)
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'CatchDashPull':'CatchWait','CatchPull':'CatchWait',
+        'DamageIceJump':'Fall','EntryEnd':'Entry','EntryStart':'Entry',
+        'Escape':'EscapeN','FlyReflectWall':'WallDamage',
+        'GuardReflect':'Guard','GuardSetOff':'GuardDamage',
+        'KneeBend':'Landing','LandingFallSpecial':'Landing',
+        'Rebirth':'Entry','RebirthWait':'Wait1','Wait':'Wait1',
     },
     9: { // Marth
-        341:'SpecialN',342:'SpecialNCapture',343:'SpecialNCaptureMax',344:'SpecialNTurn',
-        345:'SpecialS',346:'SpecialSS',347:'SpecialSHi',348:'SpecialSLw',
-        349:'SpecialHi',350:'SpecialHiStart',351:'SpecialHiEnd',
-        352:'SpecialLw',353:'SpecialLwCatch',354:'SpecialLwTurn',
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'CatchDashPull':'CatchWait','CatchPull':'CatchWait',
+        'EntryEnd':'Entry','EntryStart':'Entry',
+        'Escape':'EscapeN','FlyReflectWall':'WallDamage',
+        'GuardReflect':'Guard','GuardSetOff':'GuardDamage',
+        'KneeBend':'Landing','LandingFallSpecial':'Landing',
+        'Rebirth':'Entry','RebirthWait':'Wait1','Wait':'Wait1',
     },
-    19: { // Sheik
-        341:'SpecialN',342:'SpecialNEnd',
-        343:'SpecialS',344:'SpecialSEnd',
-        345:'SpecialHi',346:'SpecialHiStart',347:'SpecialHiEnd',
-        348:'SpecialLw',349:'SpecialLwEnd',
+};
+
+// Per-character special move mappings (actionStateId -> animName in zip)
+// From slippilab's fox.ts, marth.ts, etc.
+const CHAR_SPECIALS = {
+    2: { // Fox
+        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',
+        344:'SpecialAirNStart',345:'SpecialAirNLoop',346:'SpecialAirNEnd',
+        347:'SpecialSStart',348:'SpecialS',349:'SpecialSEnd',
+        350:'SpecialAirSStart',351:'SpecialAirS',352:'SpecialAirSEnd',
+        353:'SpecialHiHold',354:'SpecialHiHoldAir',355:'SpecialHi',356:'SpecialHi',
+        357:'SpecialHiLanding',358:'SpecialHiFall',359:'SpecialHiBound',
+        360:'SpecialLwStart',361:'SpecialLwLoop',362:'SpecialLwHit',363:'SpecialLwEnd',364:'SpecialLwLoop',
+        365:'SpecialAirLwStart',366:'SpecialAirLwLoop',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',369:'SpecialAirLwLoop',
     },
-    12: { // Peach
-        341:'SpecialN',342:'SpecialNEnd',
-        343:'SpecialS',344:'SpecialSEnd',
-        345:'SpecialHi',346:'SpecialHiStart',347:'SpecialHiEnd',
-        348:'SpecialLw',349:'SpecialLwEnd',
+    20: { // Falco (same structure as Fox)
+        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',
+        344:'SpecialAirNStart',345:'SpecialAirNLoop',346:'SpecialAirNEnd',
+        347:'SpecialSStart',348:'SpecialS',349:'SpecialSEnd',
+        350:'SpecialAirSStart',351:'SpecialAirS',352:'SpecialAirSEnd',
+        353:'SpecialHiHold',354:'SpecialHiHoldAir',355:'SpecialHi',356:'SpecialHi',
+        357:'SpecialHiLanding',358:'SpecialHiFall',359:'SpecialHiBound',
+        360:'SpecialLwStart',361:'SpecialLwLoop',362:'SpecialLwHit',363:'SpecialLwEnd',364:'SpecialLwLoop',
+        365:'SpecialAirLwStart',366:'SpecialAirLwLoop',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',369:'SpecialAirLwLoop',
     },
-    15: { // Jigglypuff
-        341:'SpecialN',342:'SpecialNEnd',
-        343:'SpecialS',344:'SpecialSEnd',
-        345:'SpecialHi',346:'SpecialHiStart',347:'SpecialHiEnd',
-        348:'SpecialLw',349:'SpecialLwEnd',
+    9: { // Marth
+        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',344:'SpecialNEnd',
+        345:'SpecialAirNStart',346:'SpecialAirNLoop',347:'SpecialAirNEnd',348:'SpecialAirNEnd',
+        349:'SpecialS1',350:'SpecialS2Hi',351:'SpecialS2Lw',352:'SpecialS3Hi',
+        353:'SpecialS3S',354:'SpecialS3Lw',355:'SpecialS4Hi',356:'SpecialS4S',357:'SpecialS4Lw',
+        358:'SpecialAirS1',359:'SpecialAirS2Hi',360:'SpecialAirS2Lw',
+        361:'SpecialAirS3Hi',362:'SpecialAirS3S',363:'SpecialAirS3Lw',
+        364:'SpecialAirS4Hi',365:'SpecialAirS4S',366:'SpecialAirS4Lw',
+        367:'SpecialHi',368:'SpecialAirHi',
+        369:'SpecialLw',370:'SpecialLwHit',371:'SpecialAirLw',372:'SpecialAirLwHit',
     },
     0: { // Captain Falcon
-        347:'SpecialN',348:'SpecialNHit',
-        349:'SpecialS',350:'SpecialSEnd',
-        351:'SpecialHi',352:'SpecialHiStart',353:'SpecialHiEnd',
-        354:'SpecialLw',355:'SpecialLwEnd',
+        347:'SpecialN',348:'SpecialNStart',349:'SpecialNEnd',
+        350:'SpecialAirN',351:'SpecialAirNStart',352:'SpecialAirNEnd',
+        353:'SpecialS',354:'SpecialSEnd',
+        355:'SpecialAirS',356:'SpecialAirSEnd',
+        357:'SpecialHi',358:'SpecialHiCatch',359:'SpecialHiThrow',
+        360:'SpecialAirHi',361:'SpecialAirHiCatch',362:'SpecialAirHiThrow',
+        363:'SpecialLw',364:'SpecialLwHit',365:'SpecialLwEnd',
+        366:'SpecialAirLw',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',
     },
 };
 
@@ -416,9 +453,7 @@ async function loadCharAnimations(charId) {
 
     const promise = (async () => {
         try {
-            const url = `${ANIM_BASE}/${zipName}.zip`;
-            console.log(`[anim] fetching ${url}`);
-            const res = await fetch(url);
+            const res = await fetch(`${ANIM_BASE}/${zipName}.zip`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const buf = await res.arrayBuffer();
             const files = unzipSync(new Uint8Array(buf));
@@ -430,7 +465,6 @@ async function loadCharAnimations(charId) {
                     animMap.set(name, json);
                 } catch {}
             }
-            console.log(`[anim] loaded ${charId} (${zipName}): ${animMap.size} animations, keys sample:`, [...animMap.keys()].slice(0,5));
             animCache.set(charId, animMap);
             animLoading.set(charId, 'loaded');
         } catch (e) {
@@ -444,23 +478,73 @@ async function loadCharAnimations(charId) {
     return animLoading.get(charId) === 'loaded';
 }
 
+// Character scale values from slippilab (keyed by external character ID)
+const CHAR_SCALE_MAP = {
+    0:1.18,  // Captain Falcon
+    1:1.0,   // Donkey Kong
+    2:0.96,  // Fox
+    3:1.0,   // Game & Watch
+    4:0.9,   // Kirby
+    5:1.2,   // Bowser
+    6:1.0,   // Link
+    7:0.95,  // Luigi
+    8:0.94,  // Mario
+    9:1.15,  // Marth
+    10:1.1,  // Mewtwo
+    11:0.94, // Ness
+    12:0.9,  // Peach
+    13:0.9,  // Pikachu
+    14:0.92, // Ice Climbers
+    15:0.68, // Jigglypuff
+    16:1.0,  // Samus
+    17:1.02, // Yoshi
+    18:1.0,  // Zelda
+    19:0.96, // Sheik
+    20:0.96, // Falco
+    21:0.9,  // Young Link
+    22:0.94, // Dr. Mario
+    23:1.06, // Roy
+    24:0.7,  // Pichu
+    25:1.18, // Ganondorf
+};
+
 function getAnimFrame(charId, actionStateId, frameCounter) {
     const anims = animCache.get(charId);
-    if (!anims) { console.log(`[anim] cache miss for charId ${charId}`); return null; }
+    if (!anims) return null;
 
-    const specials = CHAR_SPECIALS[charId] || {};
-    let animName = specials[actionStateId] || ACTION_MAP[actionStateId] || 'Wait1';
-    console.log(`[anim] charId=${charId} actionState=${actionStateId} -> animName=${animName}, has it: ${anims.has(animName)}`);
+    // Resolve animation name from action state ID
+    let animName;
+    const specials = CHAR_SPECIALS[charId];
+    if (specials && specials[actionStateId]) {
+        animName = specials[actionStateId];
+    } else if (actionStateId < ACTION_NAMES.length) {
+        animName = ACTION_NAMES[actionStateId];
+    } else {
+        animName = 'Wait1';
+    }
 
+    // Apply per-character animation name overrides
+    const charMap = CHAR_ANIM_MAP[charId];
+    if (charMap && charMap[animName]) {
+        animName = charMap[animName];
+    }
+
+    // Try exact match, then fallback chain
     let frames = anims.get(animName);
     if (!frames) frames = anims.get('Wait1');
     if (!frames) frames = anims.get('Wait2');
-    if (!frames || !frames.length) { console.log(`[anim] no frames found for ${animName}`); return null; }
+    if (!frames || !frames.length) return null;
 
-    const idx = Math.max(0, frameCounter) % frames.length;
-    const frame = frames[idx];
-    // Frames are raw SVG path strings
-    return typeof frame === 'string' ? { path: frame } : frame;
+    const idx = Math.floor(Math.max(0, frameCounter)) % frames.length;
+    let pathStr = frames[idx];
+
+    // Handle "frameN" references (deduplication in slippilab zips)
+    if (typeof pathStr === 'string' && pathStr.startsWith('frame')) {
+        const refIdx = parseInt(pathStr.slice(5));
+        if (!isNaN(refIdx) && frames[refIdx]) pathStr = frames[refIdx];
+    }
+
+    return typeof pathStr === 'string' ? { path: pathStr, animName } : null;
 }
 
 // ===== localStorage replay storage =====
@@ -767,8 +851,10 @@ function getFrameKeys() {
     return Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
 }
 
-// Melee character scale in canvas units (approximate, tuned to match slippilab)
-const CHAR_SCALE = 0.08;
+// Melee character scale in canvas units
+// slippilab transform: translate(-500,-500) then scale(0.1, -0.1) converts
+// the 1000x1000 SVG path space to ~100 game units, then charScale applies.
+// For canvas we combine: charScale * 0.1 * canvasScale
 
 function renderFrame(frameIdx) {
     if (!replayFrames || !replaySettings) return;
@@ -856,15 +942,17 @@ function renderFrame(frameIdx) {
         const data = post || pre;
         if (!data) return;
 
-        const px = toCanvasX(data.positionX);
-        const py = toCanvasY(data.positionY);
+        const gameX = data.positionX;
+        const gameY = data.positionY;
+        const px = toCanvasX(gameX);
+        const py = toCanvasY(gameY);
         const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
         const charId = player.characterId;
         const charName = CHAR_NAMES[charId] || `P${player.port+1}`;
         const tag = player.displayName || player.nametag || `P${player.port+1}`;
-        const facing = data.facingDirection ?? 1; // 1 = right, -1 = left
-        const actionStateId = post?.actionStateId ?? pre?.actionStateId ?? 17;
-        const actionStateCounter = Math.floor(post?.actionStateCounter ?? pre?.actionStateCounter ?? 0);
+        const facing = data.facingDirection ?? 1;
+        const actionStateId = post?.actionStateId ?? pre?.actionStateId ?? 14;
+        const actionStateCounter = post?.actionStateFrameCounter ?? pre?.actionStateFrameCounter ?? 0;
 
         // Shadow ellipse on ground
         ctx.save();
@@ -877,18 +965,21 @@ function renderFrame(frameIdx) {
         // Try SVG path silhouette
         const animFrame = getAnimFrame(charId, actionStateId, actionStateCounter);
         if (animFrame && animFrame.path) {
+            // Replicate slippilab's SVG transform chain in canvas:
+            // SVG: translate(gameX,gameY) scale(charScale) scale(facing,1) scale(.1,-.1) translate(-500,-500)
+            // Canvas: transforms apply in call order (last called = innermost)
             ctx.save();
-            // Translate to player position, scale, flip for facing direction
             ctx.translate(px, py);
-            ctx.scale(facing * CHAR_SCALE * scale, -CHAR_SCALE * scale);
+            const cs = (CHAR_SCALE_MAP[charId] || 1.0) * 0.1 * scale;
+            // scale(facing * cs, -cs): facing flips X, negative Y flips SVG Y-down to screen Y-up
+            ctx.scale(facing * cs, -cs);
+            ctx.translate(-500, -500);
             const p2d = new Path2D(animFrame.path);
-            // Fill silhouette
             ctx.fillStyle = color;
             ctx.globalAlpha = 0.92;
             ctx.fill(p2d);
-            // Outline
             ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = 1 / (CHAR_SCALE * scale);
+            ctx.lineWidth = 2 / cs;
             ctx.globalAlpha = 0.5;
             ctx.stroke(p2d);
             ctx.restore();
@@ -904,12 +995,6 @@ function renderFrame(frameIdx) {
             ctx.lineWidth = 2;
             ctx.globalAlpha = 1;
             ctx.stroke();
-            // Facing nub
-            ctx.beginPath();
-            ctx.arc(px + facing * 10, py - 4, 4, 0, Math.PI * 2);
-            ctx.fillStyle = 'white';
-            ctx.globalAlpha = 0.8;
-            ctx.fill();
             ctx.restore();
         }
 
