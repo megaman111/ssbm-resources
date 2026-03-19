@@ -351,7 +351,8 @@ function showEnforcerResult(playerIndex, result, message) {
         const port = player ? player.port + 1 : '?';
 
         html += `<div style="margin-bottom:0.75rem;"><span style="color:#aaa;">Player:</span> <span style="color:#fff;">${pName} (P${port})</span></div>`;
-        html += `<div style="margin-bottom:0.75rem;"><span style="color:#aaa;">Controller:</span> <span style="color:#fff;">${result.controller_type}</span></div>`;
+        const isBox = result.controller_type === 'Box';
+        html += `<div style="margin-bottom:0.75rem;font-size:1.05rem;"><span style="color:#aaa;">Controller:</span> <span style="color:${isBox ? '#f0a' : '#0cf'};font-weight:bold;">${isBox ? '🎮 Box Controller' : '🕹️ Analog (GCC)'}</span></div>`;
 
         const legalColor = result.is_legal ? '#4f4' : '#f44';
         const legalText = result.is_legal ? '✅ LEGAL' : '❌ ILLEGAL';
