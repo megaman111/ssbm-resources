@@ -8,286 +8,81 @@
     <style>
         .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #f5f5f7; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
         .back-link:hover { background: #667eea; color: white; }
-        
-        .add-note-form {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-        
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-family: inherit;
-        }
-        
-        .form-group textarea {
-            min-height: 150px;
-            resize: vertical;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .submit-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .submit-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .export-section {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-        
-        .export-btn {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            color: white;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-            margin-right: 1rem;
-        }
-        
-        .export-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .import-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        
-        .import-btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        #fileInput {
-            display: none;
-        }
-        
-        .notes-container {
-            display: grid;
-            gap: 1.5rem;
-        }
-        
-        .note-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        
-        .note-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #f5f5f7;
-        }
-        
-        .note-header img {
-            width: 40px;
-            height: 40px;
-        }
-        
-        .note-player {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #667eea;
-        }
-        
-        .note-content {
-            color: #333;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-        
-        .note-date {
-            font-size: 0.875rem;
-            color: #999;
-            margin-top: 1rem;
-        }
-        
-        .note-actions {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            display: flex;
-            gap: 0.5rem;
-        }
-        
-        .edit-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        
-        .edit-btn:hover {
-            background: #5568d3;
-        }
-        
-        .delete-btn {
-            background: #ff4444;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        
-        .delete-btn:hover {
-            background: #cc0000;
-        }
-        
-        .save-btn {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        
-        .save-btn:hover {
-            background: #45a049;
-        }
-        
-        .cancel-btn {
-            background: #999;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-        
-        .cancel-btn:hover {
-            background: #777;
-        }
-        
-        .edit-mode .note-content {
-            display: none;
-        }
-        
-        .edit-mode .edit-form {
-            display: block;
-        }
-        
-        .edit-form {
-            display: none;
-        }
-        
-        .edit-form input,
-        .edit-form select,
-        .edit-form textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-family: inherit;
-            margin-bottom: 1rem;
-        }
-        
-        .edit-form textarea {
-            min-height: 150px;
-            resize: vertical;
-        }
-        
-        .filter-section {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-        
-        .filter-section select {
-            padding: 0.75rem;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1rem;
-            margin-right: 1rem;
-        }
-        
-        .character-icons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        
-        .char-filter-btn {
-            padding: 0.5rem 1rem;
-            border: 2px solid #667eea;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .char-filter-btn:hover,
-        .char-filter-btn.active {
-            background: #667eea;
-            color: white;
-        }
+        .add-note-form { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; font-family: inherit; box-sizing: border-box; }
+        .form-group textarea { min-height: 150px; resize: vertical; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
+        .submit-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        .submit-btn:hover { transform: translateY(-2px); }
+        .export-section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; text-align: center; }
+        .export-btn { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; margin-right: 1rem; }
+        .export-btn:hover { transform: translateY(-2px); }
+        .import-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
+        .import-btn:hover { transform: translateY(-2px); }
+        #fileInput { display: none; }
+        .notes-container { display: grid; gap: 1.5rem; }
+        .note-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); position: relative; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+        .note-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .note-card.has-replay { border-left: 4px solid #667eea; }
+        .note-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #f5f5f7; }
+        .note-header img { width: 40px; height: 40px; }
+        .note-player { font-size: 1.25rem; font-weight: 700; color: #667eea; }
+        .note-content { color: #333; line-height: 1.6; white-space: pre-wrap; }
+        .note-date { font-size: 0.875rem; color: #999; margin-top: 1rem; }
+        .note-replay-badge { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
+        .note-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; }
+        .edit-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+        .edit-btn:hover { background: #5568d3; }
+        .delete-btn { background: #ff4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+        .delete-btn:hover { background: #cc0000; }
+        .save-btn { background: #4CAF50; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+        .save-btn:hover { background: #45a049; }
+        .cancel-btn { background: #999; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
+        .cancel-btn:hover { background: #777; }
+        .edit-mode .note-content { display: none; }
+        .edit-mode .edit-form { display: block; }
+        .edit-form { display: none; }
+        .edit-form input, .edit-form select, .edit-form textarea { width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; font-family: inherit; margin-bottom: 1rem; box-sizing: border-box; }
+        .edit-form textarea { min-height: 150px; resize: vertical; }
+        .filter-section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .filter-section select { padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-right: 1rem; }
+        .character-icons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+        .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .char-filter-btn:hover, .char-filter-btn.active { background: #667eea; color: white; }
+        .slp-hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
+
+        /* ===== REPLAY MODAL ===== */
+        .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; }
+        .replay-modal-overlay.open { display: flex; }
+        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 95vw; max-width: 900px; max-height: 95vh; overflow-y: auto; color: white; position: relative; }
+        .replay-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .replay-modal-title { font-size: 1.2rem; font-weight: 700; color: #a78bfa; }
+        .replay-close-btn { background: none; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; }
+        .replay-close-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .replay-load-area { text-align: center; padding: 2rem; border: 2px dashed #444; border-radius: 12px; margin-bottom: 1rem; }
+        .replay-load-area p { color: #aaa; margin-bottom: 1rem; }
+        .replay-load-area .filename-hint { color: #a78bfa; font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
+        .load-slp-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        .load-slp-btn:hover { opacity: 0.9; }
+        #slpFileInput { display: none; }
+        .replay-canvas-wrap { position: relative; background: #0d0d1a; border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
+        #replayCanvas { display: block; width: 100%; height: auto; }
+        .replay-hud { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.9rem; }
+        .player-hud { display: flex; align-items: center; gap: 0.5rem; }
+        .stock-icons { display: flex; gap: 3px; }
+        .stock-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .replay-controls { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .ctrl-btn { background: #2d2d4e; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.15s; }
+        .ctrl-btn:hover { background: #3d3d6e; }
+        .ctrl-btn.active { background: #667eea; }
+        .replay-timeline { flex: 1; min-width: 120px; accent-color: #667eea; }
+        .frame-counter { color: #aaa; font-size: 0.8rem; white-space: nowrap; }
+        .speed-select { background: #2d2d4e; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.85rem; }
+        .replay-info-bar { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.8rem; color: #888; padding: 0.5rem 0; }
+        .replay-info-bar span { color: #a78bfa; }
+        .replay-status { text-align: center; color: #667eea; padding: 1rem; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -295,7 +90,47 @@
         <source src="MainMenuLoop720p24fps.webm" type="video/webm">
     </video>
     <div id="video-overlay"></div>
-    
+
+    <!-- REPLAY MODAL -->
+    <div class="replay-modal-overlay" id="replayModalOverlay">
+        <div class="replay-modal" id="replayModal">
+            <div class="replay-modal-header">
+                <div class="replay-modal-title" id="replayModalTitle">🎮 Replay Viewer</div>
+                <button class="replay-close-btn" onclick="closeReplayModal()">✕</button>
+            </div>
+            <div class="replay-load-area" id="replayLoadArea">
+                <div class="filename-hint" id="replayFilenameHint"></div>
+                <p>Load the .slp file for this note to watch the replay</p>
+                <button class="load-slp-btn" onclick="document.getElementById('slpFileInput').click()">📂 Load .slp File</button>
+                <input type="file" id="slpFileInput" accept=".slp" onchange="loadSlpFile(event)">
+            </div>
+            <div id="replayStatus" class="replay-status" style="display:none;"></div>
+            <div id="replayViewerArea" style="display:none;">
+                <div class="replay-hud" id="replayHud"></div>
+                <div class="replay-canvas-wrap">
+                    <canvas id="replayCanvas" width="800" height="600"></canvas>
+                </div>
+                <div class="replay-controls">
+                    <button class="ctrl-btn" onclick="stepFrame(-300)" title="Jump back 5s">⏮ 5s</button>
+                    <button class="ctrl-btn" onclick="stepFrame(-1)">◀ Frame</button>
+                    <button class="ctrl-btn active" id="playPauseBtn" onclick="togglePlayback()">⏸ Pause</button>
+                    <button class="ctrl-btn" onclick="stepFrame(1)">Frame ▶</button>
+                    <button class="ctrl-btn" onclick="stepFrame(300)" title="Jump forward 5s">5s ⏭</button>
+                    <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
+                    <span class="frame-counter" id="frameCounter">0 / 0</span>
+                    <select class="speed-select" id="speedSelect" onchange="setSpeed(parseFloat(this.value))">
+                        <option value="0.25">0.25x</option>
+                        <option value="0.5">0.5x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="2">2x</option>
+                        <option value="4">4x</option>
+                    </select>
+                </div>
+                <div class="replay-info-bar" id="replayInfoBar"></div>
+            </div>
+        </div>
+    </div>
+
     <header>
         <div class="container">
             <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Player Notes - Megaman's Archive</h1>
@@ -312,7 +147,6 @@
                 📺 View Slippi Replay Archive
             </a>
         </div>
-        
         <div class="export-section">
             <h3>🏆 Major Tournament Slippi Replay Archives</h3>
             <p style="color: #666; margin-bottom: 1rem;">Archive of all majors that have run Slippi replay hotloaders - search for replays from any player at major tournaments</p>
@@ -320,7 +154,6 @@
                 🎯 View Major Tournament Replays
             </a>
         </div>
-        
         <div class="export-section">
             <h3>💾 Save Your Notes</h3>
             <p style="color: #666; margin-bottom: 1rem;">After adding or editing notes, export the JSON file and replace player-notes.json in your repo, then push to GitHub.</p>
@@ -328,7 +161,7 @@
             <button class="import-btn" onclick="document.getElementById('fileInput').click()">📤 Import Notes (Load JSON)</button>
             <input type="file" id="fileInput" accept=".json" onchange="importNotes(event)">
         </div>
-        
+
         <div class="add-note-form">
             <h2>Add New Player Note</h2>
             <form id="noteForm">
@@ -336,7 +169,6 @@
                     <label for="playerName">Player Name</label>
                     <input type="text" id="playerName" placeholder="e.g., Mango, Leffen, Zain..." required>
                 </div>
-                
                 <div class="form-group">
                     <label for="character">Character</label>
                     <select id="character" required>
@@ -358,16 +190,19 @@
                         <option value="Donkey Kong">Donkey Kong</option>
                     </select>
                 </div>
-                
                 <div class="form-group">
                     <label for="notes">Notes</label>
                     <textarea id="notes" placeholder="What does this player like to do? Tendencies, habits, gameplan notes, lessons learned..." required></textarea>
                 </div>
-                
+                <div class="form-group">
+                    <label for="slpFileName">Replay File Name (optional)</label>
+                    <input type="text" id="slpFileName" placeholder="e.g., Game_20260308T123456.slp">
+                    <div class="slp-hint">💡 Save the filename here so you know which .slp to load. Double-click any note card to open the replay viewer.</div>
+                </div>
                 <button type="submit" class="submit-btn">Add Note</button>
             </form>
         </div>
-        
+
         <div class="filter-section">
             <h3>Filter by Type</h3>
             <div class="character-icons" style="margin-bottom: 1rem;">
@@ -389,10 +224,8 @@
                 <button class="char-filter-btn" data-char="Ice Climbers">ICs</button>
             </div>
         </div>
-        
-        <div class="notes-container" id="notesContainer">
-            <!-- Notes will be dynamically added here -->
-        </div>
+
+        <div class="notes-container" id="notesContainer"></div>
     </main>
 
     <footer>
@@ -401,260 +234,473 @@
         </div>
     </footer>
 
-    <script>
-        const characterIcons = {
-            'Fox': 'https://i.imgur.com/2WVNM7m.png',
-            'Falco': 'https://i.imgur.com/dbyctg5.png',
-            'Marth': 'https://i.imgur.com/HJT5ZTS.png',
-            'Sheik': 'https://i.imgur.com/0TAZZIy.png',
-            'Peach': 'https://i.imgur.com/fFLSjd8.png',
-            'Jigglypuff': 'https://i.imgur.com/AzFEkw2.png',
-            'Captain Falcon': 'https://i.imgur.com/fcaKRdi.png',
-            'Samus': 'https://i.imgur.com/Yd9DP9r.png',
-            'Ice Climbers': 'https://i.imgur.com/iHFuxww.png',
-            'Pikachu': 'https://i.imgur.com/0GZF02r.png',
-            'Yoshi': 'https://i.imgur.com/XskW1p3.png',
-            'Luigi': 'https://i.imgur.com/uM1DTyz.png',
-            'Ganondorf': 'https://i.imgur.com/l9xQfyT.png',
-            'Dr. Mario': 'https://i.imgur.com/okOuokD.png',
-            'Donkey Kong': 'https://i.imgur.com/2hdsXlA.png'
-        };
+    <script type="module">
 
-        let currentFilter = 'all';
-        let currentTypeFilter = 'all';
-        let notes = [];
+// ===== slippi-js via esm.sh =====
+import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
 
-        // Check if a note is a concept/lesson based on player name
-        function isConceptNote(note) {
-            const conceptKeywords = ['advice', 'concept', 'notes from', 'lesson', 'how to beat'];
-            const playerName = note.playerName.toLowerCase();
-            return conceptKeywords.some(keyword => playerName.includes(keyword));
-        }
+// ===== Character data =====
+const characterIcons = {
+    'Fox': 'https://i.imgur.com/2WVNM7m.png', 'Falco': 'https://i.imgur.com/dbyctg5.png',
+    'Marth': 'https://i.imgur.com/HJT5ZTS.png', 'Sheik': 'https://i.imgur.com/0TAZZIy.png',
+    'Peach': 'https://i.imgur.com/fFLSjd8.png', 'Jigglypuff': 'https://i.imgur.com/AzFEkw2.png',
+    'Captain Falcon': 'https://i.imgur.com/fcaKRdi.png', 'Samus': 'https://i.imgur.com/Yd9DP9r.png',
+    'Ice Climbers': 'https://i.imgur.com/iHFuxww.png', 'Pikachu': 'https://i.imgur.com/0GZF02r.png',
+    'Yoshi': 'https://i.imgur.com/XskW1p3.png', 'Luigi': 'https://i.imgur.com/uM1DTyz.png',
+    'Ganondorf': 'https://i.imgur.com/l9xQfyT.png', 'Dr. Mario': 'https://i.imgur.com/okOuokD.png',
+    'Donkey Kong': 'https://i.imgur.com/2hdsXlA.png'
+};
 
-        // Load notes from JSON file
-        async function loadNotesFromFile() {
-            try {
-                const response = await fetch('player-notes.json');
-                if (response.ok) {
-                    notes = await response.json();
-                    displayNotes();
-                } else {
-                    console.log('No notes file found, starting fresh');
-                    notes = [];
-                    displayNotes();
-                }
-            } catch (error) {
-                console.log('Error loading notes:', error);
-                notes = [];
-                displayNotes();
-            }
-        }
+// Slippi internal character IDs -> name
+const CHAR_NAMES = {
+    0:'Captain Falcon',1:'Donkey Kong',2:'Fox',3:'Game & Watch',4:'Kirby',5:'Bowser',
+    6:'Link',7:'Luigi',8:'Mario',9:'Marth',10:'Mewtwo',11:'Ness',12:'Peach',13:'Pikachu',
+    14:'Ice Climbers',15:'Jigglypuff',16:'Samus',17:'Yoshi',18:'Zelda',19:'Sheik',
+    20:'Falco',21:'Young Link',22:'Dr. Mario',23:'Roy',24:'Pichu',25:'Ganondorf'
+};
 
-        // Load notes (kept for compatibility)
-        function loadNotes() {
-            return notes;
-        }
+// Player colors for canvas rendering
+const PLAYER_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12'];
 
-        // Save notes (kept for compatibility)
-        function saveNotes(newNotes) {
-            notes = newNotes;
-        }
+// Stage blast zone / platform data (approximate, in Melee units)
+const STAGE_DATA = {
+    2:  { name:'Fountain of Dreams', x:[-198,198], y:[-146,202], platforms:[[-84,84,27],[-20,20,42],[-84,-20,27]] },
+    3:  { name:'Pokémon Stadium',    x:[-230,230], y:[-111,180], platforms:[[-110,-50,25],[50,110,25]] },
+    8:  { name:'Yoshi\'s Story',     x:[-176,173], y:[-112,168], platforms:[[-59,0,23],[0,59,23]] },
+    28: { name:'Dream Land',         x:[-255,255], y:[-123,250], platforms:[[-77,-17,30],[17,77,30],[-30,30,52]] },
+    31: { name:'Battlefield',        x:[-224,224], y:[-108,200], platforms:[[-71,-6,27],[6,71,27],[-33,33,54]] },
+    32: { name:'Final Destination',  x:[-246,246], y:[-140,188], platforms:[] },
+};
 
-        // Export notes as JSON file
-        function exportNotes() {
-            const dataStr = JSON.stringify(notes, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'player-notes.json';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            alert('Notes exported! Replace the player-notes.json file in your repo with this downloaded file, then commit and push to GitHub.');
-        }
+// ===== Notes state =====
+let currentFilter = 'all';
+let currentTypeFilter = 'all';
+let notes = [];
 
-        // Import notes from JSON file
-        function importNotes(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+function isConceptNote(note) {
+    const kw = ['advice','concept','notes from','lesson','how to beat'];
+    return kw.some(k => note.playerName.toLowerCase().includes(k));
+}
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedNotes = JSON.parse(e.target.result);
-                    notes = importedNotes;
-                    displayNotes();
-                    alert('Notes imported successfully!');
-                } catch (error) {
-                    alert('Error importing notes. Please make sure the file is valid JSON.');
-                }
-            };
-            reader.readAsText(file);
-        }
+async function loadNotesFromFile() {
+    try {
+        const r = await fetch('player-notes.json');
+        notes = r.ok ? await r.json() : [];
+    } catch { notes = []; }
+    displayNotes();
+}
 
-        // Display notes
-        function displayNotes() {
-            const notes = loadNotes();
-            const container = document.getElementById('notesContainer');
-            
-            // Filter by character
-            let filteredNotes = currentFilter === 'all' 
-                ? notes 
-                : notes.filter(note => note.character === currentFilter);
-            
-            // Filter by type
-            if (currentTypeFilter === 'players') {
-                filteredNotes = filteredNotes.filter(note => !isConceptNote(note));
-            } else if (currentTypeFilter === 'concepts') {
-                filteredNotes = filteredNotes.filter(note => isConceptNote(note));
-            }
-            
-            if (filteredNotes.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #999; padding: 2rem;">No notes yet. Add your first player note above!</p>';
-                return;
-            }
-            
-            container.innerHTML = filteredNotes.map((note, index) => {
-                const originalIndex = notes.indexOf(note);
-                return `
-                <div class="note-card" id="note-${originalIndex}">
-                    <div class="note-actions">
-                        <button class="edit-btn" onclick="editNote(${originalIndex})">Edit</button>
-                        <button class="delete-btn" onclick="deleteNote(${originalIndex})">Delete</button>
-                    </div>
-                    <div class="note-header">
-                        <img src="${characterIcons[note.character]}" alt="${note.character}">
-                        <div>
-                            <div class="note-player">${note.playerName}</div>
-                            <div style="color: #667eea; font-weight: 600;">${note.character}</div>
-                        </div>
-                    </div>
-                    <div class="note-content">${note.notes}</div>
-                    <div class="edit-form">
-                        <input type="text" id="edit-player-${originalIndex}" value="${note.playerName}" placeholder="Player Name">
-                        <select id="edit-char-${originalIndex}">
-                            <option value="Fox" ${note.character === 'Fox' ? 'selected' : ''}>Fox</option>
-                            <option value="Falco" ${note.character === 'Falco' ? 'selected' : ''}>Falco</option>
-                            <option value="Marth" ${note.character === 'Marth' ? 'selected' : ''}>Marth</option>
-                            <option value="Sheik" ${note.character === 'Sheik' ? 'selected' : ''}>Sheik</option>
-                            <option value="Peach" ${note.character === 'Peach' ? 'selected' : ''}>Peach</option>
-                            <option value="Jigglypuff" ${note.character === 'Jigglypuff' ? 'selected' : ''}>Jigglypuff</option>
-                            <option value="Captain Falcon" ${note.character === 'Captain Falcon' ? 'selected' : ''}>Captain Falcon</option>
-                            <option value="Samus" ${note.character === 'Samus' ? 'selected' : ''}>Samus</option>
-                            <option value="Ice Climbers" ${note.character === 'Ice Climbers' ? 'selected' : ''}>Ice Climbers</option>
-                            <option value="Pikachu" ${note.character === 'Pikachu' ? 'selected' : ''}>Pikachu</option>
-                            <option value="Yoshi" ${note.character === 'Yoshi' ? 'selected' : ''}>Yoshi</option>
-                            <option value="Luigi" ${note.character === 'Luigi' ? 'selected' : ''}>Luigi</option>
-                            <option value="Ganondorf" ${note.character === 'Ganondorf' ? 'selected' : ''}>Ganondorf</option>
-                            <option value="Dr. Mario" ${note.character === 'Dr. Mario' ? 'selected' : ''}>Dr. Mario</option>
-                            <option value="Donkey Kong" ${note.character === 'Donkey Kong' ? 'selected' : ''}>Donkey Kong</option>
-                        </select>
-                        <textarea id="edit-notes-${originalIndex}">${note.notes}</textarea>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button class="save-btn" onclick="saveEdit(${originalIndex})">Save</button>
-                            <button class="cancel-btn" onclick="cancelEdit(${originalIndex})">Cancel</button>
-                        </div>
-                    </div>
-                    <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}</div>
+function loadNotes() { return notes; }
+function saveNotes(n) { notes = n; }
+
+function exportNotes() {
+    const blob = new Blob([JSON.stringify(notes, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'player-notes.json';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    alert('Notes exported! Replace player-notes.json in your repo, then commit and push.');
+}
+window.exportNotes = exportNotes;
+
+function importNotes(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try { notes = JSON.parse(e.target.result); displayNotes(); alert('Notes imported!'); }
+        catch { alert('Invalid JSON file.'); }
+    };
+    reader.readAsText(file);
+}
+window.importNotes = importNotes;
+
+function displayNotes() {
+    const container = document.getElementById('notesContainer');
+    let filtered = currentFilter === 'all' ? notes : notes.filter(n => n.character === currentFilter);
+    if (currentTypeFilter === 'players') filtered = filtered.filter(n => !isConceptNote(n));
+    else if (currentTypeFilter === 'concepts') filtered = filtered.filter(n => isConceptNote(n));
+
+    if (!filtered.length) {
+        container.innerHTML = '<p style="text-align:center;color:#999;padding:2rem;">No notes yet. Add your first player note above!</p>';
+        return;
+    }
+
+    container.innerHTML = filtered.map(note => {
+        const idx = notes.indexOf(note);
+        const hasReplay = !!note.slpFileName;
+        const replayBadge = hasReplay ? `<span class="note-replay-badge">🎮 ${note.slpFileName}</span>` : '';
+        return `
+        <div class="note-card ${hasReplay ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})">
+            <div class="note-actions">
+                <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
+                <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
+            </div>
+            <div class="note-header">
+                <img src="${characterIcons[note.character] || ''}" alt="${note.character}">
+                <div>
+                    <div class="note-player">${note.playerName}${replayBadge}</div>
+                    <div style="color:#667eea;font-weight:600;">${note.character}</div>
                 </div>
-            `;
-            }).join('');
+            </div>
+            <div class="note-content">${note.notes}</div>
+            <div class="edit-form">
+                <input type="text" id="edit-player-${idx}" value="${note.playerName.replace(/"/g,'&quot;')}" placeholder="Player Name">
+                <select id="edit-char-${idx}">
+                    ${['Fox','Falco','Marth','Sheik','Peach','Jigglypuff','Captain Falcon','Samus','Ice Climbers','Pikachu','Yoshi','Luigi','Ganondorf','Dr. Mario','Donkey Kong'].map(c=>`<option value="${c}" ${note.character===c?'selected':''}>${c}</option>`).join('')}
+                </select>
+                <textarea id="edit-notes-${idx}">${note.notes}</textarea>
+                <input type="text" id="edit-slp-${idx}" value="${note.slpFileName||''}" placeholder="Replay filename (e.g. Game_20260308T123456.slp)">
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="save-btn" onclick="saveEdit(${idx})">Save</button>
+                    <button class="cancel-btn" onclick="cancelEdit(${idx})">Cancel</button>
+                </div>
+            </div>
+            <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}</div>
+        </div>`;
+    }).join('');
+}
+
+document.getElementById('noteForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const newNote = {
+        playerName: document.getElementById('playerName').value,
+        character: document.getElementById('character').value,
+        notes: document.getElementById('notes').value,
+        slpFileName: document.getElementById('slpFileName').value.trim() || null,
+        date: new Date().toISOString()
+    };
+    notes.unshift(newNote);
+    document.getElementById('noteForm').reset();
+    displayNotes();
+});
+
+window.deleteNote = idx => {
+    if (confirm('Delete this note?')) { notes.splice(idx, 1); displayNotes(); }
+};
+window.editNote = idx => document.getElementById(`note-${idx}`).classList.add('edit-mode');
+window.cancelEdit = idx => document.getElementById(`note-${idx}`).classList.remove('edit-mode');
+window.saveEdit = idx => {
+    const p = document.getElementById(`edit-player-${idx}`).value;
+    const c = document.getElementById(`edit-char-${idx}`).value;
+    const n = document.getElementById(`edit-notes-${idx}`).value;
+    const s = document.getElementById(`edit-slp-${idx}`).value.trim();
+    if (!p || !c || !n) { alert('Fill in all required fields'); return; }
+    notes[idx] = { ...notes[idx], playerName: p, character: c, notes: n, slpFileName: s || null };
+    displayNotes();
+};
+
+document.querySelectorAll('.char-filter-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (this.dataset.type) {
+            document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentTypeFilter = this.dataset.type;
+        } else {
+            document.querySelectorAll('[data-char]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.dataset.char;
         }
+        displayNotes();
+    });
+});
 
-        // Add new note
-        document.getElementById('noteForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const playerName = document.getElementById('playerName').value;
-            const character = document.getElementById('character').value;
-            const notes = document.getElementById('notes').value;
-            
-            const newNote = {
-                playerName,
-                character,
-                notes,
-                date: new Date().toISOString()
-            };
-            
-            const allNotes = loadNotes();
-            allNotes.unshift(newNote); // Add to beginning
-            saveNotes(allNotes);
-            
-            // Clear form
-            document.getElementById('noteForm').reset();
-            
-            // Refresh display
-            displayNotes();
-        });
+// ===== REPLAY VIEWER =====
+let replayGame = null;
+let replayFrames = null;
+let replaySettings = null;
+let currentFrame = 0;
+let totalFrames = 0;
+let isPlaying = true;
+let playbackSpeed = 1;
+let animFrameId = null;
+let lastTimestamp = null;
+let frameAccum = 0;
+let activeNoteIdx = null;
 
-        // Delete note
-        function deleteNote(index) {
-            if (confirm('Are you sure you want to delete this note?')) {
-                const notes = loadNotes();
-                notes.splice(index, 1);
-                saveNotes(notes);
-                displayNotes();
-            }
+window.openReplayModal = idx => {
+    activeNoteIdx = idx;
+    const note = notes[idx];
+    document.getElementById('replayModalTitle').textContent = `🎮 ${note.playerName} — ${note.character}`;
+    const hint = document.getElementById('replayFilenameHint');
+    hint.textContent = note.slpFileName ? `Looking for: ${note.slpFileName}` : 'No filename saved for this note';
+    document.getElementById('replayLoadArea').style.display = 'block';
+    document.getElementById('replayViewerArea').style.display = 'none';
+    document.getElementById('replayStatus').style.display = 'none';
+    document.getElementById('replayModalOverlay').classList.add('open');
+    stopPlayback();
+    replayGame = null; replayFrames = null;
+};
+
+window.closeReplayModal = () => {
+    document.getElementById('replayModalOverlay').classList.remove('open');
+    stopPlayback();
+};
+
+// Close on overlay click
+document.getElementById('replayModalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('replayModalOverlay')) closeReplayModal();
+});
+
+window.loadSlpFile = async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const status = document.getElementById('replayStatus');
+    status.style.display = 'block';
+    status.textContent = '⏳ Parsing replay...';
+    document.getElementById('replayLoadArea').style.display = 'none';
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const uint8 = new Uint8Array(buffer);
+        replayGame = new SlippiGame(uint8);
+        replaySettings = replayGame.getSettings();
+        replayFrames = replayGame.getFrames();
+
+        const frameKeys = Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
+        totalFrames = frameKeys.length;
+
+        if (!totalFrames) throw new Error('No frames found in replay');
+
+        currentFrame = 0;
+        isPlaying = true;
+        document.getElementById('replayTimeline').max = totalFrames - 1;
+        document.getElementById('replayTimeline').value = 0;
+
+        buildInfoBar(replaySettings, file.name);
+        status.style.display = 'none';
+        document.getElementById('replayViewerArea').style.display = 'block';
+        document.getElementById('playPauseBtn').textContent = '⏸ Pause';
+        document.getElementById('playPauseBtn').classList.add('active');
+
+        startPlayback();
+    } catch(err) {
+        status.textContent = `❌ Error: ${err.message}`;
+        document.getElementById('replayLoadArea').style.display = 'block';
+    }
+    event.target.value = '';
+};
+
+function buildInfoBar(settings, filename) {
+    const stage = STAGE_DATA[settings.stageId];
+    const stageName = stage ? stage.name : `Stage ${settings.stageId}`;
+    const players = settings.players.map(p => {
+        const charName = CHAR_NAMES[p.characterId] || `Char ${p.characterId}`;
+        return `${p.displayName || p.nametag || `P${p.port+1}`} (${charName})`;
+    }).join(' vs ');
+    document.getElementById('replayInfoBar').innerHTML =
+        `<span>📁 ${filename}</span><span>🗺 ${stageName}</span><span>👥 ${players}</span>`;
+}
+
+function getFrameKeys() {
+    return Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
+}
+
+function renderFrame(frameIdx) {
+    if (!replayFrames || !replaySettings) return;
+    const keys = getFrameKeys();
+    if (frameIdx < 0 || frameIdx >= keys.length) return;
+    const frameNum = keys[frameIdx];
+    const frame = replayFrames[frameNum];
+    if (!frame) return;
+
+    const canvas = document.getElementById('replayCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    // Stage bounds
+    const stageId = replaySettings.stageId;
+    const stage = STAGE_DATA[stageId] || { x:[-230,230], y:[-150,200], platforms:[] };
+    const [bx0, bx1] = stage.x;
+    const [by0, by1] = stage.y;
+    const stageW = bx1 - bx0, stageH = by1 - by0;
+    const pad = 40;
+    const scaleX = (W - pad*2) / stageW;
+    const scaleY = (H - pad*2) / stageH;
+    const scale = Math.min(scaleX, scaleY);
+    const offX = W/2 - (bx0 + stageW/2) * scale;
+    const offY = H/2 + (by0 + stageH/2) * scale;
+
+    const toCanvasX = x => x * scale + offX;
+    const toCanvasY = y => -y * scale + offY;
+
+    // Background
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, W, H);
+
+    // Blast zones
+    ctx.strokeStyle = 'rgba(255,80,80,0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.strokeRect(toCanvasX(bx0), toCanvasY(by1), stageW*scale, stageH*scale);
+    ctx.setLineDash([]);
+
+    // Main stage platform (ground)
+    const groundY = 0;
+    ctx.fillStyle = '#2d4a7a';
+    ctx.fillRect(toCanvasX(bx0*0.55), toCanvasY(groundY+2), stageW*0.55*scale, 4);
+
+    // Side platforms
+    ctx.fillStyle = '#3a5a8a';
+    (stage.platforms || []).forEach(([px0, px1, py]) => {
+        ctx.fillRect(toCanvasX(px0), toCanvasY(py+2), (px1-px0)*scale, 4);
+    });
+
+    // Stage label
+    ctx.fillStyle = 'rgba(100,120,200,0.5)';
+    ctx.font = '12px monospace';
+    ctx.fillText(STAGE_DATA[stageId]?.name || `Stage ${stageId}`, 10, 20);
+
+    // Frame counter display
+    ctx.fillStyle = '#aaa';
+    ctx.font = '11px monospace';
+    ctx.fillText(`Frame ${frameNum} (${Math.floor(frameNum/60)}s)`, W - 130, 20);
+
+    // Players
+    const players = replaySettings.players;
+    const hudParts = [];
+
+    players.forEach((player, i) => {
+        const pFrame = frame.players?.[player.port];
+        if (!pFrame) return;
+        const pre = pFrame.pre;
+        const post = pFrame.post;
+        if (!pre && !post) return;
+        const data = post || pre;
+
+        const px = toCanvasX(data.positionX);
+        const py = toCanvasY(data.positionY);
+        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const charName = CHAR_NAMES[player.characterId] || `P${player.port+1}`;
+        const tag = player.displayName || player.nametag || `P${player.port+1}`;
+
+        // Facing direction indicator
+        const facing = data.facingDirection || 1;
+
+        // Shadow
+        ctx.beginPath();
+        ctx.ellipse(px, toCanvasY(0)+2, 14, 4, 0, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fill();
+
+        // Body circle
+        ctx.beginPath();
+        ctx.arc(px, py, 14, 0, Math.PI*2);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Facing arrow
+        ctx.beginPath();
+        ctx.moveTo(px + facing*14, py);
+        ctx.lineTo(px + facing*22, py);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px + facing*22, py);
+        ctx.lineTo(px + facing*18, py-4);
+        ctx.moveTo(px + facing*22, py);
+        ctx.lineTo(px + facing*18, py+4);
+        ctx.stroke();
+
+        // Name tag
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(tag, px, py - 20);
+        ctx.textAlign = 'left';
+
+        // HUD data
+        const stocks = post?.stocksRemaining ?? pre?.stocksRemaining ?? '?';
+        const percent = (post?.percent ?? pre?.percent ?? 0).toFixed(1);
+        hudParts.push({ tag, charName, color, stocks, percent });
+    });
+
+    // Update HUD
+    const hud = document.getElementById('replayHud');
+    hud.innerHTML = hudParts.map(p => `
+        <div class="player-hud">
+            <div class="stock-dot" style="background:${p.color};width:16px;height:16px;border-radius:50%;"></div>
+            <strong style="color:${p.color}">${p.tag}</strong>
+            <span style="color:#aaa">${p.charName}</span>
+            <div class="stock-icons">${Array.from({length:p.stocks||0},()=>`<div class="stock-dot" style="background:${p.color}"></div>`).join('')}</div>
+            <span style="color:#fff;font-weight:700">${p.percent}%</span>
+        </div>
+    `).join('<div style="color:#555">vs</div>');
+
+    // Update timeline
+    document.getElementById('replayTimeline').value = frameIdx;
+    document.getElementById('frameCounter').textContent = `${frameIdx} / ${totalFrames - 1}`;
+}
+
+function startPlayback() {
+    stopPlayback();
+    lastTimestamp = null;
+    frameAccum = 0;
+    animFrameId = requestAnimationFrame(playLoop);
+}
+
+function stopPlayback() {
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+}
+
+function playLoop(ts) {
+    if (!isPlaying) { animFrameId = requestAnimationFrame(playLoop); return; }
+    if (lastTimestamp === null) lastTimestamp = ts;
+    const delta = ts - lastTimestamp;
+    lastTimestamp = ts;
+    frameAccum += delta * playbackSpeed * 60 / 1000;
+
+    while (frameAccum >= 1) {
+        frameAccum -= 1;
+        if (currentFrame < totalFrames - 1) {
+            currentFrame++;
+        } else {
+            currentFrame = 0; // loop
         }
+    }
+    renderFrame(currentFrame);
+    animFrameId = requestAnimationFrame(playLoop);
+}
 
-        // Edit note
-        function editNote(index) {
-            const noteCard = document.getElementById(`note-${index}`);
-            noteCard.classList.add('edit-mode');
-        }
+window.togglePlayback = () => {
+    isPlaying = !isPlaying;
+    const btn = document.getElementById('playPauseBtn');
+    btn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+    btn.classList.toggle('active', isPlaying);
+    if (isPlaying) lastTimestamp = null;
+};
 
-        // Cancel edit
-        function cancelEdit(index) {
-            const noteCard = document.getElementById(`note-${index}`);
-            noteCard.classList.remove('edit-mode');
-        }
+window.stepFrame = delta => {
+    isPlaying = false;
+    document.getElementById('playPauseBtn').textContent = '▶ Play';
+    document.getElementById('playPauseBtn').classList.remove('active');
+    currentFrame = Math.max(0, Math.min(totalFrames - 1, currentFrame + delta));
+    renderFrame(currentFrame);
+};
 
-        // Save edit
-        function saveEdit(index) {
-            const playerName = document.getElementById(`edit-player-${index}`).value;
-            const character = document.getElementById(`edit-char-${index}`).value;
-            const notes = document.getElementById(`edit-notes-${index}`).value;
+window.seekToFrame = idx => {
+    currentFrame = Math.max(0, Math.min(totalFrames - 1, idx));
+    renderFrame(currentFrame);
+};
 
-            if (!playerName || !character || !notes) {
-                alert('Please fill in all fields');
-                return;
-            }
+window.setSpeed = s => { playbackSpeed = s; };
 
-            const allNotes = loadNotes();
-            allNotes[index] = {
-                ...allNotes[index],
-                playerName,
-                character,
-                notes
-            };
-            saveNotes(allNotes);
-            displayNotes();
-        }
+// Keyboard shortcuts when modal is open
+document.addEventListener('keydown', e => {
+    if (!document.getElementById('replayModalOverlay').classList.contains('open')) return;
+    if (!replayFrames) return;
+    if (e.key === ' ') { e.preventDefault(); togglePlayback(); }
+    else if (e.key === 'ArrowRight') stepFrame(e.shiftKey ? 10 : 1);
+    else if (e.key === 'ArrowLeft') stepFrame(e.shiftKey ? -10 : -1);
+    else if (e.key === 'Escape') closeReplayModal();
+});
 
-        // Filter functionality
-        document.querySelectorAll('.char-filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Check if this is a type filter or character filter
-                if (this.dataset.type) {
-                    // Type filter
-                    document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentTypeFilter = this.dataset.type;
-                } else {
-                    // Character filter
-                    document.querySelectorAll('[data-char]').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    currentFilter = this.dataset.char;
-                }
-                displayNotes();
-            });
-        });
-
-        // Initial load
-        loadNotesFromFile();
+loadNotesFromFile();
     </script>
 </body>
 </html>
