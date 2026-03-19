@@ -63,6 +63,14 @@
 - [ ] **Timer display** — Melee-accurate timer with hundredths conversion
 - [ ] **Highlight navigation** — jump between notable moments (kills, combos, etc.)
 
+### Clips Panel
+- [x] **Clips panel** — collapsible sections for Kill Combos, Grabs, Edgeguards, Crouch Cancels, Missed L-Cancels, Shield Options, Ledge Options
+- [x] **Action dropdown** — select any action state to see all occurrences with frame ranges
+- [x] **Attack dropdown** — filtered to Attack/Landing actions
+- [x] **Click-to-seek** — clicking a clip row jumps to that frame
+- [x] **Layout restructure** — canvas+controls on left, controllers on right, clips panel below
+- [x] **Stick map overlay** — persistent container outside controller panel, updates with frame data
+
 ### Modularity
 - [ ] Extract replay viewer into standalone reusable module (embeddable on any page)
 - [ ] Concept-to-replay linking — click a concept and it opens the replay viewer at a specific moment
