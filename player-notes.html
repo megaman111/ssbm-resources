@@ -1255,17 +1255,19 @@ function renderFrame(frameIdx) {
 
     const players = replaySettings.players;
     const hudParts = [];
+    if (frameIdx === 0) console.log('[render] players:', JSON.stringify(players.map(p=>({port:p.port,charId:p.characterId,tag:p.displayName||p.nametag}))), 'frame keys sample:', Object.keys(frame.players||{}).slice(0,4));
 
     players.forEach((player, i) => {
         const pFrame = frame.players?.[player.port];
-        if (!pFrame) return;
+        if (!pFrame) { console.warn(`[render] No frame data for player ${i}, port=${player.port}, keys=`, Object.keys(frame.players||{})); return; }
         const post = pFrame.post;
         const pre = pFrame.pre;
         const data = post || pre;
-        if (!data) return;
+        if (!data) { console.warn(`[render] No post/pre for player ${i}`); return; }
 
         const gameX = data.positionX;
         const gameY = data.positionY;
+        if (gameX == null || gameY == null) { console.warn(`[render] Null position for player ${i}:`, gameX, gameY); return; }
         const px = toCanvasX(gameX);
         const py = toCanvasY(gameY);
         const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
