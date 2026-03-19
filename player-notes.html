@@ -2188,8 +2188,6 @@ function buildControllerSVG(pre, color, playerIdx) {
         <path fill="transparent" d="m 104.65234,199.2793 c 41.488,0 75.23438,33.75128 75.23438,75.23828 0,41.487 -33.74638,75.24023 -75.23438,75.24023 -41.486996,0 -75.238278,-33.75323 -75.238278,-75.24023 0,-41.487 33.751282,-75.23828 75.238278,-75.23828 z"/>
         <polygon fill="lightgray" stroke="black" stroke-width="2.5" points="${octPoints}"/>
         <circle fill="gray" stroke="black" stroke-width="2.5" cx="${stickCx}" cy="${stickCy}" r="35.1"/>
-        <!-- Clickable overlay on stick gate to open stick map -->
-        <circle cx="${gCx}" cy="${gCy}" r="${gR}" fill="transparent" style="cursor:pointer" data-stickmap="${playerIdx}"/>
         <path fill="transparent" d="M402 361.3c.4 0 .8.1 1.1.3l31.2 18a3 3 0 0 1 1.4 1.8l10.3 34.1a3 3 0 0 1-.3 2.4L427 451.2a3 3 0 0 1-1.9 1.5l-36.2 9.2a3 3 0 0 1-2.3-.3l-32.2-18.9a3 3 0 0 1-1.4-2l-8.7-37.1a3 3 0 0 1 .4-2.4l19.3-30a3 3 0 0 1 1.8-1.3l35-8.6h1.2z"/>
         <circle fill="gold" stroke="black" stroke-width="2.5" cx="395.2" cy="411.6" r="44.1"/>
         <circle fill="yellow" stroke="black" stroke-width="2.5" cx="${csCx}" cy="${csCy}" r="24.6"/>
@@ -2320,7 +2318,8 @@ function updateControllerPanel(frameIdx) {
         if (!isDoubles) {
             html += `<button class="savestate-btn" onclick="downloadSavestate(${player.playerIndex})">Download savestate</button>`;
         }
-        html += `</div><div class="controller-svg-wrap" style="position:relative;">${buildControllerSVG(pre, color, i)}`;
+        html += `</div><div class="controller-svg-wrap" style="position:relative;">${buildControllerSVG(pre, color, i)}
+        <div class="stickmap-click-target" data-stickmap="${i}" style="position:absolute;left:6%;top:35%;width:24%;height:24%;border-radius:50%;cursor:pointer;z-index:5;"></div>`;
         // Stick map overlay: if this player's stick map is open, render it
         if (stickMapPlayerIdx === i) {
             const jx = pre?.joystickX ?? 0;
@@ -2336,8 +2335,8 @@ function updateControllerPanel(frameIdx) {
     panel.innerHTML = html;
     panel.style.display = 'block';
 
-    // Event delegation for stick map toggle (inline onclick doesn't work in innerHTML SVG)
-    panel.querySelectorAll('[data-stickmap]').forEach(el => {
+    // Event delegation for stick map toggle
+    panel.querySelectorAll('.stickmap-click-target').forEach(el => {
         el.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleStickMap(parseInt(el.getAttribute('data-stickmap')));
