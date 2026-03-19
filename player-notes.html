@@ -763,6 +763,18 @@ const CHAR_SCALE_MAP = {
     25:1.08, // Ganondorf
 };
 
+// Per-character shield offset in game units [x, y] (from schmooblidon/slippi-visualiser)
+// x is multiplied by facing direction; both divided by 4.5 to convert to game coords
+// Characters not listed default to Fox's offset
+const CHAR_SHIELD_OFFSET = {
+    0:[5,34],   // Captain Falcon
+    2:[5,34],   // Fox
+    9:[5,40],   // Marth
+    15:[0,22],  // Jigglypuff
+    20:[10,40], // Falco
+};
+const DEFAULT_SHIELD_OFFSET = [5, 34];
+
 function getAnimFrame(charId, actionStateId, frameCounter) {
     const anims = animCache.get(charId);
     if (!anims) return null;
@@ -1455,22 +1467,79 @@ function renderFrame(frameIdx) {
         }
 
         // Shield bubble (when shielding)
-        // Action states 178-182 are GuardOn, Guard, GuardOff, GuardSetOff, GuardReflect
+        // Action states 0xB2-0xB6 (178-182): GuardOn, Guard, GuardOff, GuardSetOff, GuardReflect
         const isShielding = actionStateId >= 178 && actionStateId <= 182;
-        const shieldStrength = post?.shieldStrength ?? 60; // max is 60
-        if (isShielding && shieldStrength > 0) {
-            const shieldRadius = (shieldStrength / 60) * 12 * scale; // scale with shield health
-            const shieldAlpha = 0.4 + (shieldStrength / 60) * 0.3;
+        const shieldHP = post?.shieldSize ?? 60; // max 60
+        if (isShielding && shieldHP > 0) {
+            // Shield size in game units (from schmooblidon): (HP/60) * 7.7696875
+            const shieldGameRadius = (shieldHP / 60) * 7.7696875;
+            const shieldCanvasRadius = shieldGameRadius * scale;
+
+            // Shield position: player pos + character offset + stick tilt
+            const sOff = CHAR_SHIELD_OFFSET[charId] || DEFAULT_SHIELD_OFFSET;
+            let shieldX = gameX + (sOff[0] * facing / 4.5);
+            let shieldY = gameY + (sOff[1] / 4.5);
+
+            // Stick-based shield tilting (if not in shieldstun)
+            const isShieldStun = actionStateId === 181; // GuardSetOff
+            if (!isShieldStun && pre) {
+                const stickX = pre.joystickX ?? 0;
+                const stickY = pre.joystickY ?? 0;
+                const stickMag = Math.sqrt(stickX * stickX + stickY * stickY);
+                const stickAngle = Math.atan2(stickY, stickX);
+                const tiltOffset = stickMag * 3;
+                shieldX += Math.cos(stickAngle) * tiltOffset;
+                shieldY += Math.sin(stickAngle) * tiltOffset;
+            }
+
+            const sx = toCanvasX(shieldX);
+            const sy = toCanvasY(shieldY);
+
+            // Analog trigger affects opacity (higher analog = more opaque = smaller shield in-game,
+            // but visually we just show the shield bubble with trigger-based alpha)
+            const triggerAnalog = Math.max(pre?.physicalLTrigger ?? 0, pre?.physicalRTrigger ?? 0);
+            const shieldAlpha = 0.35 + 0.35 * (triggerAnalog / 140); // light press = translucent, hard press = more opaque
+
             ctx.save();
             ctx.beginPath();
-            // Shield is centered slightly above character center
-            ctx.arc(px, py - 5 * scale, shieldRadius, 0, Math.PI * 2);
+            ctx.arc(sx, sy, shieldCanvasRadius, 0, Math.PI * 2);
             ctx.fillStyle = color;
             ctx.globalAlpha = shieldAlpha;
             ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = 2;
-            ctx.globalAlpha = 0.8;
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.6;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Fox/Falco shine (reflector) visual effect
+        // Fox: SpecialLw states 360-369, Falco: SpecialLw states 360-369
+        const isFoxOrFalco = (charId === 2 || charId === 20);
+        const isShineState = isFoxOrFalco && (
+            (actionStateId >= 360 && actionStateId <= 364) || // grounded shine
+            (actionStateId >= 365 && actionStateId <= 369)    // aerial shine
+        );
+        if (isShineState) {
+            const shineRadius = 6 * scale; // approximate shine hitbox visual
+            const shinePhase = (actionStateCounter * 0.3) % (Math.PI * 2);
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(shinePhase);
+            // Draw hexagon
+            ctx.beginPath();
+            for (let h = 0; h < 6; h++) {
+                const angle = (Math.PI / 3) * h - Math.PI / 2;
+                const hx = Math.cos(angle) * shineRadius;
+                const hy = Math.sin(angle) * shineRadius;
+                if (h === 0) ctx.moveTo(hx, hy);
+                else ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.fillStyle = charId === 2 ? 'rgba(100,180,255,0.3)' : 'rgba(255,80,80,0.3)'; // blue for Fox, red for Falco
+            ctx.fill();
+            ctx.strokeStyle = charId === 2 ? 'rgba(100,200,255,0.8)' : 'rgba(255,100,100,0.8)';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
             ctx.restore();
         }
