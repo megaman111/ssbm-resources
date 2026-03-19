@@ -1421,15 +1421,14 @@ function renderFrame(frameIdx) {
         // Try SVG path silhouette
         const animFrame = getAnimFrame(charId, actionStateId, actionStateCounter);
         if (animFrame && animFrame.path) {
-            // SVG paths are in 1000x1000 viewBox, Y-down. Character head ≈ top, feet ≈ bottom.
-            // slippilab uses: translate(pos) scale(charScale) scale(facing,1) scale(0.1,-0.1) translate(-500,-500)
-            // The -0.1 Y flips SVG Y-down → game Y-up. Their root scaleY(-1) then flips back to screen.
-            // Our toCanvasY already does the root Y flip, so we replicate slippilab's scale(0.1,-0.1):
-            //   negative Y to flip SVG coords into game-up space (toCanvasY then flips to screen-down).
+            // SVG paths from potrace: 1000x1000 viewBox, Y-down, head≈Y340, feet≈Y500.
+            // translate(-500,-500) puts feet at origin = game position.
+            // Positive scaleY preserves SVG Y-down = canvas Y-down (head above feet).
+            // toCanvasY handles game→canvas Y flip for position only.
             ctx.save();
             ctx.translate(px, py);
             const cs = (CHAR_SCALE_MAP[charId] || 1.0) * 0.1 * scale;
-            ctx.scale(facing * cs, -cs);
+            ctx.scale(facing * cs, cs);
             ctx.translate(-500, -500);
             const p2d = new Path2D(animFrame.path);
             ctx.fillStyle = color;
