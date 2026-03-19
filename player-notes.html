@@ -2569,24 +2569,84 @@ function detectClips() {
                 ps.startFrame = fi;
             }
 
-            // Kill detection: stock count decreased
-            if (stocks < ps.stocks && ps.stocks > 0) {
-                // This player lost a stock — attribute kill to opponent
-                const killerIdx = ps.opponent;
-                const killerPort = killerIdx != null ? (players.find(x=>x.playerIndex===killerIdx)?.port ?? 0) : p.port;
-                clips.kills.push({ player: killerIdx ?? p.playerIndex, victim: p.playerIndex, port: killerPort, victimPort: p.port, frame: fi });
+            // Kill combo detection (slippilab-style):
+            // Sequence: opponent in hitstun → opponent dead (delayed)
+            // Always: opponent never in grounded control
+            // isDead: actionStateId 0x00-0x0a (0-10)
+            const oppIsDead = ps.opponent != null && (() => {
+                const oppPost2 = frame.players?.[ps.opponent]?.post;
+                if (!oppPost2) return false;
+                const oas = oppPost2.actionStateId ?? 14;
+                return oas >= 0x00 && oas <= 0x0a;
+            })();
+            const oppInHitstunForKill = ps.opponent != null && (() => {
+                const oppPost2 = frame.players?.[ps.opponent]?.post;
+                if (!oppPost2) return false;
+                const oas = oppPost2.actionStateId ?? 14;
+                return (oas >= 0x4b && oas <= 0x5b) || oas === 0x26;
+            })();
+            const oppInGroundedControl = ps.opponent != null && (() => {
+                const oppPost2 = frame.players?.[ps.opponent]?.post;
+                if (!oppPost2) return false;
+                const oas = oppPost2.actionStateId ?? 14;
+                return (oas >= 0x0e && oas <= 0x18) || (oas >= 0x27 && oas <= 0x29) || (oas >= 0x2c && oas <= 0x40) || oas === 0xd4;
+            })();
+
+            // Kill combo state machine: _kcPhase 0=waiting, 1=opp in hitstun
+            if (ps._kcPhase == null) ps._kcPhase = 0;
+            if (oppInGroundedControl) {
+                ps._kcPhase = 0; ps._kcStart = null;
+            } else if (ps._kcPhase === 0) {
+                if (oppInHitstunForKill) { ps._kcPhase = 1; ps._kcStart = fi; }
+            } else if (ps._kcPhase === 1) {
+                if (oppIsDead) {
+                    clips.kills.push({ player: p.playerIndex, victim: ps.opponent, port: p.port, victimPort: players.find(x=>x.playerIndex===ps.opponent)?.port ?? 0, frame: fi, start: ps._kcStart });
+                    ps._kcPhase = 0; ps._kcStart = null;
+                }
             }
             ps.stocks = stocks;
 
-            // Grab detection: Catch through ThrowLw (212-222)
-            if (asId >= 212 && asId <= 222) {
-                // In grab sequence (Catch through ThrowLw)
-                if (ps._grabStart == null) ps._grabStart = fi;
-                ps._grabEnd = fi;
-            } else {
-                if (ps._grabStart != null) {
-                    clips.grabs.push({ player: p.playerIndex, port: p.port, start: ps._grabStart, end: ps._grabEnd });
-                    ps._grabStart = null;
+            // Grab punish detection (slippilab-style):
+            // Sequence: opponent grabbed → opponent not dead AND (not grounded control OR offstage)
+            // isGrabbed: 0xdf-0xe8 (223-232) — these are the VICTIM's grabbed states (CaptureWait etc)
+            const oppIsGrabbed = ps.opponent != null && (() => {
+                const oppPost2 = frame.players?.[ps.opponent]?.post;
+                if (!oppPost2) return false;
+                const oas = oppPost2.actionStateId ?? 14;
+                return oas >= 0xdf && oas <= 0xe8;
+            })();
+            const oppOffstageForGrab = ps.opponent != null && (() => {
+                const oppPost2 = frame.players?.[ps.opponent]?.post;
+                if (!oppPost2) return false;
+                const stg = STAGE_DATA[replaySettings.stageId];
+                if (!stg) return false;
+                const ox = oppPost2.positionX ?? 0, oy = oppPost2.positionY ?? 0;
+                const lL = stg.ledge?.[0]?.[0] ?? -80, lR = stg.ledge?.[1]?.[0] ?? 80;
+                const mY = stg.ground?.[0]?.[1] ?? 0;
+                const oName = (oppPost2.actionStateId ?? 14) < ACTION_NAMES.length ? ACTION_NAMES[oppPost2.actionStateId ?? 14] : '';
+                if (oName.startsWith('Thrown')) return false;
+                return oy < mY - 10 || ox < lL || ox > lR;
+            })();
+
+            // Grab punish state machine: _gpPhase 0=waiting, 1=opp grabbed
+            if (ps._gpPhase == null) ps._gpPhase = 0;
+            if (ps._gpPhase === 0) {
+                if (oppIsGrabbed) { ps._gpPhase = 1; ps._gpStart = fi; }
+            } else if (ps._gpPhase === 1) {
+                if (!oppIsDead && (!oppInGroundedControl || oppOffstageForGrab)) {
+                    // Still in punish — keep tracking
+                    if (oppIsGrabbed) { /* still grabbed, continue */ }
+                    else { ps._gpEnd = fi; }
+                } else if (oppIsDead) {
+                    // Grab led to kill
+                    clips.grabs.push({ player: p.playerIndex, port: p.port, start: ps._gpStart, end: fi });
+                    ps._gpPhase = 0; ps._gpStart = null;
+                } else if (oppInGroundedControl && !oppOffstageForGrab) {
+                    // Opponent regained control on stage — punish over
+                    if (fi - ps._gpStart > 10) {
+                        clips.grabs.push({ player: p.playerIndex, port: p.port, start: ps._gpStart, end: fi });
+                    }
+                    ps._gpPhase = 0; ps._gpStart = null;
                 }
             }
 
@@ -2659,27 +2719,46 @@ function detectClips() {
             }
             ps._prevLCancel = lCancel;
 
-            // Shield options: GuardOn/Guard/GuardReflect/GuardSetOff (178-182) transitions
-            if (asId >= 178 && asId <= 182) {
-                if (ps._shieldStart == null) ps._shieldStart = fi;
-                ps._shieldEnd = fi;
-            } else {
-                if (ps._shieldStart != null) {
-                    const exitName = asName;
-                    clips.shieldOptions.push({ player: p.playerIndex, port: p.port, start: ps._shieldStart, end: fi, exit: exitName });
-                    ps._shieldStart = null;
-                }
+            // Shield options (slippilab-style): trigger on GuardSetOff (182)
+            // Record the frame of shield drop and what action follows
+            if (ps._prevAsId === 182 && asId !== 182) {
+                // Just exited GuardSetOff — the current action is the OOS option
+                clips.shieldOptions.push({ player: p.playerIndex, port: p.port, start: ps._shieldDropFrame ?? fi, end: fi, exit: asName });
+                ps._shieldDropFrame = null;
+            }
+            if (asId === 182 && ps._prevAsId !== 182) {
+                ps._shieldDropFrame = fi;
             }
 
-            // Ledge options: CliffCatch through CliffJumpQuick2 (252-263)
-            if (asId >= 252 && asId <= 263) {
-                if (ps._ledgeStart == null) ps._ledgeStart = fi;
-                ps._ledgeEnd = fi;
+            // Ledge options (slippilab-style): CliffWait (253) with opponent closer to center & not offstage
+            // Then not(CliffWait) for minimum 60 frames = meaningful ledge option
+            if (asId === 253) {
+                // In CliffWait — check if conditions met to start tracking
+                if (ps.opponent != null) {
+                    const myX = post.positionX ?? 0;
+                    const oppPost3 = frame.players?.[ps.opponent]?.post;
+                    if (oppPost3) {
+                        const oppX3 = oppPost3.positionX ?? 0;
+                        const oppY3 = oppPost3.positionY ?? 0;
+                        const stg = STAGE_DATA[replaySettings.stageId];
+                        const lL = stg?.ledge?.[0]?.[0] ?? -80, lR = stg?.ledge?.[1]?.[0] ?? 80;
+                        const mY = stg?.ground?.[0]?.[1] ?? 0;
+                        const oppCloser = Math.abs(myX) > Math.abs(oppX3);
+                        const oName3 = (oppPost3.actionStateId ?? 14) < ACTION_NAMES.length ? ACTION_NAMES[oppPost3.actionStateId ?? 14] : '';
+                        const oppOff = !oName3.startsWith('Thrown') && (oppY3 < mY - 10 || oppX3 < lL || oppX3 > lR);
+                        if (oppCloser && !oppOff) {
+                            if (ps._ledgeStart == null) ps._ledgeStart = fi;
+                        }
+                    }
+                }
+                ps._ledgeExitFrame = null; // reset exit tracking while on ledge
             } else {
                 if (ps._ledgeStart != null) {
-                    const exitName = asName;
-                    clips.ledgeOptions.push({ player: p.playerIndex, port: p.port, start: ps._ledgeStart, end: fi, exit: exitName });
-                    ps._ledgeStart = null;
+                    if (ps._ledgeExitFrame == null) ps._ledgeExitFrame = fi;
+                    if (fi - ps._ledgeExitFrame >= 60) {
+                        clips.ledgeOptions.push({ player: p.playerIndex, port: p.port, start: ps._ledgeStart, end: fi, exit: asName });
+                        ps._ledgeStart = null; ps._ledgeExitFrame = null;
+                    }
                 }
             }
 
@@ -2729,11 +2808,11 @@ function buildClipsPanel() {
     html += buildSection('kills', 'Kill Combos', clips.kills, k => {
         const c = portColor(k.port);
         const vc = portColor(k.victimPort);
-        return `<div class="clip-row" ${frameClick(Math.max(0, k.frame - 120))}>
+        return `<div class="clip-row" ${frameClick(k.start)}>
             <span class="clip-port" style="background:${c}20;color:${c};">P${k.port+1}</span>
             <span style="color:#666;font-size:0.7rem;">KO'd</span>
             <span class="clip-port" style="background:${vc}20;color:${vc};">P${k.victimPort+1}</span>
-            <span class="clip-frames">Frame ${k.frame}</span>
+            <span class="clip-frames">${k.start}–${k.frame}</span>
         </div>`;
     });
 
