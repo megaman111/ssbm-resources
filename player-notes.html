@@ -241,7 +241,7 @@
 import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
 import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
 
-const PROXY = 'https://relaxed-gingersnap-96defd.netlify.app/.netlify/functions/slippi-proxy';
+const ANIM_BASE = './animation-zips';
 
 // ===== Character data =====
 const characterIcons = {
@@ -416,7 +416,7 @@ async function loadCharAnimations(charId) {
 
     const promise = (async () => {
         try {
-            const res = await fetch(`${PROXY}?file=${zipName}.zip`);
+            const res = await fetch(`${ANIM_BASE}/${zipName}.zip`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const buf = await res.arrayBuffer();
             const files = unzipSync(new Uint8Array(buf));
@@ -452,11 +452,14 @@ function getAnimFrame(charId, actionStateId, frameCounter) {
 
     // Try exact match, then fallback chain
     let frames = anims.get(animName);
-    if (!frames) frames = anims.get('Wait');
+    if (!frames) frames = anims.get('Wait1'); // slippilab uses Wait1 not Wait
+    if (!frames) frames = anims.get('Wait2');
     if (!frames || !frames.length) return null;
 
     const idx = Math.max(0, frameCounter) % frames.length;
-    return frames[idx];
+    const frame = frames[idx];
+    // Frames are raw SVG path strings
+    return typeof frame === 'string' ? { path: frame } : frame;
 }
 
 // ===== localStorage replay storage =====
