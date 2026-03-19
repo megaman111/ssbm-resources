@@ -2590,28 +2590,66 @@ function detectClips() {
                 }
             }
 
-            // Edgeguard detection: opponent is offstage (below stage or past blast zone X)
+            // Edgeguard detection (slippilab-style):
+            // Sequence: opponent offstage → opponent exits hitstun → opponent hit again
+            // Always: opponent never in grounded control during the whole sequence
             const stageId = replaySettings.stageId;
             const stage = STAGE_DATA[stageId];
             if (stage && ps.opponent != null) {
-                const oppFrame = frame.players?.[ps.opponent]?.post;
-                if (oppFrame) {
-                    const oppX = oppFrame.positionX ?? 0;
-                    const oppY = oppFrame.positionY ?? 0;
-                    const offstage = oppY < stage.y[0] + 5 || Math.abs(oppX) > (stage.x[1] + 20);
-                    if (offstage && !ps._edgeguardStart) {
-                        ps._edgeguardStart = fi;
-                    } else if (!offstage && ps._edgeguardStart) {
-                        if (fi - ps._edgeguardStart > 15) {
-                            clips.edgeguards.push({ player: p.playerIndex, port: p.port, start: ps._edgeguardStart, end: fi });
+                const oppPost = frame.players?.[ps.opponent]?.post;
+                if (oppPost) {
+                    const oppX = oppPost.positionX ?? 0;
+                    const oppY = oppPost.positionY ?? 0;
+                    const oppAs = oppPost.actionStateId ?? 14;
+                    const oppActionName = oppAs < ACTION_NAMES.length ? ACTION_NAMES[oppAs] : '';
+                    // isOffstage: past ledge or below main platform - 10 (skip Thrown states)
+                    const ledgeL = stage.ledge?.[0]?.[0] ?? stage.ground?.[0]?.[0] ?? -80;
+                    const ledgeR = stage.ledge?.[1]?.[0] ?? stage.ground?.[stage.ground.length-1]?.[0] ?? 80;
+                    const mainY = stage.ground?.[0]?.[1] ?? 0;
+                    const isThrown = oppActionName.startsWith('Thrown');
+                    const oppOffstage = !isThrown && (oppY < mainY - 10 || oppX < ledgeL || oppX > ledgeR);
+                    // isInHitstun: 0x4b-0x5b (75-91) or 0x26 (38 = DamageBind)
+                    const oppInHitstun = (oppAs >= 0x4b && oppAs <= 0x5b) || oppAs === 0x26;
+                    // isInGroundedControl: 0x0e-0x18, 0x27-0x29, 0x2c-0x40, 0xd4
+                    const oppGrounded = (oppAs >= 0x0e && oppAs <= 0x18) || (oppAs >= 0x27 && oppAs <= 0x29) || (oppAs >= 0x2c && oppAs <= 0x40) || oppAs === 0xd4;
+
+                    // State machine: _egPhase 0=waiting, 1=opp offstage, 2=opp exited hitstun offstage
+                    if (ps._egPhase == null) ps._egPhase = 0;
+
+                    if (oppGrounded) {
+                        // Opponent regained grounded control — reset
+                        if (ps._egPhase > 0 && ps._egStart != null) ps._egStart = null;
+                        ps._egPhase = 0;
+                    } else if (ps._egPhase === 0) {
+                        // Waiting for opponent to go offstage
+                        if (oppOffstage) {
+                            ps._egPhase = 1;
+                            ps._egStart = fi;
                         }
-                        ps._edgeguardStart = null;
+                    } else if (ps._egPhase === 1) {
+                        // Opponent is offstage — wait for them to exit hitstun
+                        if (!oppOffstage) {
+                            ps._egPhase = 0; ps._egStart = null;
+                        } else if (!oppInHitstun) {
+                            ps._egPhase = 2; // They recovered from hitstun while offstage
+                        }
+                    } else if (ps._egPhase === 2) {
+                        // Opponent exited hitstun offstage — wait for them to get hit again
+                        if (!oppOffstage) {
+                            ps._egPhase = 0; ps._egStart = null;
+                        } else if (oppInHitstun) {
+                            // Got hit again while offstage = edgeguard!
+                            clips.edgeguards.push({ player: p.playerIndex, port: p.port, start: ps._egStart, end: fi });
+                            ps._egPhase = 1; // Reset to phase 1 (still offstage, could chain)
+                            ps._egStart = fi;
+                        }
                     }
                 }
             }
 
-            // Crouch cancel: in Squat/SquatWait (39-40) and taking damage
-            if ((asId >= 75 && asId <= 86) && (ps._prevAsId === 39 || ps._prevAsId === 40)) {
+            // Crouch cancel: was in SquatWait (0x28=40) and now in hitstun (0x4b-0x5b or 0x26)
+            const nowInHitstun = (asId >= 0x4b && asId <= 0x5b) || asId === 0x26;
+            if (nowInHitstun && ps._prevAsId === 0x28) {
                 clips.crouchCancels.push({ player: p.playerIndex, port: p.port, frame: fi });
             }
 
