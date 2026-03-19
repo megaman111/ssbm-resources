@@ -370,31 +370,55 @@ const ACTION_NAMES = [
 ];
 
 // Per-character animation name overrides (actionName -> zipAnimName)
-// From slippilab's character files — maps action names that differ from zip filenames
-const CHAR_ANIM_MAP = {
-    2: { // Fox (internal ID = 1 in slippilab, but we use external IDs)
-        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
-        'CatchDashPull':'CatchWait','CatchPull':'CatchWait',
-        'DamageIceJump':'Fall','EntryEnd':'Entry','EntryStart':'Entry',
-        'Escape':'EscapeN','FlyReflectWall':'WallDamage',
-        'GuardReflect':'Guard','GuardSetOff':'GuardDamage',
-        'KneeBend':'Landing','LandingFallSpecial':'Landing',
-        'Rebirth':'Entry','RebirthWait':'Wait1','Wait':'Wait1',
-    },
-    9: { // Marth
-        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
-        'CatchDashPull':'CatchWait','CatchPull':'CatchWait',
-        'EntryEnd':'Entry','EntryStart':'Entry',
-        'Escape':'EscapeN','FlyReflectWall':'WallDamage',
-        'GuardReflect':'Guard','GuardSetOff':'GuardDamage',
-        'KneeBend':'Landing','LandingFallSpecial':'Landing',
-        'Rebirth':'Entry','RebirthWait':'Wait1','Wait':'Wait1',
-    },
+// Common animation name overrides — maps game action names to zip filenames
+// Applied to all characters, then per-character overrides on top
+const COMMON_ANIM_MAP = {
+    'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+    'CatchDashPull':'CatchWait','CatchPull':'CatchWait',
+    'DamageIceJump':'Fall','EntryEnd':'Entry','EntryStart':'Entry',
+    'Escape':'EscapeN','FlyReflectWall':'WallDamage',
+    'GuardReflect':'Guard','GuardSetOff':'GuardDamage',
+    'KneeBend':'Landing','LandingFallSpecial':'Landing',
+    'Rebirth':'Entry','RebirthWait':'Entry',
 };
+// Characters whose zip uses Wait1.json (need Wait→Wait1 mapping)
+// Luigi(7),Ganondorf(25),Mewtwo(10),Mario(8),DrMario(22),Roy(23),Pichu(24),
+// Bowser(5),Kirby(4),Zelda(18),G&W(3),Falco(20),Fox(2),Marth(9),Sheik(19),
+// CaptainFalcon(0),Peach(12),Jigglypuff(15)
+const WAIT1_CHARS = new Set([0,2,3,4,5,7,8,9,10,12,15,18,19,20,22,23,24,25]);
+// Per-character extra overrides (beyond COMMON_ANIM_MAP)
+const CHAR_ANIM_EXTRA = {
+    21: {'AppealR':'Appeal','AppealL':'Appeal'}, // Young Link has separate appeals in specials
+};
+// Build merged CHAR_ANIM_MAP at load time
+const CHAR_ANIM_MAP = {};
+for (let i = 0; i <= 25; i++) {
+    const m = Object.assign({}, COMMON_ANIM_MAP);
+    if (WAIT1_CHARS.has(i)) { m['Wait'] = 'Wait1'; m['RebirthWait'] = 'Wait1'; }
+    if (CHAR_ANIM_EXTRA[i]) Object.assign(m, CHAR_ANIM_EXTRA[i]);
+    CHAR_ANIM_MAP[i] = m;
+}
 
 // Per-character special move mappings (actionStateId -> animName in zip)
-// From slippilab's fox.ts, marth.ts, etc.
+// From slippilab source — all 26 characters
 const CHAR_SPECIALS = {
+    0: { // Captain Falcon
+        347:'SpecialN',348:'SpecialAirN',349:'SpecialSStart',350:'SpecialS',
+        351:'SpecialAirSStart',352:'SpecialAirS',353:'SpecialHi',354:'SpecialAirHi',
+        355:'SpecialHiCatch',356:'SpecialHiThrow',357:'SpecialLw',358:'SpecialLwEnd',
+        359:'SpecialAirLw',360:'SpecialAirLwEnd',361:'SpecialAirLwEndAir',
+        362:'SpecialLwEndAir',363:'SpecialHiThrow',
+    },
+    1: { // Donkey Kong
+        351:'ThrowFWait',352:'ThrowFWalkSlow',353:'ThrowFWalkMiddle',354:'ThrowFWalkFast',
+        355:'ThrowFTurn',356:'ThrowFWait',357:'ThrowFWait',358:'ThrowFWait',359:'ThrowFWait',
+        361:'ThrowFF',362:'ThrowFB',363:'ThrowFHi',364:'ThrowFLw',
+        365:'ThrowFF',366:'ThrowFB',367:'ThrowFHi',368:'ThrowFLw',
+        369:'SpecialNStart',370:'SpecialNLoop',371:'SpecialNCansel',372:'SpecialN',373:'SpecialN',
+        374:'SpecialAirNStart',375:'SpecialAirNLoop',376:'SpecialAirNCansel',377:'SpecialAirN',378:'SpecialAirN',
+        379:'SpecialS',380:'SpecialAirS',381:'SpecialHi',382:'SpecialAirHi',
+        383:'SpecialLwStart',384:'SpecialLwLoop',385:'SpecialLwEnd',
+    },
     2: { // Fox
         341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',
         344:'SpecialAirNStart',345:'SpecialAirNLoop',346:'SpecialAirNEnd',
@@ -405,15 +429,57 @@ const CHAR_SPECIALS = {
         360:'SpecialLwStart',361:'SpecialLwLoop',362:'SpecialLwHit',363:'SpecialLwEnd',364:'SpecialLwLoop',
         365:'SpecialAirLwStart',366:'SpecialAirLwLoop',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',369:'SpecialAirLwLoop',
     },
-    20: { // Falco (same structure as Fox)
-        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',
-        344:'SpecialAirNStart',345:'SpecialAirNLoop',346:'SpecialAirNEnd',
-        347:'SpecialSStart',348:'SpecialS',349:'SpecialSEnd',
-        350:'SpecialAirSStart',351:'SpecialAirS',352:'SpecialAirSEnd',
-        353:'SpecialHiHold',354:'SpecialHiHoldAir',355:'SpecialHi',356:'SpecialHi',
-        357:'SpecialHiLanding',358:'SpecialHiFall',359:'SpecialHiBound',
-        360:'SpecialLwStart',361:'SpecialLwLoop',362:'SpecialLwHit',363:'SpecialLwEnd',364:'SpecialLwLoop',
-        365:'SpecialAirLwStart',366:'SpecialAirLwLoop',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',369:'SpecialAirLwLoop',
+    3: { // Game & Watch
+        341:'Attack11',342:'Attack11',343:'Attack100Start',344:'Attack100End',345:'AttackLw3',
+        346:'AttackS4',347:'AttackAirN',348:'AttackAirB',349:'AttackAirHi',
+        350:'LandingAirN',351:'LandingAirB',352:'LandingAirHi',
+        353:'SpecialN',354:'SpecialAirN',355:'SpecialS',356:'SpecialS',357:'SpecialS',
+        358:'SpecialS',359:'SpecialS',360:'SpecialS',361:'SpecialS',362:'SpecialS',363:'SpecialS',
+        364:'SpecialAirS',365:'SpecialAirS',366:'SpecialAirS',367:'SpecialAirS',368:'SpecialAirS',
+        369:'SpecialAirS',370:'SpecialAirS',371:'SpecialAirS',372:'SpecialAirS',
+        373:'SpecialHi',374:'SpecialAirHi',375:'SpecialLw',376:'SpecialLwCatch',
+        377:'SpecialLwShoot',378:'SpecialAirLw',379:'SpecialAirLwCatch',380:'SpecialAirLwShoot',
+    },
+    4: { // Kirby
+        341:'JumpAerialF1',342:'JumpAerialF2',343:'JumpAerialF3',344:'JumpAerialF4',345:'JumpAerialF5',
+        346:'JumpAerialF1Met',347:'JumpAerialF2Met',348:'JumpAerialF3Met',
+        349:'JumpAerialF4Met',350:'JumpAerialF5Met',351:'AttackDash',352:'AttackDash',
+        353:'SpecialN',354:'SpecialNLoop',355:'SpecialNEnd',356:'Eat',
+        359:'EatWait',360:'EatWalkSlow',361:'EatWalkMiddle',362:'EatWalkFast',
+        363:'EatTurn',364:'EatLanding',365:'EatJump1',366:'EatLanding',367:'SpecialNDrink',
+        369:'SpecialNSpit',371:'SpecialN',372:'SpecialNLoop',373:'SpecialNEnd',374:'Eat',
+        377:'EatWait',378:'SpecialNDrink',380:'SpecialNSpit',382:'EatTurn',
+        383:'SpecialS',384:'SpecialAirS',385:'SpecialHi1',386:'SpecialHi2',
+        387:'SpecialHi3',388:'SpecialHi4',389:'SpecialAirHi1',390:'SpecialAirHi2',
+        391:'SpecialAirHi3',392:'SpecialAirHi4',393:'SpecialLw1',394:'SpecialLw1',
+        395:'SpecialLw2',396:'SpecialAirLw1',397:'SpecialAirLw1',398:'SpecialAirLw2',
+    },
+    5: { // Bowser
+        341:'SpecialNStart',342:'SpecialN',343:'SpecialNEnd',
+        344:'SpecialAirNStart',345:'SpecialAirN',346:'SpecialAirNEnd',
+        347:'SpecialSStart',348:'SpecialSHit',349:'SpecialSHit',350:'SpecialSHit',
+        351:'SpecialSEndF',352:'SpecialSEndB',353:'SpecialAirSStart',
+        354:'SpecialAirSHit',355:'SpecialAirSHit',356:'SpecialAirSHit',
+        357:'SpecialAirSEndF',358:'SpecialAirSEndB',359:'SpecialHi',
+        360:'SpecialAirHi',361:'SpecialLw',362:'SpecialAirLw',363:'SpecialLwLanding',
+    },
+    6: { // Link
+        341:'AttackS42',344:'SpecialNStart',345:'SpecialNLoop',346:'SpecialNEnd',
+        347:'SpecialAirNStart',348:'SpecialAirNLoop',349:'SpecialAirNEnd',
+        350:'SpecialS1',351:'SpecialS2',352:'SpecialS1',
+        353:'SpecialAirS1',354:'SpecialAirS2',355:'SpecialAirS1',
+        356:'SpecialHi',357:'SpecialAirHi',358:'SpecialLw',359:'SpecialAirLw',
+        360:'AirCatch',361:'AirCatchHit',
+    },
+    7: { // Luigi
+        341:'SpecialN',342:'SpecialAirN',343:'SpecialSStart',344:'SpecialSHold',345:'SpecialSHold',
+        346:'SpecialSEnd',347:'SpecialS',348:'SpecialS',349:'SpecialAirSStart',
+        350:'SpecialAirSHold',351:'SpecialS',352:'SpecialAirSEnd',353:'SpecialS',354:'SpecialS',
+        355:'SpecialHi',356:'SpecialAirHi',357:'SpecialLw',358:'SpecialAirLw',
+    },
+    8: { // Mario
+        343:'SpecialN',344:'SpecialAirN',345:'SpecialS',346:'SpecialSAir',
+        347:'SpecialHi',348:'SpecialAirHi',349:'SpecialLw',350:'SpecialAirLw',
     },
     9: { // Marth
         341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',344:'SpecialNEnd',
@@ -423,18 +489,145 @@ const CHAR_SPECIALS = {
         358:'SpecialAirS1',359:'SpecialAirS2Hi',360:'SpecialAirS2Lw',
         361:'SpecialAirS3Hi',362:'SpecialAirS3S',363:'SpecialAirS3Lw',
         364:'SpecialAirS4Hi',365:'SpecialAirS4S',366:'SpecialAirS4Lw',
-        367:'SpecialHi',368:'SpecialAirHi',
-        369:'SpecialLw',370:'SpecialLwHit',371:'SpecialAirLw',372:'SpecialAirLwHit',
+        367:'SpecialHi',368:'SpecialAirHi',369:'SpecialLw',370:'SpecialLwHit',
+        371:'SpecialAirLw',372:'SpecialAirLwHit',
     },
-    0: { // Captain Falcon
-        347:'SpecialN',348:'SpecialNStart',349:'SpecialNEnd',
-        350:'SpecialAirN',351:'SpecialAirNStart',352:'SpecialAirNEnd',
-        353:'SpecialS',354:'SpecialSEnd',
-        355:'SpecialAirS',356:'SpecialAirSEnd',
-        357:'SpecialHi',358:'SpecialHiCatch',359:'SpecialHiThrow',
-        360:'SpecialAirHi',361:'SpecialAirHiCatch',362:'SpecialAirHiThrow',
-        363:'SpecialLw',364:'SpecialLwHit',365:'SpecialLwEnd',
-        366:'SpecialAirLw',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',
+    10: { // Mewtwo
+        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNLoop',344:'SpecialNCancel',345:'SpecialNEnd',
+        346:'SpecialAirNStart',347:'SpecialAirNLoop',348:'SpecialAirNLoop',
+        349:'SpecialAirNCancel',350:'SpecialAirNEnd',351:'SpecialS',352:'SpecialAirS',
+        353:'SpecialHiStart',354:'SpecialHiLost',355:'SpecialHi',
+        356:'SpecialAirHiStart',357:'SpecialHiLost',358:'SpecialAirHi',
+        359:'SpecialLw',360:'SpecialAirLw',
+    },
+    11: { // Ness
+        341:'AttackS4',342:'AttackHi4',343:'AttackHi4',344:'AttackHi4',
+        345:'AttackLw4',346:'AttackLw4',347:'AttackLw4',
+        348:'SpecialNStart',349:'SpecialNHold',350:'SpecialNEnd',351:'SpecialNEnd',
+        352:'SpecialAirNStart',353:'SpecialAirNHold',354:'SpecialAirNEnd',355:'SpecialAirNEnd',
+        356:'SpecialS',357:'SpecialAirS',358:'SpecialHiStart',359:'SpecialHiHold',
+        360:'SpecialHiEnd',361:'SpecialHi',362:'SpecialAirHiStart',363:'SpecialAirHiHold',
+        364:'SpecialAirHiEnd',365:'SpecialHi',366:'SpecialHi',
+        367:'SpecialLwStart',368:'SpecialLwHold',369:'SpecialLwHit',370:'SpecialLwEnd',
+        372:'SpecialAirLwStart',373:'SpecialAirLwHold',374:'SpecialAirLwHit',375:'SpecialAirLwEnd',
+    },
+    12: { // Peach
+        341:'Fuwafuwa',342:'FallF',343:'FallB',344:'AttackAirN',345:'AttackAirF',346:'AttackAirB',
+        347:'AttackAirHi',348:'AttackAirLw',349:'AttackS4',350:'AttackS4',351:'AttackS4',
+        352:'SpecialN',353:'SpecialAirN',354:'SpecialSStart',355:'SpecialSEnd',
+        357:'SpecialAirSStart',358:'SpecialAirSEnd',359:'SpecialAirS',360:'SpecialSJump',
+        361:'SpecialHiStart',362:'SpecialHiEnd',363:'SpecialAirHiStart',364:'SpecialAirHiEnd',
+        365:'SpecialLw',366:'SpecialLwHit',367:'SpecialAirLw',368:'SpecialAirLwHit',
+        369:'ItemParasolOpen',370:'ItemParasolFall',
+    },
+    13: { // Pikachu
+        341:'SpecialN',342:'SpecialN',343:'SpecialSStart',344:'SpecialSHold',
+        346:'SpecialSEnd',347:'SpecialS',348:'SpecialAirSStart',349:'SpecialAirSHold',
+        350:'SpecialS',351:'SpecialAirSEnd',352:'SpecialS',
+        353:'SpecialHiStart',354:'SpecialHiStart',355:'SpecialHiEnd',
+        356:'SpecialAirHiStart',357:'SpecialAirHiStart',358:'SpecialAirHiEnd',
+        359:'SpecialLwStart',360:'SpecialLwLoop',361:'SpecialLwEnd',362:'SpecialLwEnd',
+        363:'SpecialAirLwStart',364:'SpecialAirLwLoop',365:'SpecialAirLwEnd',366:'SpecialAirLwEnd',
+    },
+    14: { // Ice Climbers
+        341:'SpecialN',342:'SpecialAirN',343:'SpecialS1',344:'SpecialS2',
+        345:'SpecialAirS1',346:'SpecialAirS2',347:'SpecialHiStart',348:'SpecialHiThrow',
+        350:'SpecialHiStart',351:'SpecialHiThrow',352:'SpecialAirHiStart',
+        353:'SpecialAirHiThrow',354:'SpecialAirHiThrow2',355:'SpecialAirHiStart',
+        356:'SpecialAirHiThrow',357:'SpecialLw',358:'SpecialAirLw',
+        359:'NanaSpecialS2',360:'NanaSpecialAirS2',361:'NanaSpecialHiStart',
+        362:'NanaSpecialAirHiThrow',365:'NanaSpecialHiThrow',
+    },
+    15: { // Jigglypuff
+        341:'JumpAerialF1',342:'JumpAerialF2',343:'JumpAerialF3',344:'JumpAerialF4',345:'JumpAerialF5',
+        346:'SpecialNStartR',347:'SpecialNStartL',348:'SpecialN',349:'SpecialN',
+        350:'SpecialN',351:'SpecialN',352:'SpecialNEndR',353:'SpecialNEndL',
+        354:'SpecialAirNStartR',355:'SpecialAirNStartL',356:'SpecialN',357:'SpecialN',
+        358:'SpecialN',359:'SpecialN',360:'SpecialAirNEndR',361:'SpecialAirNEndL',
+        362:'DamageFall',363:'SpecialS',364:'SpecialAirS',
+        365:'SpecialHiL',366:'SpecialAirHiL',367:'SpecialHiR',368:'SpecialAirHiR',
+        369:'SpecialLwL',370:'SpecialAirLwL',371:'SpecialLwR',372:'SpecialAirLwR',
+    },
+    16: { // Samus
+        341:'SpecialLw',342:'SpecialAirLw',343:'SpecialNStart',344:'SpecialNHold',
+        345:'SpecialNCancel',346:'SpecialN',347:'SpecialAirNStart',348:'SpecialAirN',
+        349:'SpecialS',350:'SpecialS',351:'SpecialAirS',352:'SpecialAirS',
+        353:'SpecialHi',354:'SpecialAirHi',355:'SpecialLw',356:'SpecialAirLw',
+        357:'AirCatch',358:'AirCatchHit',
+    },
+    17: { // Yoshi
+        341:'Guard',342:'Guard',343:'GuardOff',344:'GuardDamage',345:'GuardOn',
+        346:'SpecialN1',347:'SpecialN2',349:'SpecialN2',
+        351:'SpecialAirN1',352:'SpecialAirN2',354:'SpecialAirN2',
+        356:'SpecialSStart',357:'SpecialSLoop',358:'SpecialSLoop',359:'SpecialSEnd',
+        360:'SpecialAirSStart',361:'SpecialSLoop',362:'SpecialSLoop',363:'SpecialAirSEnd',
+        364:'SpecialHi',365:'SpecialAirHi',366:'SpecialLw',367:'SpecialLwLanding',368:'SpecialAirLw',
+    },
+    18: { // Zelda
+        341:'SpecialN',342:'SpecialAirN',343:'SpecialSStart',344:'SpecialSLoop',345:'SpecialSEnd',
+        346:'SpecialAirSStart',347:'SpecialAirSLoop',348:'SpecialAirSEnd',
+        349:'SpecialHiStart',351:'SpecialHi',352:'SpecialAirHiStart',354:'SpecialAirHi',
+        355:'SpecialLw',356:'SpecialLw2',357:'SpecialAirLw',358:'SpecialAirLw2',
+    },
+    19: { // Sheik
+        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNCansel',344:'SpecialNEnd',
+        345:'SpecialAirNStart',346:'SpecialAirNLoop',347:'SpecialAirNCansel',348:'SpecialAirNEnd',
+        349:'SpecialSStart',350:'SpecialS',351:'SpecialSEnd',
+        352:'SpecialAirSStart',353:'SpecialAirS',354:'SpecialAirSEnd',
+        355:'SpecialHiStart',357:'SpecialHi',358:'SpecialAirHiStart',360:'SpecialAirHi',
+        361:'SpecialLw',362:'SpecialLw2',363:'SpecialAirLw',364:'SpecialAirLw2',
+    },
+    20: { // Falco
+        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',
+        344:'SpecialAirNStart',345:'SpecialAirNLoop',346:'SpecialAirNEnd',
+        347:'SpecialSStart',348:'SpecialS',349:'SpecialSEnd',
+        350:'SpecialAirSStart',351:'SpecialAirS',352:'SpecialAirSEnd',
+        353:'SpecialHiHold',354:'SpecialHiHoldAir',355:'SpecialHi',356:'SpecialHi',
+        357:'SpecialHiLanding',358:'SpecialHiFall',359:'SpecialHiBound',
+        360:'SpecialLwStart',361:'SpecialLwLoop',362:'SpecialLwHit',363:'SpecialLwEnd',364:'SpecialLw2',
+        365:'SpecialAirLwStart',366:'SpecialAirLwLoop',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',
+        369:'SpecialAirLwLoop',370:'AppealSStartR',371:'AppealSStartL',
+        372:'AppealSR',373:'AppealSL',374:'AppealSEndR',375:'AppealSEndL',
+    },
+    21: { // Young Link
+        341:'AttackS42',342:'AppealR',343:'AppealL',
+        344:'SpecialNStart',345:'SpecialNLoop',346:'SpecialNEnd',
+        347:'SpecialAirNStart',348:'SpecialAirNLoop',349:'SpecialAirNEnd',
+        350:'SpecialS1',351:'SpecialS2',352:'SpecialS1',
+        353:'SpecialAirS1',354:'SpecialAirS2',355:'SpecialAirS1',
+        356:'SpecialHi',357:'SpecialAirHi',358:'SpecialLw',359:'SpecialAirLw',
+        360:'AirCatch',361:'AirCatchHit',
+    },
+    22: { // Dr. Mario
+        341:'Appeal',343:'SpecialN',344:'SpecialAirN',345:'SpecialS',346:'SpecialSAir',
+        347:'SpecialHi',348:'SpecialAirHi',349:'SpecialLw',350:'SpecialAirLw',
+    },
+    23: { // Roy
+        341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',344:'SpecialNEnd',
+        345:'SpecialAirNStart',346:'SpecialAirNLoop',347:'SpecialAirNEnd',348:'SpecialAirNEnd',
+        349:'SpecialS1',350:'SpecialS2Hi',351:'SpecialS2Lw',352:'SpecialS3Hi',
+        353:'SpecialS3S',354:'SpecialS3Lw',355:'SpecialS4Hi',356:'SpecialS4S',357:'SpecialS4Lw',
+        358:'SpecialAirS1',359:'SpecialAirS2Hi',360:'SpecialAirS2Lw',
+        361:'SpecialAirS3Hi',362:'SpecialAirS3S',363:'SpecialAirS3Lw',
+        364:'SpecialAirS4Hi',365:'SpecialAirS4S',366:'SpecialAirS4Lw',
+        367:'SpecialHi',368:'SpecialAirHi',369:'SpecialLw',370:'SpecialLwHit',
+        371:'SpecialAirLw',372:'SpecialAirLwHit',
+    },
+    24: { // Pichu
+        341:'SpecialN',342:'SpecialN',343:'SpecialSStart',344:'SpecialSHold',
+        346:'SpecialSEnd',347:'SpecialS',348:'SpecialAirSStart',349:'SpecialAirSHold',
+        350:'SpecialS',351:'SpecialAirSEnd',352:'SpecialS',
+        353:'SpecialHiStart',354:'SpecialHiStart',355:'SpecialHiEnd',
+        356:'SpecialAirHiStart',357:'SpecialAirHiStart',358:'SpecialAirHiEnd',
+        359:'SpecialLwStart',360:'SpecialLwLoop',361:'SpecialLwEnd',362:'SpecialLwEnd',
+        363:'SpecialAirLwStart',364:'SpecialAirLwLoop',365:'SpecialAirLwEnd',366:'SpecialAirLwEnd',
+    },
+    25: { // Ganondorf
+        347:'SpecialN',348:'SpecialAirN',349:'SpecialSStart',350:'SpecialS',
+        351:'SpecialAirSStart',352:'SpecialAirS',353:'SpecialHi',354:'SpecialAirHi',
+        355:'SpecialHiCatch',356:'SpecialHiThrow',357:'SpecialLw',358:'SpecialLwEnd',
+        359:'SpecialAirLw',360:'SpecialAirLwEnd',361:'SpecialAirLwEndAir',
+        362:'SpecialLwEndAir',363:'SpecialHiThrow',
     },
 };
 
@@ -480,32 +673,32 @@ async function loadCharAnimations(charId) {
 
 // Character scale values from slippilab (keyed by external character ID)
 const CHAR_SCALE_MAP = {
-    0:1.18,  // Captain Falcon
+    0:0.97,  // Captain Falcon
     1:1.0,   // Donkey Kong
     2:0.96,  // Fox
-    3:1.0,   // Game & Watch
-    4:0.9,   // Kirby
-    5:1.2,   // Bowser
-    6:1.0,   // Link
-    7:0.95,  // Luigi
-    8:0.94,  // Mario
+    3:1.02,  // Game & Watch
+    4:0.92,  // Kirby
+    5:0.69,  // Bowser
+    6:1.22,  // Link
+    7:1.25,  // Luigi
+    8:1.1,   // Mario
     9:1.15,  // Marth
-    10:1.1,  // Mewtwo
-    11:0.94, // Ness
-    12:0.9,  // Peach
+    10:1.0,  // Mewtwo
+    11:1.0,  // Ness
+    12:1.15, // Peach
     13:0.9,  // Pikachu
-    14:0.92, // Ice Climbers
-    15:0.68, // Jigglypuff
-    16:1.0,  // Samus
-    17:1.02, // Yoshi
-    18:1.0,  // Zelda
-    19:0.96, // Sheik
-    20:0.96, // Falco
-    21:0.9,  // Young Link
-    22:0.94, // Dr. Mario
-    23:1.06, // Roy
-    24:0.7,  // Pichu
-    25:1.18, // Ganondorf
+    14:1.15, // Ice Climbers
+    15:0.94, // Jigglypuff
+    16:0.88, // Samus
+    17:1.05, // Yoshi
+    18:1.26, // Zelda
+    19:1.4,  // Sheik
+    20:1.1,  // Falco
+    21:0.96, // Young Link
+    22:1.1,  // Dr. Mario
+    23:1.08, // Roy
+    24:0.5,  // Pichu
+    25:1.08, // Ganondorf
 };
 
 function getAnimFrame(charId, actionStateId, frameCounter) {
