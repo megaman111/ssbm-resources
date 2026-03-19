@@ -1255,7 +1255,11 @@ function renderFrame(frameIdx) {
 
     const players = replaySettings.players;
     const hudParts = [];
-    if (frameIdx === 0) console.log('[render] players:', JSON.stringify(players.map(p=>({port:p.port,charId:p.characterId,tag:p.displayName||p.nametag}))), 'frame keys sample:', Object.keys(frame.players||{}).slice(0,4));
+    if (frameIdx === 0) {
+        console.log('[render] players:', JSON.stringify(players.map(p=>({idx:p.playerIndex,port:p.port,charId:p.characterId,tag:p.displayName||p.nametag}))));
+        console.log('[render] frame.players keys:', Object.keys(frame.players||{}));
+        console.log('[render] frame.players sample:', JSON.stringify(Object.fromEntries(Object.entries(frame.players||{}).map(([k,v])=>[k,{hasPost:!!v?.post,hasPre:!!v?.pre,posX:v?.post?.positionX??v?.pre?.positionX}]))));
+    }
 
     players.forEach((player, i) => {
         const pFrame = frame.players?.[player.playerIndex];
@@ -1289,14 +1293,15 @@ function renderFrame(frameIdx) {
         // Try SVG path silhouette
         const animFrame = getAnimFrame(charId, actionStateId, actionStateCounter);
         if (animFrame && animFrame.path) {
-            // Replicate slippilab's SVG transform chain in canvas:
-            // SVG: translate(gameX,gameY) scale(charScale) scale(facing,1) scale(.1,-.1) translate(-500,-500)
-            // Canvas: transforms apply in call order (last called = innermost)
+            // SVG paths are in 1000x1000 space, centered at (500,500), Y-down.
+            // slippilab chain: translate(-500,-500) → scale(0.1,-0.1) → scale(facing,1) → scale(charScale) → translate(gamePos)
+            // Our toCanvasY already flips Y (game Y-up → canvas Y-down), so we DON'T flip Y again here.
+            // We just need: translate(canvasPos) → scale(charScale * 0.1) → scale(facing for X) → scale(1,-1 for SVG Y-down→up) → translate(-500,-500)
             ctx.save();
             ctx.translate(px, py);
             const cs = (CHAR_SCALE_MAP[charId] || 1.0) * 0.1 * scale;
-            // scale(facing * cs, -cs): facing flips X, negative Y flips SVG Y-down to screen Y-up
-            ctx.scale(facing * cs, -cs);
+            // facing flips X; +cs for Y because toCanvasY already flipped game coords
+            ctx.scale(facing * cs, cs);
             ctx.translate(-500, -500);
             const p2d = new Path2D(animFrame.path);
             ctx.fillStyle = color;
