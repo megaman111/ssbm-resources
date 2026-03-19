@@ -46,6 +46,15 @@
 - [ ] Whispy wind indicator (Dream Land)
 - [ ] Pokemon Stadium transformations indicator
 
+### Controller & State Display
+- [x] **Controller visualization** — SVG GameCube controller per player showing all inputs (sticks, buttons, triggers, d-pad) in real-time
+- [x] **Player state info** — character name, animation state name, frame counter, hitlag/hitstun/invulnerability indicators
+- [x] **Download savestate button** — generates .gci savestate file (300 frames) using `@gcpreston/tm_replay_wasm`, loadable in Training Mode Community Edition
+- [x] **Hide savestate for doubles** — savestate button hidden when replay has >2 players (doubles .gci not supported yet)
+
+### DI / Trajectory
+- [ ] **DI line visualizer** — show the DI input direction as a line from the character when in hitstun/knockback, indicating where the player is holding to influence their trajectory
+
 ### UI/Controls
 - [x] **Debug mode** — show action state ID, frame counter, position, animation name per player (toggle with 'd' key)
 - [x] **Fullscreen mode** (toggle with 'f' key)

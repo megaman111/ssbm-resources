@@ -89,6 +89,17 @@
         .replay-info-bar { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.8rem; color: #888; padding: 0.5rem 0; }
         .replay-info-bar span { color: #a78bfa; }
         .replay-status { text-align: center; color: #667eea; padding: 1rem; font-size: 0.9rem; }
+        .controller-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; padding: 0.75rem 0; }
+        .controller-card { background: #16213e; border-radius: 10px; padding: 0.75rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+        .controller-info { flex: 0 0 auto; min-width: 110px; }
+        .controller-info .port-badge { display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.7rem; font-weight: 700; margin-right: 0.4rem; vertical-align: middle; }
+        .controller-info .char-name { font-size: 1.05rem; font-weight: 700; color: #fff; }
+        .controller-info .anim-name { font-size: 0.8rem; color: #a78bfa; margin-top: 0.15rem; }
+        .controller-info .frame-num { font-size: 0.8rem; color: #888; }
+        .controller-info .extra-info { font-size: 0.7rem; color: #667eea; margin-top: 0.1rem; }
+        .savestate-btn { background: #2d2d4e; color: #ccc; border: 1px solid #555; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.75rem; margin-top: 0.4rem; transition: background 0.15s; }
+        .savestate-btn:hover { background: #3d3d6e; color: #fff; }
+        .controller-svg-wrap { flex: 1; max-width: 200px; }
     </style>
 </head>
 <body>
@@ -139,6 +150,7 @@
                 </div>
                 <div class="replay-info-bar" id="replayInfoBar"></div>
                 <div style="font-size:0.7rem;color:#555;padding:0.25rem 0;">Keys: Space/K=play/pause · ←→=frame · Shift+←→=10f · J/L=±1s · 0-9=jump · D=debug · F=fullscreen</div>
+                <div id="controllerPanel" style="display:none;"></div>
             </div>
         </div>
     </div>
@@ -246,6 +258,19 @@
 // ===== slippi-js + fflate via esm.sh =====
 import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
 import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
+
+// Savestate WASM module (lazy-loaded only when user clicks download)
+let tmReplayWasm = null;
+async function loadSavestateWasm() {
+    if (tmReplayWasm) return tmReplayWasm;
+    try {
+        tmReplayWasm = await import('https://esm.sh/@gcpreston/tm_replay_wasm@0.1.1');
+        return tmReplayWasm;
+    } catch (e) {
+        console.warn('Failed to load savestate WASM:', e);
+        return null;
+    }
+}
 
 const ANIM_BASE = './animation-zips';
 
@@ -1487,6 +1512,7 @@ window.loadSlpFile = async event => {
 
 async function initReplayFromBuffer(uint8, filename) {
     const status = document.getElementById('replayStatus');
+    replayRawBytes = uint8.buffer.slice(uint8.byteOffset, uint8.byteOffset + uint8.byteLength);
     replayGame = new SlippiGame(uint8);
     replaySettings = replayGame.getSettings();
     replayFrames = replayGame.getFrames();
@@ -1690,7 +1716,6 @@ function renderFrame(frameIdx) {
 
     const players = replaySettings.players;
     const hudParts = [];
-    const keys = getFrameKeys();
 
     players.forEach((player, i) => {
         const pFrame = frame.players?.[player.playerIndex];
@@ -2005,6 +2030,7 @@ function renderFrame(frameIdx) {
 
     document.getElementById('replayTimeline').value = frameIdx;
     document.getElementById('frameCounter').textContent = `${frameIdx} / ${totalFrames - 1}`;
+    updateControllerPanel(frameIdx);
 }
 
 function startPlayback() {
@@ -2083,6 +2109,164 @@ document.addEventListener('keydown', e => {
         seekToFrame(Math.floor(pct * (totalFrames - 1)));
     }
 });
+
+// ===== CONTROLLER VISUALIZATION =====
+// Store the raw .slp bytes for savestate generation
+let replayRawBytes = null;
+
+function buildControllerSVG(pre, color) {
+    // Read inputs from pre-frame data
+    const jx = pre?.joystickX ?? 0;
+    const jy = pre?.joystickY ?? 0;
+    const cx = pre?.cStickX ?? 0;
+    const cy = pre?.cStickY ?? 0;
+    const a = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0100) : false;
+    const b = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0200) : false;
+    const x = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0400) : false;
+    const y = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0800) : false;
+    const z = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0010) : false;
+    const start = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x1000) : false;
+    const lDig = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0040) : false;
+    const rDig = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0020) : false;
+    const dUp = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0008) : false;
+    const dDown = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0004) : false;
+    const dLeft = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0001) : false;
+    const dRight = pre?.physicalButtons != null ? !!(pre.physicalButtons & 0x0002) : false;
+    const lAn = pre?.physicalLTrigger ?? 0;
+    const rAn = pre?.physicalRTrigger ?? 0;
+
+    const w = (pressed) => pressed ? 'white' : '';
+    const stickCx = 104.7 + jx * 34;
+    const stickCy = 274.5 - jy * 34;
+    const csCx = 395.2 + cx * 19.5;
+    const csCy = 411.6 - cy * 19.5;
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 585.781 585.782" style="width:100%;height:auto;">
+        <path fill="${color}" d="M376.4 33.6c-6 0-11.9 3.9-11.1 11.8 1 11.8-2.6 21.8-12.6 28.8-10 7.2-24.4 4.3-35.2 10.2a53.6 53.6 0 0 0-28.1 40.6c-116.9 1.6-160.5 25.4-160.5 25.4-68.1-13.9-77.4 34-77.4 34-67.5 45-47.9 128.2-47.9 128.2-7 84.3-9.5 239.6 46.8 239.6s56-145.5 56-145.5 9.8 16.2 17.3 37.6c7.5 21.3 63.5 79.7 124.1 15.6 60.7-64.1-23-128.2-23-128.2v-10.2c20.2-5.6 68-6.6 68-6.6s48 1 68.2 6.6v10.2s-83.7 64-23 128.2c60.6 64 116.6 5.7 124-15.6 7.6-21.4 17.4-37.6 17.4-37.6s-.3 145.5 56 145.5 53.7-155.3 46.8-239.6c0 0 19.6-83.1-48-128.2 0 0-9.2-47.9-77.3-34 0 0-39.3-21.4-143-25 5-25.9 37.2-20 54.9-32.7a52.6 52.6 0 0 0 21-47.3c-.8-7.8-7.2-11.8-13.4-11.8z"/>
+        <path fill="transparent" d="M178.6 361.5h20.8c4.8 0 8.8 4 8.8 8.9V392H230c4.8 0 8.8 4 8.8 8.9v20.8c0 4.8-4 8.8-8.8 8.8h-21.8v21.8c0 4.8-4 8.8-8.8 8.8h-20.8c-4.9 0-8.9-4-8.9-8.8v-21.8H148c-4.9 0-8.9-4-8.9-8.8V401a9 9 0 0 1 8.9-8.9h21.7v-21.7a9 9 0 0 1 8.9-8.9z"/>
+        <path fill="${dUp||dDown||dLeft||dRight?'#aaa':'gray'}" stroke="black" stroke-width="2.5" d="M202 370.4c0-1.5-1.2-2.7-2.6-2.7h-20.8a2.7 2.7 0 0 0-2.7 2.7v27.9h-28a2.7 2.7 0 0 0-2.6 2.7v20.8c0 1.5 1.2 2.7 2.7 2.7h27.9v27.9c0 1.5 1.2 2.7 2.7 2.7h20.8c1.5 0 2.7-1.2 2.7-2.7v-28H230c1.5 0 2.7-1.1 2.7-2.6V401c0-1.5-1.2-2.7-2.7-2.7h-28z"/>
+        ${dUp?'<rect x="170" y="365" width="18" height="20" fill="white" rx="2"/>':''}
+        ${dDown?'<rect x="170" y="418" width="18" height="20" fill="white" rx="2"/>':''}
+        ${dLeft?'<rect x="143" y="393" width="20" height="18" fill="white" rx="2"/>':''}
+        ${dRight?'<rect x="198" y="393" width="20" height="18" fill="white" rx="2"/>':''}
+        <path fill="transparent" d="m 104.65234,199.2793 c 41.488,0 75.23438,33.75128 75.23438,75.23828 0,41.487 -33.74638,75.24023 -75.23438,75.24023 -41.486996,0 -75.238278,-33.75323 -75.238278,-75.24023 0,-41.487 33.751282,-75.23828 75.238278,-75.23828 z"/>
+        <circle fill="lightgray" stroke="black" stroke-width="2.5" cx="104.7" cy="274.5" r="69.1"/>
+        <circle fill="gray" stroke="black" stroke-width="2.5" cx="${stickCx}" cy="${stickCy}" r="35.1"/>
+        <path fill="transparent" d="M402 361.3c.4 0 .8.1 1.1.3l31.2 18a3 3 0 0 1 1.4 1.8l10.3 34.1a3 3 0 0 1-.3 2.4L427 451.2a3 3 0 0 1-1.9 1.5l-36.2 9.2a3 3 0 0 1-2.3-.3l-32.2-18.9a3 3 0 0 1-1.4-2l-8.7-37.1a3 3 0 0 1 .4-2.4l19.3-30a3 3 0 0 1 1.8-1.3l35-8.6h1.2z"/>
+        <circle fill="gold" stroke="black" stroke-width="2.5" cx="395.2" cy="411.6" r="44.1"/>
+        <circle fill="yellow" stroke="black" stroke-width="2.5" cx="${csCx}" cy="${csCy}" r="24.6"/>
+        <circle fill="${w(start)||'gray'}" stroke="black" stroke-width="2.5" cx="292.9" cy="271.9" r="13.7"/>
+        <path fill="transparent" d="M478.2 187.8a21.5 21.5 0 0 1 21.6 24.8 69 69 0 0 1 26.6 16 21.4 21.4 0 0 1 13.8-5c9.8 0 18.4 6.6 21 16l.2 1c5.7 18.8 5.7 18.8 9.7 36l.2.9a21.9 21.9 0 0 1-21 27.2 21 21 0 0 1-7.8-1.6 69 69 0 0 1-109.8 26.2 29 29 0 1 1-23.7-45.7h.8l-.2-5.6c0-16.5 5.8-31.6 15.5-43.5a21.6 21.6 0 0 1 10-35.9l1-.3c18.8-5.7 18.8-5.7 36-9.7l.8-.2c1.7-.4 3.5-.6 5.3-.6z"/>
+        <circle fill="${w(a)||'green'}" stroke="black" stroke-width="2.5" cx="479.4" cy="279.7" r="33.9"/>
+        <circle fill="${w(b)||'red'}" stroke="black" stroke-width="2.5" cx="410.6" cy="313" r="22.9"/>
+        <path fill="${w(y)||'gray'}" stroke="black" stroke-width="2.5" d="M429.3 229.8a16 16 0 0 0 15.4 4.7c.5-.1 2.3-1 3.7-1.8 3.7-2.1 8.9-5 14.4-6.5 6.7-1.8 15.9-2 19.5-2h.6c3.8-1.1 7-3.6 9-7.1l.2-.3a15.4 15.4 0 0 0-13.9-22.9 17 17 0 0 0-3.9.5l-.8.1c-17 4-17 4-35.6 9.6l-1.2.4a15.6 15.6 0 0 0-11 19 15 15 0 0 0 3.6 6.3z"/>
+        <path fill="${w(x)||'gray'}" stroke="black" stroke-width="2.5" d="M565.1,278 c -4,-16.9 -4,-16.9 -9.6,-35.6 l -0.3,-1 c -2.2,-8.2 -10.9,-13.3 -19.1,-11.1 -2.1,0.6 -4,1.6 -5.6,2.8 -1.6,1.3 -3,2.9 -4,4.7 -1.9,3.4 -2.5,7.5 -1.4,11.5 0.1,0.5 1.1,2.2 1.9,3.6 2.1,3.8 4.9,8.9 6.4,14.4 2,7.4 2,17.8 2.0,20.1 0.7,2.4 2,4.4 3.7,6.1 1.5,1.6 3.3,2.8 5.4,3.7 3.1,1.3 6.5,1.7 9.9,0.8 8.1,-2.2 12.9,-10.6 10.9,-19.1 z"/>
+        <path fill="${w(lDig)||'gray'}" stroke="black" stroke-width="2.5" d="m 130,150 l -75,35 l 0,-10 c 0,-55 55,-55 75,-35 l 0,10 z"/>
+        <path fill="${w(rDig)||'gray'}" stroke="black" stroke-width="2.5" d="m 460,150 l 75,35 l 0,-10 c 0,-55 -55,-55 -75,-35 l 0,10 z"/>
+        <path fill="${w(z)||'purple'}" stroke="black" stroke-width="2.5" d="M460 155v-15l75 35v15z"/>
+        <text x="55" y="540" fill="#aaa" font-size="22" font-family="monospace">L:${lAn.toFixed(0)}</text>
+        <text x="430" y="540" fill="#aaa" font-size="22" font-family="monospace">R:${rAn.toFixed(0)}</text>
+    </svg>`;
+}
+
+function updateControllerPanel(frameIdx) {
+    const panel = document.getElementById('controllerPanel');
+    if (!panel || !replayFrames || !replaySettings) { if(panel) panel.style.display='none'; return; }
+    const keys = getFrameKeys();
+    if (frameIdx < 0 || frameIdx >= keys.length) return;
+    const frameNum = keys[frameIdx];
+    const frame = replayFrames[frameNum];
+    if (!frame) return;
+
+    const players = replaySettings.players;
+    const isDoubles = players.length > 2;
+
+    let html = '<div class="controller-panel">';
+    players.forEach((player, i) => {
+        const pFrame = frame.players?.[player.playerIndex];
+        if (!pFrame) return;
+        const post = pFrame.post;
+        const pre = pFrame.pre;
+        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const charId = player.characterId;
+        const charName = CHAR_NAMES[charId] || `Char ${charId}`;
+        const tag = player.displayName || player.nametag || `P${player.port+1}`;
+        const actionStateId = post?.actionStateId ?? 14;
+        const actionStateCounter = post?.actionStateCounter ?? 0;
+        const animFrame = getAnimFrame(charId, actionStateId, actionStateCounter);
+        const animName = animFrame?.animName || (actionStateId < ACTION_NAMES.length ? ACTION_NAMES[actionStateId] : `AS${actionStateId}`);
+        const hitlag = post?.hitlagRemaining ?? 0;
+        const hitstun = post?.hitstunRemaining ?? 0;
+        const hurtbox = post?.hurtboxCollisionState ?? 0;
+
+        html += `<div class="controller-card">
+            <div class="controller-info">
+                <div>
+                    <span class="port-badge" style="background:${color};opacity:0.5;color:#fff;">P${player.port+1}</span>
+                    <span class="char-name">${charName}</span>
+                </div>
+                <div class="anim-name">${animName}</div>
+                <div class="frame-num">Frame ${Math.round(actionStateCounter)}</div>`;
+        if (hitlag > 0) html += `<div class="extra-info">Hitlag ${hitlag.toFixed(0)}</div>`;
+        if (hitstun > 0) html += `<div class="extra-info">Hitstun ${hitstun.toFixed(0)}</div>`;
+        if (hurtbox !== 0) html += `<div class="extra-info" style="color:#5b9aff;">${hurtbox===1?'Invulnerable':'Intangible'}</div>`;
+        // Savestate button: only for singles (not doubles)
+        if (!isDoubles) {
+            html += `<button class="savestate-btn" onclick="downloadSavestate(${player.playerIndex})">Download savestate</button>`;
+        }
+        html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color)}</div></div>`;
+    });
+    html += '</div>';
+    panel.innerHTML = html;
+    panel.style.display = 'block';
+}
+
+// Savestate download using @gcpreston/tm_replay_wasm
+window.downloadSavestate = async (playerIndex) => {
+    if (!replayRawBytes) {
+        alert('No raw replay data available for savestate generation.');
+        return;
+    }
+    const btn = event.target;
+    const origText = btn.textContent;
+    btn.textContent = 'Loading WASM...';
+    btn.disabled = true;
+    try {
+        const wasm = await loadSavestateWasm();
+        if (!wasm || !wasm.construct_tm_replay_from_slp_in_js) {
+            throw new Error('Savestate WASM module not available');
+        }
+        const keys = getFrameKeys();
+        const frameNum = keys[currentFrame] ?? 0;
+        // lowPort = true if this player is the lower port
+        const players = replaySettings.players;
+        const lowPort = !players.some(p => p.playerIndex < playerIndex);
+        const d = new Date();
+        const name = 'savestate' + d.getFullYear() + (d.getMonth()+1) + d.getDate() + d.getHours() + d.getMinutes() + d.getSeconds();
+        btn.textContent = 'Generating...';
+        const gciData = wasm.construct_tm_replay_from_slp_in_js(
+            new Uint8Array(replayRawBytes),
+            lowPort,
+            frameNum,
+            300,
+            name,
+            BigInt(0)
+        );
+        const blob = new Blob([gciData], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${name}.gci`;
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+        btn.textContent = '✓ Downloaded';
+        setTimeout(() => { btn.textContent = origText; btn.disabled = false; }, 2000);
+    } catch (e) {
+        console.error('Savestate error:', e);
+        btn.textContent = origText;
+        btn.disabled = false;
+        alert('Failed to generate savestate: ' + e.message);
+    }
+};
 
 loadNotesFromFile();
     </script>
