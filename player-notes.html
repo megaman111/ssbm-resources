@@ -66,7 +66,6 @@
         .replay-load-area .filename-hint { color: #a78bfa; font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
         .load-slp-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
         .load-slp-btn:hover { opacity: 0.9; }
-        #slpFileInput { display: none; }
         .replay-canvas-wrap { position: relative; background: #0d0d1a; border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
         #replayCanvas { display: block; width: 100%; height: auto; }
         .replay-hud { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.9rem; }
@@ -101,8 +100,8 @@
             <div class="replay-load-area" id="replayLoadArea">
                 <div class="filename-hint" id="replayFilenameHint"></div>
                 <p>Load the .slp file for this note to watch the replay</p>
-                <button class="load-slp-btn" onclick="document.getElementById('slpFileInput').click()">📂 Load .slp File</button>
-                <input type="file" id="slpFileInput" accept=".slp" onchange="loadSlpFile(event)">
+                <label for="slpFileInput" class="load-slp-btn" style="display:inline-block;cursor:pointer;">📂 Browse for .slp File</label>
+                <input type="file" id="slpFileInput" accept=".slp" onchange="loadSlpFile(event)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
             </div>
             <div id="replayStatus" class="replay-status" style="display:none;"></div>
             <div id="replayViewerArea" style="display:none;">
