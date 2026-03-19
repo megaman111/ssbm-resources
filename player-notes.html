@@ -237,8 +237,11 @@
 
     <script type="module">
 
-// ===== slippi-js via esm.sh =====
+// ===== slippi-js + fflate via esm.sh =====
 import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
+import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
+
+const PROXY = 'https://relaxed-gingersnap-96defd.netlify.app/.netlify/functions/slippi-proxy';
 
 // ===== Character data =====
 const characterIcons = {
@@ -272,6 +275,189 @@ const STAGE_DATA = {
     31: { name:'Battlefield',        x:[-224,224], y:[-108,200], platforms:[[-71,-6,27],[6,71,27],[-33,33,54]] },
     32: { name:'Final Destination',  x:[-246,246], y:[-140,188], platforms:[] },
 };
+
+// ===== Character zip filenames (slippilab naming) =====
+const CHAR_ZIP = {
+    0:'captain_falcon',1:'donkey_kong',2:'fox',3:'game_and_watch',4:'kirby',5:'bowser',
+    6:'link',7:'luigi',8:'mario',9:'marth',10:'mewtwo',11:'ness',12:'peach',13:'pikachu',
+    14:'ice_climbers',15:'jigglypuff',16:'samus',17:'yoshi',18:'zelda',19:'sheik',
+    20:'falco',21:'young_link',22:'dr_mario',23:'roy',24:'pichu',25:'ganondorf'
+};
+
+// Action state ID -> animation name mappings (from slippilab character files)
+// Covers the most common action states. Falls back to 'Wait' if not found.
+const ACTION_MAP = {
+    // Universal
+    0:'DeadDown',1:'DeadLeft',2:'DeadRight',3:'DeadUp',4:'DeadUpStar',5:'DeadUpStarIce',
+    6:'DeadUpFall',7:'DeadUpFallHitCamera',8:'DeadUpFallHitCameraFlat',9:'DeadUpFallIce',
+    10:'DeadUpFallIceHitCamera',11:'DeadUpFallIceHitCameraFlat',
+    14:'Sleep',15:'Rebirth',16:'RebirthWait',
+    17:'Wait',18:'WalkSlow',19:'WalkMiddle',20:'WalkFast',
+    21:'Turn',22:'TurnRun',23:'Dash',24:'Run',25:'RunDirect',26:'RunBrake',
+    27:'KneeBend',28:'JumpF',29:'JumpB',30:'JumpAerialF',31:'JumpAerialB',
+    32:'Fall',33:'FallF',34:'FallB',35:'FallAerial',36:'FallAerialF',37:'FallAerialB',
+    38:'FallSpecial',39:'FallSpecialF',40:'FallSpecialB',
+    41:'DamageFall',
+    42:'Squat',43:'SquatWait',44:'SquatRv',
+    45:'LandingLight',46:'LandingHeavy',47:'Landing',48:'LandingFallSpecial',
+    49:'Attack11',50:'Attack12',51:'Attack13',52:'Attack100Start',53:'Attack100Loop',54:'Attack100End',
+    55:'AttackDash',56:'AttackS3Hi',57:'AttackS3HiS',58:'AttackS3S',59:'AttackS3LwS',60:'AttackS3Lw',
+    61:'AttackHi3',62:'AttackLw3',
+    63:'AttackS4Hi',64:'AttackS4HiS',65:'AttackS4S',66:'AttackS4LwS',67:'AttackS4Lw',
+    68:'AttackHi4',69:'AttackLw4',
+    70:'AttackAirN',71:'AttackAirF',72:'AttackAirB',73:'AttackAirHi',74:'AttackAirLw',
+    75:'LandingAirN',76:'LandingAirF',77:'LandingAirB',78:'LandingAirHi',79:'LandingAirLw',
+    80:'DamageHi1',81:'DamageHi2',82:'DamageHi3',
+    83:'DamageN1',84:'DamageN2',85:'DamageN3',
+    86:'DamageLw1',87:'DamageLw2',88:'DamageLw3',
+    89:'DamageAir1',90:'DamageAir2',91:'DamageAir3',
+    92:'DamageFlyHi',93:'DamageFlyN',94:'DamageFlyLw',95:'DamageFlyTop',96:'DamageFlyRoll',
+    97:'LightGet',98:'HeavyGet',99:'LightThrowF',100:'LightThrowB',101:'LightThrowHi',102:'LightThrowLw',
+    103:'LightThrowDash',104:'LightThrowDrop',105:'LightThrowAirF',106:'LightThrowAirB',
+    107:'LightThrowAirHi',108:'LightThrowAirLw',
+    109:'HeavyThrowF',110:'HeavyThrowB',111:'HeavyThrowHi',112:'HeavyThrowLw',
+    113:'LightThrowF4',114:'LightThrowB4',115:'LightThrowHi4',116:'LightThrowLw4',
+    117:'LightThrowAirF4',118:'LightThrowAirB4',119:'LightThrowAirHi4',120:'LightThrowAirLw4',
+    121:'HeavyThrowF4',122:'HeavyThrowB4',123:'HeavyThrowHi4',124:'HeavyThrowLw4',
+    125:'SwordSwing1',126:'SwordSwing3',127:'SwordSwing4',128:'SwordSwingDash',
+    129:'ItemSwing1',130:'ItemSwing3',131:'ItemSwing4',132:'ItemSwingDash',
+    133:'ItemThrowF',134:'ItemThrowB',135:'ItemThrowHi',136:'ItemThrowLw',
+    137:'ItemThrowDash',138:'ItemThrowDrop',139:'ItemThrowAirF',140:'ItemThrowAirB',
+    141:'ItemThrowAirHi',142:'ItemThrowAirLw',
+    143:'ItemScrew',144:'ItemScrewAir',
+    145:'DamageScrew',146:'DamageScrewAir',
+    147:'GuardOn',148:'Guard',149:'GuardOff',150:'GuardSetOff',151:'GuardReflect',
+    152:'DownBoundU',153:'DownWaitU',154:'DownDamageU',155:'DownAttackU',156:'DownFowardU',
+    157:'DownBackU',158:'DownSpotU',159:'DownBoundD',160:'DownWaitD',161:'DownDamageD',
+    162:'DownAttackD',163:'DownFowardD',164:'DownBackD',165:'DownSpotD',166:'Passive',
+    167:'PassiveStandF',168:'PassiveStandB',169:'PassiveWall',170:'PassiveWallJump',171:'PassiveCeil',
+    172:'ShieldBreakFly',173:'ShieldBreakFall',174:'ShieldBreakDownU',175:'ShieldBreakDownD',
+    176:'ShieldBreakStandU',177:'ShieldBreakStandD',178:'FuraFura',179:'Furafura',
+    180:'CatchPull',181:'ThrownF',182:'ThrownB',183:'ThrownHi',184:'ThrownLw',
+    185:'ThrownLwWomen',186:'Pass',187:'Ottotto',188:'OttottoWait',
+    189:'FlyReflectWall',190:'FlyReflectCeil',191:'StopWall',192:'StopCeil',193:'MissFoot',
+    194:'CliffCatch',195:'CliffWait',196:'CliffClimbSlow',197:'CliffClimbQuick',
+    198:'CliffAttackSlow',199:'CliffAttackQuick',200:'CliffEscapeSlow',201:'CliffEscapeQuick',
+    202:'CliffJumpSlow1',203:'CliffJumpSlow2',204:'CliffJumpQuick1',205:'CliffJumpQuick2',
+    206:'AppealR',207:'AppealL',
+    208:'ShoulderedWait',209:'ShoulderedWalkSlow',210:'ShoulderedWalkMiddle',211:'ShoulderedWalkFast',
+    212:'ShoulderedTurn',213:'ThrownFF',214:'ThrownFB',215:'ThrownFHi',216:'ThrownFLw',
+    217:'CaptureCaptain',218:'CaptureYoshi',219:'YoshiEgg',220:'CaptureKoopa',221:'CaptureDamageKoopa',
+    222:'CaptureWaitKoopa',223:'ThrownKoopaF',224:'ThrownKoopaB',225:'CaptureKoopaAir',
+    226:'CaptureDamageKoopaAir',227:'CaptureWaitKoopaAir',228:'ThrownKoopaAirF',229:'ThrownKoopaAirB',
+    230:'CaptureKirby',231:'CaptureWaitKirby',232:'ThrownKirbyStar',233:'ThrownCopyStar',
+    234:'ThrownKirby',235:'BarrelWait',236:'Bury',237:'BuryWait',238:'BuryJump',
+    239:'DamageSong',240:'DamageSongWait',241:'DamageSongRv',242:'DamageIce',243:'DamageIceJump',
+    244:'CaptureLeader',245:'CaptureWaitLeader',246:'ThrownLeaderF',247:'ThrownLeaderB',
+    248:'CaptureWaitLeader2',249:'ThrownLeaderF2',250:'ThrownLeaderB2',
+    251:'WallDamage',252:'CliffWait2',253:'CliffJumpSlow1',254:'CliffJumpSlow2',
+    // Special moves start at 341 for most chars — handled by per-char maps below
+};
+
+// Per-character special move overrides (actionStateId -> animName)
+// These are the character-specific action states (341+)
+const CHAR_SPECIALS = {
+    2: { // Fox
+        341:'SpecialN',342:'SpecialNHit',343:'SpecialNReflect',
+        344:'SpecialS',345:'SpecialSEnd',
+        346:'SpecialHi',347:'SpecialHiStart',348:'SpecialHiEnd',349:'SpecialHiFall',
+        350:'SpecialLw',351:'SpecialLwStart',352:'SpecialLwEnd',
+    },
+    20: { // Falco
+        341:'SpecialN',342:'SpecialNHit',343:'SpecialNReflect',
+        344:'SpecialS',345:'SpecialSEnd',
+        346:'SpecialHi',347:'SpecialHiStart',348:'SpecialHiEnd',349:'SpecialHiFall',
+        350:'SpecialLw',351:'SpecialLwStart',352:'SpecialLwEnd',
+    },
+    9: { // Marth
+        341:'SpecialN',342:'SpecialNCapture',343:'SpecialNCaptureMax',344:'SpecialNTurn',
+        345:'SpecialS',346:'SpecialSS',347:'SpecialSHi',348:'SpecialSLw',
+        349:'SpecialHi',350:'SpecialHiStart',351:'SpecialHiEnd',
+        352:'SpecialLw',353:'SpecialLwCatch',354:'SpecialLwTurn',
+    },
+    19: { // Sheik
+        341:'SpecialN',342:'SpecialNEnd',
+        343:'SpecialS',344:'SpecialSEnd',
+        345:'SpecialHi',346:'SpecialHiStart',347:'SpecialHiEnd',
+        348:'SpecialLw',349:'SpecialLwEnd',
+    },
+    12: { // Peach
+        341:'SpecialN',342:'SpecialNEnd',
+        343:'SpecialS',344:'SpecialSEnd',
+        345:'SpecialHi',346:'SpecialHiStart',347:'SpecialHiEnd',
+        348:'SpecialLw',349:'SpecialLwEnd',
+    },
+    15: { // Jigglypuff
+        341:'SpecialN',342:'SpecialNEnd',
+        343:'SpecialS',344:'SpecialSEnd',
+        345:'SpecialHi',346:'SpecialHiStart',347:'SpecialHiEnd',
+        348:'SpecialLw',349:'SpecialLwEnd',
+    },
+    0: { // Captain Falcon
+        347:'SpecialN',348:'SpecialNHit',
+        349:'SpecialS',350:'SpecialSEnd',
+        351:'SpecialHi',352:'SpecialHiStart',353:'SpecialHiEnd',
+        354:'SpecialLw',355:'SpecialLwEnd',
+    },
+};
+
+// Animation cache: charId -> Map<animName, frames[]>
+const animCache = new Map();
+// Loading state: charId -> Promise | 'loaded' | 'failed'
+const animLoading = new Map();
+
+async function loadCharAnimations(charId) {
+    if (animLoading.get(charId) === 'loaded') return true;
+    if (animLoading.get(charId) === 'failed') return false;
+    if (animLoading.has(charId)) { await animLoading.get(charId); return animLoading.get(charId) === 'loaded'; }
+
+    const zipName = CHAR_ZIP[charId];
+    if (!zipName) { animLoading.set(charId, 'failed'); return false; }
+
+    const promise = (async () => {
+        try {
+            const res = await fetch(`${PROXY}?file=${zipName}.zip`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const buf = await res.arrayBuffer();
+            const files = unzipSync(new Uint8Array(buf));
+            const animMap = new Map();
+            for (const [filename, data] of Object.entries(files)) {
+                const name = filename.replace(/^.*\//, '').replace(/\.json$/, '');
+                try {
+                    const json = JSON.parse(new TextDecoder().decode(data));
+                    // Each json is an array of frame objects with a 'path' string
+                    animMap.set(name, json);
+                } catch {}
+            }
+            animCache.set(charId, animMap);
+            animLoading.set(charId, 'loaded');
+        } catch (e) {
+            console.warn(`Failed to load animations for char ${charId}:`, e);
+            animLoading.set(charId, 'failed');
+        }
+    })();
+
+    animLoading.set(charId, promise);
+    await promise;
+    return animLoading.get(charId) === 'loaded';
+}
+
+function getAnimFrame(charId, actionStateId, frameCounter) {
+    const anims = animCache.get(charId);
+    if (!anims) return null;
+
+    // Resolve animation name
+    const specials = CHAR_SPECIALS[charId] || {};
+    let animName = specials[actionStateId] || ACTION_MAP[actionStateId] || 'Wait';
+
+    // Try exact match, then fallback chain
+    let frames = anims.get(animName);
+    if (!frames) frames = anims.get('Wait');
+    if (!frames || !frames.length) return null;
+
+    const idx = Math.max(0, frameCounter) % frames.length;
+    return frames[idx];
+}
 
 // ===== localStorage replay storage =====
 function slpKey(note) { return 'slp_' + note.date; }
@@ -556,6 +742,10 @@ async function initReplayFromBuffer(uint8, filename) {
     document.getElementById('playPauseBtn').textContent = '⏸ Pause';
     document.getElementById('playPauseBtn').classList.add('active');
     startPlayback();
+
+    // Kick off animation loading in background (renders as dots until loaded)
+    const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
+    charIds.forEach(id => loadCharAnimations(id));
 }
 
 function buildInfoBar(settings, filename) {
@@ -573,6 +763,9 @@ function getFrameKeys() {
     return Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
 }
 
+// Melee character scale in canvas units (approximate, tuned to match slippilab)
+const CHAR_SCALE = 0.08;
+
 function renderFrame(frameIdx) {
     if (!replayFrames || !replaySettings) return;
     const keys = getFrameKeys();
@@ -585,13 +778,12 @@ function renderFrame(frameIdx) {
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
 
-    // Stage bounds
     const stageId = replaySettings.stageId;
     const stage = STAGE_DATA[stageId] || { x:[-230,230], y:[-150,200], platforms:[] };
     const [bx0, bx1] = stage.x;
     const [by0, by1] = stage.y;
     const stageW = bx1 - bx0, stageH = by1 - by0;
-    const pad = 40;
+    const pad = 50;
     const scaleX = (W - pad*2) / stageW;
     const scaleY = (H - pad*2) / stageH;
     const scale = Math.min(scaleX, scaleY);
@@ -601,114 +793,149 @@ function renderFrame(frameIdx) {
     const toCanvasX = x => x * scale + offX;
     const toCanvasY = y => -y * scale + offY;
 
-    // Background
-    ctx.fillStyle = '#0d0d1a';
+    // Background gradient
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0a1a');
+    bg.addColorStop(1, '#0d1a2e');
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
 
-    // Blast zones
-    ctx.strokeStyle = 'rgba(255,80,80,0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4,4]);
+    // Blast zone border
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,60,60,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6,4]);
     ctx.strokeRect(toCanvasX(bx0), toCanvasY(by1), stageW*scale, stageH*scale);
     ctx.setLineDash([]);
+    ctx.restore();
 
-    // Main stage platform (ground)
+    // Ground platform
+    const groundLeft = bx0 * 0.52, groundRight = bx1 * 0.52;
     const groundY = 0;
-    ctx.fillStyle = '#2d4a7a';
-    ctx.fillRect(toCanvasX(bx0*0.55), toCanvasY(groundY+2), stageW*0.55*scale, 4);
+    ctx.save();
+    ctx.fillStyle = '#3a5a9a';
+    ctx.shadowColor = '#667eea';
+    ctx.shadowBlur = 8;
+    ctx.fillRect(toCanvasX(groundLeft), toCanvasY(groundY + 1.5), (groundRight - groundLeft) * scale, 3);
+    ctx.restore();
 
     // Side platforms
-    ctx.fillStyle = '#3a5a8a';
+    ctx.save();
+    ctx.fillStyle = '#4a6aaa';
+    ctx.shadowColor = '#667eea';
+    ctx.shadowBlur = 6;
     (stage.platforms || []).forEach(([px0, px1, py]) => {
-        ctx.fillRect(toCanvasX(px0), toCanvasY(py+2), (px1-px0)*scale, 4);
+        ctx.fillRect(toCanvasX(px0), toCanvasY(py + 1.5), (px1 - px0) * scale, 3);
     });
+    ctx.restore();
 
-    // Stage label
-    ctx.fillStyle = 'rgba(100,120,200,0.5)';
-    ctx.font = '12px monospace';
-    ctx.fillText(STAGE_DATA[stageId]?.name || `Stage ${stageId}`, 10, 20);
-
-    // Frame counter display
-    ctx.fillStyle = '#aaa';
+    // Stage name
+    ctx.fillStyle = 'rgba(100,130,220,0.4)';
     ctx.font = '11px monospace';
-    ctx.fillText(`Frame ${frameNum} (${Math.floor(frameNum/60)}s)`, W - 130, 20);
+    ctx.fillText(stage.name || `Stage ${stageId}`, 10, 18);
 
-    // Players
+    // Frame info
+    ctx.fillStyle = 'rgba(180,180,180,0.5)';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`Frame ${frameNum}  (${Math.floor(Math.max(0,frameNum)/60)}s)`, W - 10, 18);
+    ctx.textAlign = 'left';
+
     const players = replaySettings.players;
     const hudParts = [];
 
     players.forEach((player, i) => {
         const pFrame = frame.players?.[player.port];
         if (!pFrame) return;
-        const pre = pFrame.pre;
         const post = pFrame.post;
-        if (!pre && !post) return;
+        const pre = pFrame.pre;
         const data = post || pre;
+        if (!data) return;
 
         const px = toCanvasX(data.positionX);
         const py = toCanvasY(data.positionY);
         const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
-        const charName = CHAR_NAMES[player.characterId] || `P${player.port+1}`;
+        const charId = player.characterId;
+        const charName = CHAR_NAMES[charId] || `P${player.port+1}`;
         const tag = player.displayName || player.nametag || `P${player.port+1}`;
+        const facing = data.facingDirection ?? 1; // 1 = right, -1 = left
+        const actionStateId = post?.actionStateId ?? pre?.actionStateId ?? 17;
+        const actionStateCounter = Math.floor(post?.actionStateCounter ?? pre?.actionStateCounter ?? 0);
 
-        // Facing direction indicator
-        const facing = data.facingDirection || 1;
-
-        // Shadow
+        // Shadow ellipse on ground
+        ctx.save();
         ctx.beginPath();
-        ctx.ellipse(px, toCanvasY(0)+2, 14, 4, 0, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.ellipse(px, toCanvasY(groundY) + 2, 16 * scale / 4, 5, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
         ctx.fill();
+        ctx.restore();
 
-        // Body circle
-        ctx.beginPath();
-        ctx.arc(px, py, 14, 0, Math.PI*2);
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        // Try SVG path silhouette
+        const animFrame = getAnimFrame(charId, actionStateId, actionStateCounter);
+        if (animFrame && animFrame.path) {
+            ctx.save();
+            // Translate to player position, scale, flip for facing direction
+            ctx.translate(px, py);
+            ctx.scale(facing * CHAR_SCALE * scale, -CHAR_SCALE * scale);
+            const p2d = new Path2D(animFrame.path);
+            // Fill silhouette
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.92;
+            ctx.fill(p2d);
+            // Outline
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 1 / (CHAR_SCALE * scale);
+            ctx.globalAlpha = 0.5;
+            ctx.stroke(p2d);
+            ctx.restore();
+        } else {
+            // Fallback: colored circle while animations load
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(px, py, 13, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.85;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 1;
+            ctx.stroke();
+            // Facing nub
+            ctx.beginPath();
+            ctx.arc(px + facing * 10, py - 4, 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.globalAlpha = 0.8;
+            ctx.fill();
+            ctx.restore();
+        }
 
-        // Facing arrow
-        ctx.beginPath();
-        ctx.moveTo(px + facing*14, py);
-        ctx.lineTo(px + facing*22, py);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(px + facing*22, py);
-        ctx.lineTo(px + facing*18, py-4);
-        ctx.moveTo(px + facing*22, py);
-        ctx.lineTo(px + facing*18, py+4);
-        ctx.stroke();
-
-        // Name tag
-        ctx.fillStyle = 'white';
+        // Name tag above character
+        ctx.save();
         ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(tag, px, py - 20);
-        ctx.textAlign = 'left';
+        ctx.fillStyle = color;
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 4;
+        ctx.fillText(tag, px, py - 22);
+        ctx.restore();
 
-        // HUD data
         const stocks = post?.stocksRemaining ?? pre?.stocksRemaining ?? '?';
         const percent = (post?.percent ?? pre?.percent ?? 0).toFixed(1);
         hudParts.push({ tag, charName, color, stocks, percent });
     });
 
-    // Update HUD
+    // HUD
     const hud = document.getElementById('replayHud');
     hud.innerHTML = hudParts.map(p => `
         <div class="player-hud">
-            <div class="stock-dot" style="background:${p.color};width:16px;height:16px;border-radius:50%;"></div>
+            <div class="stock-dot" style="background:${p.color};width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.4)"></div>
             <strong style="color:${p.color}">${p.tag}</strong>
-            <span style="color:#aaa">${p.charName}</span>
-            <div class="stock-icons">${Array.from({length:p.stocks||0},()=>`<div class="stock-dot" style="background:${p.color}"></div>`).join('')}</div>
+            <span style="color:#aaa;font-size:0.8em">${p.charName}</span>
+            <div class="stock-icons">${Array.from({length:Math.max(0,p.stocks||0)},()=>`<div class="stock-dot" style="background:${p.color}"></div>`).join('')}</div>
             <span style="color:#fff;font-weight:700">${p.percent}%</span>
         </div>
-    `).join('<div style="color:#555">vs</div>');
+    `).join('<div style="color:#555;padding:0 0.5rem">vs</div>');
 
-    // Update timeline
     document.getElementById('replayTimeline').value = frameIdx;
     document.getElementById('frameCounter').textContent = `${frameIdx} / ${totalFrames - 1}`;
 }

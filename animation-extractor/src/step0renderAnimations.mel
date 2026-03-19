@@ -1,0 +1,64 @@
+// STEP 0: Render all character animations to BMP files from Maya.
+//
+// HOW TO USE:
+// 1. Download "New and Improved Animation Pack":
+//    https://www.mediafire.com/file/cmasv6kab9271p0/New_and_Improved_Animation_Pack.zip/file
+// 2. Open the character's .mb scene file in Maya 2018
+//    (e.g. PlFx.mb for Fox, PlMs.mb for Marth, PlFc.mb for Falco, etc.)
+// 3. In Maya: Window -> Rendering Editors -> Hypershade
+//    Then: Edit -> Delete All By Type -> Textures
+//    (This makes the character render as a solid silhouette)
+// 4. Set the side camera background to WHITE
+// 5. Set framerate to 60fps in Maya preferences
+// 6. Edit the OUTPUT_DIR variable below to your desired output path
+// 7. In Maya: Script Editor -> MEL tab -> paste this script -> run
+//
+// OUTPUT: One folder per animation, each containing numbered .bmp frames
+// e.g. output/PlFx_Share_ACTION_Wait1_figatree/PlFx_Share_ACTION_Wait1_figatree_0_tmp.bmp
+//
+// NOTE: This takes several hours to run for a full character.
+
+// ===== EDIT THIS =====
+string $OUTPUT_DIR = "C:/animation-extractor/input/bmp";
+// =====================
+
+// Get all animation clips in the scene
+string $allAnimCurves[] = `ls -type animCurve`;
+string $animNames[];
+int $animCount = 0;
+
+// Find all figatree nodes (these are the animation containers in Melee .mb files)
+string $figatrees[] = `ls -type transform "*_figatree"`;
+
+for ($figatree in $figatrees) {
+    string $animName = $figatree;
+    
+    // Get frame range for this animation
+    float $startFrame = `findKeyframe -which first $figatree`;
+    float $endFrame = `findKeyframe -which last $figatree`;
+    
+    if ($endFrame <= $startFrame) continue;
+    
+    // Create output directory for this animation
+    string $animOutputDir = $OUTPUT_DIR + "/" + $animName;
+    sysFile -makeDir $animOutputDir;
+    
+    // Set active animation
+    currentTime $startFrame;
+    
+    // Render each frame
+    for ($frame = $startFrame; $frame <= $endFrame; $frame++) {
+        currentTime $frame;
+        
+        string $outputFile = $animOutputDir + "/" + $animName + "_" + $frame + "_tmp";
+        
+        // Render from side camera as BMP
+        renderWindowEditor -edit
+            -writeImage $outputFile
+            renderView;
+    }
+    
+    print ("Completed: " + $animName + "\n");
+}
+
+print "All animations rendered!\n";

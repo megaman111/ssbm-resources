@@ -1,0 +1,18 @@
+{
+  "name": "animation-extractor",
+  "version": "1.0.0",
+  "description": "Extracts Melee character animation zips for the slippilab-style replay viewer",
+  "type": "module",
+  "scripts": {
+    "step1": "zx src/step1bmpToSvg.mjs input/bmp .out/step1",
+    "step2": "zx src/step2optimizeSvg.mjs .out/step1 .out/step2",
+    "step3": "zx src/step3svgToJson.mjs .out/step2 .out/step3",
+    "step4": "zx src/step4jsonToZip.mjs .out/step3 .out/step4",
+    "all": "npm run step1 && npm run step2 && npm run step3 && npm run step4"
+  },
+  "dependencies": {
+    "zx": "^7.2.3",
+    "svgo": "^3.0.0",
+    "potrace": "^2.1.8"
+  }
+}
