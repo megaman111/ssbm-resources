@@ -346,117 +346,294 @@ const CHAR_ZIP = {
     20:'falco',21:'young_link',22:'dr_mario',23:'roy',24:'pichu',25:'ganondorf'
 };
 
-// Action state ID -> animation name (from slippilab's actionNameById)
+// Action state ID -> animation name (EXACT copy from slippilab's actionNameById)
 // Source: https://github.com/frankborden/slippilab/blob/main/src/common/ids.ts
+// 341 entries (0-340). 341+ are character-specific specials.
 const ACTION_NAMES = [
-    'DeadDown','DeadLeft','DeadRight','DeadUp','DeadUpStar','DeadUpStarIce',
-    'DeadUpFall','DeadUpFallHitCamera','DeadUpFallHitCameraFlat','DeadUpFallIce',
-    'DeadUpFallHitCameraIce','Sleep','Rebirth','RebirthWait',
-    'Wait','WalkSlow','WalkMiddle','WalkFast',
-    'Turn','TurnRun','Dash','Run','RunDirect','RunBrake',
-    'KneeBend','JumpF','JumpB','JumpAerialF','JumpAerialB',
-    'Fall','FallF','FallB','FallAerial','FallAerialF','FallAerialB',
-    'FallSpecial','FallSpecialF','FallSpecialB',
-    'DamageFall',
-    'Squat','SquatWait','SquatRv',
-    'SquatF','SquatB',
-    'Landing','LandingFallSpecial',
-    'Attack11','Attack12','Attack13','Attack100Start','Attack100Loop','Attack100End',
-    'AttackDash',
-    'AttackS3Hi','AttackS3HiS','AttackS3S','AttackS3LwS','AttackS3Lw',
-    'AttackHi3','AttackLw3',
-    'AttackS4Hi','AttackS4HiS','AttackS4S','AttackS4LwS','AttackS4Lw',
-    'AttackHi4','AttackLw4',
-    'AttackAirN','AttackAirF','AttackAirB','AttackAirHi','AttackAirLw',
-    'LandingAirN','LandingAirF','LandingAirB','LandingAirHi','LandingAirLw',
-    'DamageHi1','DamageHi2','DamageHi3',
-    'DamageN1','DamageN2','DamageN3',
-    'DamageLw1','DamageLw2','DamageLw3',
-    'DamageAir1','DamageAir2','DamageAir3',
-    'DamageFlyHi','DamageFlyN','DamageFlyLw','DamageFlyTop','DamageFlyRoll',
-    'LightGet','HeavyGet',
-    'LightThrowF','LightThrowB','LightThrowHi','LightThrowLw',
-    'LightThrowDash','LightThrowDrop',
-    'LightThrowAirF','LightThrowAirB','LightThrowAirHi','LightThrowAirLw',
-    'HeavyThrowF','HeavyThrowB','HeavyThrowHi','HeavyThrowLw',
-    'LightThrowF4','LightThrowB4','LightThrowHi4','LightThrowLw4',
-    'LightThrowAirF4','LightThrowAirB4','LightThrowAirHi4','LightThrowAirLw4',
-    'HeavyThrowF4','HeavyThrowB4','HeavyThrowHi4','HeavyThrowLw4',
-    'SwordSwing1','SwordSwing3','SwordSwing4','SwordSwingDash',
-    'ItemSwing1','ItemSwing3','ItemSwing4','ItemSwingDash',
-    'ItemThrowF','ItemThrowB','ItemThrowHi','ItemThrowLw',
-    'ItemThrowDash','ItemThrowDrop',
-    'ItemThrowAirF','ItemThrowAirB','ItemThrowAirHi','ItemThrowAirLw',
-    'ItemScrew','ItemScrewAir',
-    'DamageScrew','DamageScrewAir',
-    'ItemDeadU','ItemDeadL','ItemDeadD','ItemDeadR',
-    'GuardOn','Guard','GuardOff','GuardSetOff','GuardReflect',
-    'DownBoundU','DownWaitU','DownDamageU','DownStandU','DownAttackU','DownFowardU',
-    'DownBackU','DownSpotU',
-    'DownBoundD','DownWaitD','DownDamageD','DownStandD','DownAttackD','DownFowardD',
-    'DownBackD','DownSpotD',
-    'Passive','PassiveStandF','PassiveStandB','PassiveWall','PassiveWallJump','PassiveCeil',
-    'ShieldBreakFly','ShieldBreakFall','ShieldBreakDownU','ShieldBreakDownD',
-    'ShieldBreakStandU','ShieldBreakStandD',
-    'FuraFura',
-    'Catch','CatchPull','CatchDash','CatchDashPull','CatchWait','CatchAttack','CatchCut',
-    'ThrowF','ThrowB','ThrowHi','ThrowLw',
-    'CapturePulledHi','CaptureWaitHi','CaptureDamageHi','CapturePulledLw','CaptureWaitLw','CaptureDamageLw','CaptureCut','CaptureJump',
-    'CatchPull','ThrownF','ThrownB','ThrownHi','ThrownLw',
-    'ThrownLwWomen','Pass','Ottotto','OttottoWait',
-    'FlyReflectWall','FlyReflectCeil','StopWall','StopCeil','MissFoot',
-    'CliffCatch','CliffWait','CliffClimbSlow','CliffClimbQuick',
-    'CliffAttackSlow','CliffAttackQuick','CliffEscapeSlow','CliffEscapeQuick',
-    'CliffJumpSlow1','CliffJumpSlow2','CliffJumpQuick1','CliffJumpQuick2',
-    'AppealR','AppealL',
-    'ShoulderedWait','ShoulderedWalkSlow','ShoulderedWalkMiddle','ShoulderedWalkFast',
-    'ShoulderedTurn','ThrownFF','ThrownFB','ThrownFHi','ThrownFLw',
-    'CaptureCaptain','CaptureYoshi','YoshiEgg','CaptureKoopa','CaptureDamageKoopa',
-    'CaptureWaitKoopa','ThrownKoopaF','ThrownKoopaB','CaptureKoopaAir',
-    'CaptureDamageKoopaAir','CaptureWaitKoopaAir','ThrownKoopaAirF','ThrownKoopaAirB',
-    'CaptureKirby','CaptureWaitKirby','ThrownKirbyStar','ThrownCopyStar',
-    'ThrownKirby','BarrelWait','Bury','BuryWait','BuryJump',
-    'DamageSong','DamageSongWait','DamageSongRv','DamageIce','DamageIceJump',
-    'CaptureMewtwo','CaptureMewtwoAir','ThrownMewtwo','ThrownMewtwoAir',
-    'WarpStarJump','WarpStarFall','HammerWait','HammerWalk','HammerTurn','HammerKneeBend',
-    'HammerFall','HammerJump','HammerLanding',
-    'KinokoGiantStart','KinokoGiantStartAir','KinokoGiantEnd','KinokoGiantEndAir',
-    'KinokoSmallStart','KinokoSmallStartAir','KinokoSmallEnd','KinokoSmallEndAir',
-    'Entry','EntryStart','EntryEnd',
-    'DamageIce','DamageIceJump',
-    'CaptureMasterhand','CapturedamageMasterhand','CapturewaitMasterhand','ThrownMasterhand',
-    'CaptureKirbyYoshi','KirbyYoshiEgg',
-    'CaptureLeadead','CaptureLikelike','DownReflect',
-    'CaptureCrazyhand','CapturedamageCrazyhand','CapturewaitCrazyhand','ThrownCrazyhand',
-    'BarrelCannonWait',
+    'DeadDown','DeadLeft','DeadRight','DeadUp','DeadUpStar','DeadUpStarIce',       // 0-5
+    'DeadUpFall','DeadUpFallHitCamera','DeadUpFallHitCameraFlat','DeadUpFallIce',   // 6-9
+    'DeadUpFallHitCameraIce','Sleep','Rebirth','RebirthWait',                       // 10-13
+    'Wait','WalkSlow','WalkMiddle','WalkFast',                                      // 14-17
+    'Turn','TurnRun','Dash','Run','RunDirect','RunBrake',                           // 18-23
+    'KneeBend','JumpF','JumpB','JumpAerialF','JumpAerialB',                         // 24-28
+    'Fall','FallF','FallB','FallAerial','FallAerialF','FallAerialB',                // 29-34
+    'FallSpecial','FallSpecialF','FallSpecialB',                                    // 35-37
+    'DamageFall',                                                                   // 38
+    'Squat','SquatWait','SquatRv',                                                  // 39-41
+    'Landing','LandingFallSpecial',                                                 // 42-43
+    'Attack11','Attack12','Attack13','Attack100Start','Attack100Loop','Attack100End',// 44-49
+    'AttackDash',                                                                   // 50
+    'AttackS3Hi','AttackS3HiS','AttackS3S','AttackS3LwS','AttackS3Lw',             // 51-55
+    'AttackHi3','AttackLw3',                                                        // 56-57
+    'AttackS4Hi','AttackS4HiS','AttackS4S','AttackS4LwS','AttackS4Lw',             // 58-62
+    'AttackHi4','AttackLw4',                                                        // 63-64
+    'AttackAirN','AttackAirF','AttackAirB','AttackAirHi','AttackAirLw',             // 65-69
+    'LandingAirN','LandingAirF','LandingAirB','LandingAirHi','LandingAirLw',       // 70-74
+    'DamageHi1','DamageHi2','DamageHi3',                                            // 75-77
+    'DamageN1','DamageN2','DamageN3',                                               // 78-80
+    'DamageLw1','DamageLw2','DamageLw3',                                            // 81-83
+    'DamageAir1','DamageAir2','DamageAir3',                                         // 84-86
+    'DamageFlyHi','DamageFlyN','DamageFlyLw','DamageFlyTop','DamageFlyRoll',        // 87-91
+    'LightGet','HeavyGet',                                                          // 92-93
+    'LightThrowF','LightThrowB','LightThrowHi','LightThrowLw',                     // 94-97
+    'LightThrowDash','LightThrowDrop',                                              // 98-99
+    'LightThrowAirF','LightThrowAirB','LightThrowAirHi','LightThrowAirLw',         // 100-103
+    'HeavyThrowF','HeavyThrowB','HeavyThrowHi','HeavyThrowLw',                     // 104-107
+    'LightThrowF4','LightThrowB4','LightThrowHi4','LightThrowLw4',                 // 108-111
+    'LightThrowAirF4','LightThrowAirB4','LightThrowAirHi4','LightThrowAirLw4',     // 112-115
+    'HeavyThrowF4','HeavyThrowB4','HeavyThrowHi4','HeavyThrowLw4',                 // 116-119
+    'SwordSwing1','SwordSwing3','SwordSwing4','SwordSwingDash',                     // 120-123
+    'BatSwing1','BatSwing3','BatSwing4','BatSwingDash',                             // 124-127
+    'ParasolSwing1','ParasolSwing3','ParasolSwing4','ParasolSwingDash',             // 128-131
+    'HarisenSwing1','HarisenSwing3','HarisenSwing4','HarisenSwingDash',             // 132-135
+    'StarRodSwing1','StarRodSwing3','StarRodSwing4','StarRodSwingDash',             // 136-139
+    'LipStickSwing1','LipStickSwing3','LipStickSwing4','LipStickSwingDash',         // 140-143
+    'ItemParasolOpen','ItemParasolFall','ItemParasolFallSpecial','ItemParasolDamageFall', // 144-147
+    'LGunShoot','LGunShootAir','LGunShootEmpty','LGunShootAirEmpty',                // 148-151
+    'FireFlowerShoot','FireFlowerShootAir',                                         // 152-153
+    'ItemScrew','ItemScrewAir','DamageScrew','DamageScrewAir',                      // 154-157
+    'ItemScopeStart','ItemScopeRapid','ItemScopeFire','ItemScopeEnd',               // 158-161
+    'ItemScopeAirStart','ItemScopeAirRapid','ItemScopeAirFire','ItemScopeAirEnd',   // 162-165
+    'ItemScopeStartEmpty','ItemScopeRapidEmpty','ItemScopeFireEmpty','ItemScopeEndEmpty', // 166-169
+    'ItemScopeAirStartEmpty','ItemScopeAirRapidEmpty','ItemScopeAirFireEmpty','ItemScopeAirEndEmpty', // 170-173
+    'LiftWait','LiftWalk1','LiftWalk2','LiftTurn',                                 // 174-177
+    'GuardOn','Guard','GuardOff','GuardSetOff','GuardReflect',                      // 178-182
+    'DownBoundU','DownWaitU','DownDamageU','DownStandU','DownAttackU','DownFowardU', // 183-188
+    'DownBackU','DownSpotU',                                                        // 189-190
+    'DownBoundD','DownWaitD','DownDamageD','DownStandD','DownAttackD','DownFowardD', // 191-196
+    'DownBackD','DownSpotD',                                                        // 197-198
+    'Passive','PassiveStandF','PassiveStandB','PassiveWall','PassiveWallJump','PassiveCeil', // 199-204
+    'ShieldBreakFly','ShieldBreakFall','ShieldBreakDownU','ShieldBreakDownD',        // 205-208
+    'ShieldBreakStandU','ShieldBreakStandD',                                        // 209-210
+    'FuraFura',                                                                     // 211
+    'Catch','CatchPull','CatchDash','CatchDashPull','CatchWait','CatchAttack','CatchCut', // 212-218
+    'ThrowF','ThrowB','ThrowHi','ThrowLw',                                          // 219-222
+    'CapturePulledHi','CaptureWaitHi','CaptureDamageHi',                            // 223-225
+    'CapturePulledLw','CaptureWaitLw','CaptureDamageLw',                            // 226-228
+    'CaptureCut','CaptureJump',                                                     // 229-230
+    'CaptureNeck','CaptureFoot',                                                    // 231-232
+    'EscapeF','EscapeB','Escape','EscapeAir',                                       // 233-236
+    'ReboundStop','Rebound',                                                        // 237-238
+    'ThrownF','ThrownB','ThrownHi','ThrownLw','ThrownLwWomen',                     // 239-243
+    'Pass','Ottotto','OttottoWait',                                                 // 244-246
+    'FlyReflectWall','FlyReflectCeil','StopWall','StopCeil','MissFoot',             // 247-251
+    'CliffCatch','CliffWait','CliffClimbSlow','CliffClimbQuick',                    // 252-255
+    'CliffAttackSlow','CliffAttackQuick','CliffEscapeSlow','CliffEscapeQuick',      // 256-259
+    'CliffJumpSlow1','CliffJumpSlow2','CliffJumpQuick1','CliffJumpQuick2',          // 260-263
+    'AppealR','AppealL',                                                            // 264-265
+    'ShoulderedWait','ShoulderedWalkSlow','ShoulderedWalkMiddle','ShoulderedWalkFast', // 266-269
+    'ShoulderedTurn',                                                               // 270
+    'ThrownFF','ThrownFB','ThrownFHi','ThrownFLw',                                 // 271-274
+    'CaptureCaptain','CaptureYoshi','YoshiEgg',                                     // 275-277
+    'CaptureKoopa','CaptureDamageKoopa','CaptureWaitKoopa','ThrownKoopaF','ThrownKoopaB', // 278-282
+    'CaptureKoopaAir','CaptureDamageKoopaAir','CaptureWaitKoopaAir','ThrownKoopaAirF','ThrownKoopaAirB', // 283-287
+    'CaptureKirby','CaptureWaitKirby','ThrownKirbyStar','ThrownCopyStar','ThrownKirby', // 288-292
+    'BarrelWait','Bury','BuryWait','BuryJump',                                      // 293-296
+    'DamageSong','DamageSongWait','DamageSongRv',                                   // 297-299
+    'DamageBind',                                                                   // 300
+    'CaptureMewtwo','CaptureMewtwoAir','ThrownMewtwo','ThrownMewtwoAir',           // 301-304
+    'WarpStarJump','WarpStarFall',                                                  // 305-306
+    'HammerWait','HammerWalk','HammerTurn','HammerKneeBend','HammerFall','HammerJump','HammerLanding', // 307-313
+    'KinokoGiantStart','KinokoGiantStartAir','KinokoGiantEnd','KinokoGiantEndAir',  // 314-317
+    'KinokoSmallStart','KinokoSmallStartAir','KinokoSmallEnd','KinokoSmallEndAir',  // 318-321
+    'Entry','EntryStart','EntryEnd',                                                // 322-324
+    'DamageIce','DamageIceJump',                                                    // 325-326
+    'CaptureMasterhand','CapturedamageMasterhand','CapturewaitMasterhand','ThrownMasterhand', // 327-330
+    'CaptureKirbyYoshi','KirbyYoshiEgg',                                            // 331-332
+    'CaptureLeadead','CaptureLikelike','DownReflect',                               // 333-335
+    'CaptureCrazyhand','CapturedamageCrazyhand','CapturewaitCrazyhand','ThrownCrazyhand', // 336-339
+    'BarrelCannonWait',                                                             // 340
 ];
 
 // Per-character animation name overrides (actionName -> zipAnimName)
 // Common animation name overrides — maps game action names to zip filenames
 // Applied to all characters, then per-character overrides on top
+// Common animation name overrides shared by ALL characters
+// Maps actionName -> zip animation filename. Empty string = no animation available.
+// Built from slippilab per-character animationMap (entries common to all 26 chars).
 const COMMON_ANIM_MAP = {
-    'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
     'CatchDashPull':'CatchWait','CatchPull':'CatchWait',
     'DamageIceJump':'Fall','EntryEnd':'Entry','EntryStart':'Entry',
     'Escape':'EscapeN','FlyReflectWall':'WallDamage',
-    'GuardReflect':'Guard','GuardSetOff':'GuardDamage',
+    'GuardSetOff':'GuardDamage',
     'KneeBend':'Landing','LandingFallSpecial':'Landing',
-    'Rebirth':'Entry','RebirthWait':'Entry',
+    'Rebirth':'Entry',
+    'ReboundStop':'Rebound',
+    'ShieldBreakDownD':'DownBoundD','ShieldBreakDownU':'DownBoundU',
+    'ShieldBreakFall':'DamageFall','ShieldBreakStandD':'DownStandD','ShieldBreakStandU':'DownStandU',
+    'SwordSwing1':'Swing1','SwordSwing3':'Swing3','SwordSwing4':'Swing4','SwordSwingDash':'SwingDash',
+    'LightThrowAirB4':'LightThrowAirB','LightThrowAirF4':'LightThrowAirF',
+    'LightThrowAirHi4':'LightThrowAirHi','LightThrowAirLw4':'LightThrowAirLw',
+    'LightThrowB4':'LightThrowB','LightThrowF4':'LightThrowF',
+    'LightThrowHi4':'LightThrowHi','LightThrowLw4':'LightThrowLw',
+    // States with no animation data (empty string = skip, show fallback)
+    'BarrelWait':'','Bury':'','BuryJump':'','BuryWait':'',
+    'CaptureCaptain':'','CaptureDamageKoopa':'','CaptureDamageKoopaAir':'',
+    'CaptureKirby':'','CaptureKirbyYoshi':'','CaptureKoopa':'','CaptureKoopaAir':'',
+    'CaptureMewtwo':'','CaptureMewtwoAir':'','CaptureWaitKirby':'',
+    'CaptureWaitKoopa':'','CaptureWaitKoopaAir':'','CaptureYoshi':'',
+    'DamageBind':'','DamageIce':'','DamageSong':'','DamageSongRv':'','DamageSongWait':'',
+    'DeadDown':'','DeadLeft':'','DeadRight':'','DeadUpFallHitCamera':'',
+    'DeadUpFallHitCameraIce':'','DeadUpFallIce':'','DeadUpStar':'','DeadUpStarIce':'',
+    'DownReflect':'','FlyReflectCeil':'',
+    'ItemParasolDamageFall':'','ItemParasolFall':'','ItemParasolFallSpecial':'','ItemParasolOpen':'',
+    'KirbyYoshiEgg':'','LiftTurn':'','LiftWait':'','LiftWalk1':'','LiftWalk2':'',
+    'RunDirect':'','ShieldBreakFly':'',
+    'ShoulderedTurn':'','ShoulderedWait':'','ShoulderedWalkFast':'',
+    'ShoulderedWalkMiddle':'','ShoulderedWalkSlow':'',
+    'ThrownB':'','ThrownCopyStar':'','ThrownF':'','ThrownFB':'','ThrownFF':'',
+    'ThrownFHi':'','ThrownFLw':'','ThrownHi':'','ThrownKirby':'','ThrownKirbyStar':'',
+    'ThrownKoopaAirB':'','ThrownKoopaAirF':'','ThrownKoopaB':'','ThrownKoopaF':'',
+    'ThrownLw':'','ThrownLwWomen':'','ThrownMewtwo':'','ThrownMewtwoAir':'',
+    'YoshiEgg':'',
 };
-// Characters whose zip uses Wait1.json (need Wait→Wait1 mapping)
-// Luigi(7),Ganondorf(25),Mewtwo(10),Mario(8),DrMario(22),Roy(23),Pichu(24),
-// Bowser(5),Kirby(4),Zelda(18),G&W(3),Falco(20),Fox(2),Marth(9),Sheik(19),
-// CaptainFalcon(0),Peach(12),Jigglypuff(15)
-const WAIT1_CHARS = new Set([0,2,3,4,5,7,8,9,10,12,15,18,19,20,22,23,24,25]);
-// Per-character extra overrides (beyond COMMON_ANIM_MAP)
+
+// Per-character animation overrides (keyed by EXTERNAL character ID)
+// Built directly from slippilab's per-character animationMap entries that differ from COMMON_ANIM_MAP
 const CHAR_ANIM_EXTRA = {
-    21: {'AppealR':'Appeal','AppealL':'Appeal'}, // Young Link has separate appeals in specials
+    0: { // Captain Falcon
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4S',
+        'AttackS4Hi':'AttackS4Hi','AttackS4HiS':'AttackS4Hi','AttackS4Lw':'AttackS4Lw','AttackS4LwS':'AttackS4Lw',
+        'CliffWait':'CliffWait1','GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    1: { // Donkey Kong
+        'AppealL':'AppealL','AppealR':'AppealR',
+        'AttackS3HiS':'AttackS3Hi','AttackS3LwS':'AttackS3Lw',
+        'AttackS4S':'AttackS4S','AttackS4Hi':'AttackS4Hi','AttackS4HiS':'AttackS4Hi',
+        'AttackS4Lw':'AttackS4Lw','AttackS4LwS':'AttackS4Lw',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    2: { // Fox
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    3: { // Game & Watch
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    4: { // Kirby
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    5: { // Bowser
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    6: { // Link
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    7: { // Luigi
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    8: { // Mario
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    9: { // Marth
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS3S':'AttackS31','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    10: { // Mewtwo
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    11: { // Ness
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    12: { // Peach
+        'AppealL':'AppealL','AppealR':'AppealR','AttackS3S':'AttackS3','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    13: { // Pikachu
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    14: { // Ice Climbers
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    15: { // Jigglypuff
+        'AppealL':'AppealL','AppealR':'AppealR',
+        'AttackS3HiS':'AttackS3Hi','AttackS3LwS':'AttackS3Lw','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    16: { // Samus
+        'AppealL':'AppealL','AppealR':'AppealR',
+        'AttackS4S':'AttackS4S','AttackS4Hi':'AttackS4Hi','AttackS4HiS':'AttackS4HiS',
+        'AttackS4Lw':'AttackS4Lw','AttackS4LwS':'AttackS4LwS',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    17: { // Yoshi
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    18: { // Zelda
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    19: { // Sheik
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS3S':'AttackS3','AttackS4S':'AttackS4',
+        'GuardReflect':'GuardOn',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    20: { // Falco
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    21: { // Young Link
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait','RebirthWait':'Wait',
+    },
+    22: { // Dr. Mario
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    23: { // Roy
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS3S':'AttackS31','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    24: { // Pichu
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
+    25: { // Ganondorf
+        'AppealL':'Appeal','AppealR':'Appeal','AttackS4S':'AttackS4',
+        'GuardReflect':'Guard',
+        'Wait':'Wait1','RebirthWait':'Wait1',
+    },
 };
+
 // Build merged CHAR_ANIM_MAP at load time
 const CHAR_ANIM_MAP = {};
 for (let i = 0; i <= 25; i++) {
     const m = Object.assign({}, COMMON_ANIM_MAP);
-    if (WAIT1_CHARS.has(i)) { m['Wait'] = 'Wait1'; m['RebirthWait'] = 'Wait1'; }
     if (CHAR_ANIM_EXTRA[i]) Object.assign(m, CHAR_ANIM_EXTRA[i]);
     CHAR_ANIM_MAP[i] = m;
 }
@@ -763,43 +940,74 @@ const CHAR_SCALE_MAP = {
     25:1.08, // Ganondorf
 };
 
-// Per-character shield offset in game units [x, y] (from schmooblidon/slippi-visualiser)
-// x is multiplied by facing direction; both divided by 4.5 to convert to game coords
-// Characters not listed default to Fox's offset
+// Per-character shield offset in model units [x, y] (from slippilab character files)
+// These are divided by 4.5 to convert to game coords in the rendering code
 const CHAR_SHIELD_OFFSET = {
-    0:[5,34],   // Captain Falcon
-    2:[5,34],   // Fox
-    9:[5,40],   // Marth
-    15:[0,22],  // Jigglypuff
-    20:[10,40], // Falco
+    0:[0.2,10.447],   // Captain Falcon
+    1:[2.724,9.003],  // Donkey Kong (TODO in slippilab)
+    2:[2.724,9.003],  // Fox
+    3:[2.724,9.003],  // Game & Watch (TODO)
+    4:[2.724,9.003],  // Kirby (TODO)
+    5:[2.724,9.003],  // Bowser (TODO)
+    6:[2.724,9.003],  // Link (TODO)
+    7:[2.724,9.003],  // Luigi (TODO)
+    8:[2.724,9.003],  // Mario (TODO)
+    9:[0.893,7.257],  // Marth
+    10:[2.724,9.003], // Mewtwo (TODO)
+    11:[2.724,9.003], // Ness (TODO)
+    12:[1.111,7.556], // Peach (5/4.5, 34/4.5)
+    13:[2.724,9.003], // Pikachu (TODO)
+    14:[2.724,9.003], // Ice Climbers (TODO)
+    15:[0,4.828],     // Jigglypuff
+    16:[2.724,9.003], // Samus (TODO)
+    17:[2.724,9.003], // Yoshi (TODO)
+    18:[2.724,9.003], // Zelda (TODO)
+    19:[0.541,6.969], // Sheik
+    20:[2.724,9.003], // Falco
+    21:[2.724,9.003], // Young Link (TODO)
+    22:[2.724,9.003], // Dr. Mario (TODO)
+    23:[2.724,9.003], // Roy (TODO)
+    24:[2.724,9.003], // Pichu (TODO)
+    25:[2.724,9.003], // Ganondorf (TODO)
 };
-const DEFAULT_SHIELD_OFFSET = [5, 34];
+const DEFAULT_SHIELD_OFFSET = [2.724, 9.003];
 
 function getAnimFrame(charId, actionStateId, frameCounter) {
     const anims = animCache.get(charId);
     if (!anims) return null;
 
-    // Resolve animation name from action state ID
-    let animName;
+    // Step 1: Check character-specific specials (341+)
+    let animName = null;
     const specials = CHAR_SPECIALS[charId];
-    if (specials && specials[actionStateId]) {
+    if (specials && specials[actionStateId] !== undefined) {
         animName = specials[actionStateId];
-    } else if (actionStateId < ACTION_NAMES.length) {
+    }
+
+    // Step 2: Look up common action name from ACTION_NAMES array
+    if (!animName && actionStateId < ACTION_NAMES.length) {
         animName = ACTION_NAMES[actionStateId];
-    } else {
-        animName = 'Wait1';
     }
 
-    // Apply per-character animation name overrides
-    const charMap = CHAR_ANIM_MAP[charId];
-    if (charMap && charMap[animName]) {
-        animName = charMap[animName];
+    // Step 3: Apply per-character animation name overrides
+    if (animName) {
+        const charMap = CHAR_ANIM_MAP[charId];
+        if (charMap && charMap[animName] !== undefined) {
+            animName = charMap[animName];
+        }
     }
 
-    // Try exact match, then fallback chain
-    let frames = anims.get(animName);
-    if (!frames) frames = anims.get('Wait1');
-    if (!frames) frames = anims.get('Wait2');
+    // Empty string means "no animation available" — use fallback
+    if (!animName) animName = null;
+
+    // Step 4: Try to find frames for the resolved animation name
+    let frames = animName ? anims.get(animName) : null;
+
+    // Fallback chain: try Wait/Wait1, then any available animation
+    if (!frames) {
+        const waitName = CHAR_ANIM_EXTRA[charId]?.Wait || 'Wait';
+        frames = anims.get(waitName) || anims.get('Wait1') || anims.get('Wait');
+        if (frames) animName = waitName;
+    }
     if (!frames || !frames.length) return null;
 
     const idx = Math.floor(Math.max(0, frameCounter)) % frames.length;
@@ -1477,8 +1685,8 @@ function renderFrame(frameIdx) {
 
             // Shield position: player pos + character offset + stick tilt
             const sOff = CHAR_SHIELD_OFFSET[charId] || DEFAULT_SHIELD_OFFSET;
-            let shieldX = gameX + (sOff[0] * facing / 4.5);
-            let shieldY = gameY + (sOff[1] / 4.5);
+            let shieldX = gameX + (sOff[0] * facing);
+            let shieldY = gameY + sOff[1];
 
             // Stick-based shield tilting (if not in shieldstun)
             const isShieldStun = actionStateId === 181; // GuardSetOff
@@ -1544,15 +1752,7 @@ function renderFrame(frameIdx) {
             ctx.restore();
         }
 
-        // Name tag above character
-        ctx.save();
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = color;
-        ctx.shadowColor = 'black';
-        ctx.shadowBlur = 4;
-        ctx.fillText(tag, px, py - 22);
-        ctx.restore();
+        // (name tag removed per user request)
 
         const stocks = post?.stocksRemaining ?? pre?.stocksRemaining ?? '?';
         const percent = (post?.percent ?? pre?.percent ?? 0).toFixed(1);
