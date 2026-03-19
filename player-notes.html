@@ -266,14 +266,72 @@ const CHAR_NAMES = {
 // Player colors for canvas rendering
 const PLAYER_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12'];
 
-// Stage blast zone / platform data (approximate, in Melee units)
+// Stage data from schmooblidon/slippi-visualiser (authoritative geometry)
+// polygon: array of [x,y] points for the stage solid shape
+// platforms: array of [[x1,y1],[x2,y2]] line segments for pass-through platforms
+// ground: array of [[x1,y1],[x2,y2]] line segments for the main ground surface
+// ledge: [leftPos, rightPos] ledge grab positions
+// x/y: blast zone [min, max]
 const STAGE_DATA = {
-    2:  { name:'Fountain of Dreams', x:[-198,198], y:[-146,202], platforms:[[-84,84,27],[-20,20,42],[-84,-20,27]] },
-    3:  { name:'Pokémon Stadium',    x:[-230,230], y:[-111,180], platforms:[[-110,-50,25],[50,110,25]] },
-    8:  { name:'Yoshi\'s Story',     x:[-176,173], y:[-112,168], platforms:[[-59,0,23],[0,59,23]] },
-    28: { name:'Dream Land',         x:[-255,255], y:[-123,250], platforms:[[-77,-17,30],[17,77,30],[-30,30,52]] },
-    31: { name:'Battlefield',        x:[-224,224], y:[-108,200], platforms:[[-71,-6,27],[6,71,27],[-33,33,54]] },
-    32: { name:'Final Destination',  x:[-246,246], y:[-140,188], platforms:[] },
+    2: { name:'Fountain of Dreams',
+        x:[-198.75,198.75], y:[-146.25,202.5],
+        polygon:[[-63.35,0.62],[-53.5,0.62],[-51.25,0],[51.25,0],[53.5,0.62],[63.35,0.62],
+            [63.35,-4.5],[59.33,-15],[56.9,-19.5],[55,-27],[52,-32],[48,-38],[41,-42],
+            [19,-49.5],[13,-54.5],[10,-62],[8.8,-72],[8.8,-150],[-8.8,-150],
+            [-8.8,-72],[-10,-62],[-13,-54.5],[-19,-49.5],[-41,-42],[-48,-38],[-52,-32],
+            [-55,-27],[-56.9,-19.5],[-59.33,-15],[-63.35,-4.5]],
+        platforms:[[[-14.25,42.75],[14.25,42.75]],[[21,22.125],[49.5,22.125]],[[-49.5,16.125],[-21,16.125]]],
+        ground:[[-63.35,0.62],[-53.5,0.62],[-51.25,0],[51.25,0],[53.5,0.62],[63.35,0.62]],
+        ledge:[[-66.35,0.62],[66.35,0.62]],
+    },
+    3: { name:'Pokémon Stadium',
+        x:[-230,230], y:[-111,180],
+        polygon:[[-87.75,0],[87.75,0],[87.75,-4],[73.75,-15],[73.75,-17.75],[60,-17.75],
+            [60,-38],[15,-60],[15,-112],[-15,-112],[-15,-60],[-60,-38],[-60,-17.75],
+            [-73.75,-17.75],[-73.75,-15],[-87.75,-4]],
+        platforms:[[[-55,25],[-25,25]],[[25,25],[55,25]]],
+        ground:[[-87.75,0],[87.75,0]],
+        ledge:[[-87.75,0],[87.75,0]],
+    },
+    8: { name:'Yoshi\'s Story',
+        x:[-175.7,173.6], y:[-91,168],
+        polygon:[[-56,-3.5],[-39,0],[39,0],[56,-3.5],[56,-7],[55,-8],[54,-11],[53,-12],
+            [53,-27],[54,-28],[54,-30],[53,-31],[53,-46],[54,-47],[54,-100],[-54,-100],
+            [-54,-47],[-53,-46],[-53,-31],[-54,-30],[-54,-28],[-53,-27],[-53,-12],
+            [-54,-11],[-55,-8],[-56,-7]],
+        platforms:[[[-59.5,23.45],[-28,23.45]],[[28,23.45],[59.5,23.45]],[[-15.75,42],[15.75,42]]],
+        ground:[[-56,-3.5],[-39,0],[39,0],[56,-3.5]],
+        ledge:[[-56,-3.5],[56,-3.5]],
+        randall:{width:11.9,period:1200,offset:123,pathOffset:-5.13,
+            path:[[-95.9,-33.25],[95.69,-33.25],[96.72,-32.69],[97.3,-31.675],
+                [97.3,-15.225],[96.72,-14.21],[95.69,-13.65],[-96.04,-13.65],
+                [-97.07,-14.21],[-97.65,-15.225],[-97.65,-31.675],[-97.07,-32.69],
+                [-96.04,-33.25],[-95.9,-33.25]]},
+    },
+    28: { name:'Dream Land',
+        x:[-255,255], y:[-123,250],
+        polygon:[[-77.25,0],[77.25,0],[76.5,-11],[65.75,-36],[-65.75,-36],[-76.5,-11]],
+        platforms:[[[-61.393,30.142],[-31.725,30.142]],[[-19.018,51.425],[19.017,51.425]],[[31.704,30.243],[63.075,30.243]]],
+        ground:[[-77.25,0],[77.25,0]],
+        ledge:[[-77.25,0],[77.25,0]],
+    },
+    31: { name:'Battlefield',
+        x:[-224,224], y:[-108.8,200],
+        polygon:[[-68.4,0],[68.4,0],[65,-6],[36,-19],[39,-21],[33,-25],[30,-29],[29,-35],
+            [10,-40],[10,-30],[-10,-30],[-10,-40],[-29,-35],[-30,-29],[-33,-25],
+            [-39,-21],[-36,-19],[-65,-6]],
+        platforms:[[[-57.6,27.2],[-20,27.2]],[[20,27.2],[57.6,27.2]],[[-18.8,54.4],[18.8,54.4]]],
+        ground:[[-68.4,0],[68.4,0]],
+        ledge:[[-68.4,0],[68.4,0]],
+    },
+    32: { name:'Final Destination',
+        x:[-246,246], y:[-140,188],
+        polygon:[[-85.6,0],[85.6,0],[85.6,-10],[65,-20],[65,-30],[60,-47],[50,-55],
+            [45,-56],[-45,-56],[-50,-55],[-60,-47],[-65,-30],[-65,-20],[-85.6,-10]],
+        platforms:[],
+        ground:[[-85.6,0],[85.6,0]],
+        ledge:[[-68.4,0],[68.4,0]],
+    },
 };
 
 // ===== Character zip filenames (slippilab naming) =====
@@ -1092,25 +1150,96 @@ function renderFrame(frameIdx) {
     ctx.setLineDash([]);
     ctx.restore();
 
-    // Ground platform
-    const groundLeft = bx0 * 0.52, groundRight = bx1 * 0.52;
-    const groundY = 0;
+    // Ground platform — draw the stage polygon
     ctx.save();
-    ctx.fillStyle = '#3a5a9a';
-    ctx.shadowColor = '#667eea';
-    ctx.shadowBlur = 8;
-    ctx.fillRect(toCanvasX(groundLeft), toCanvasY(groundY + 1.5), (groundRight - groundLeft) * scale, 3);
+    const poly = stage.polygon || [];
+    if (poly.length > 2) {
+        ctx.fillStyle = 'rgba(40,60,120,0.35)';
+        ctx.strokeStyle = '#3a5a9a';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#667eea';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(poly[0][0]), toCanvasY(poly[0][1]));
+        for (let i = 1; i < poly.length; i++) ctx.lineTo(toCanvasX(poly[i][0]), toCanvasY(poly[i][1]));
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+    }
+    // Draw ground surface line (brighter)
+    const gnd = stage.ground || [];
+    if (gnd.length > 1) {
+        ctx.strokeStyle = '#5a8aee';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = '#667eea';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(gnd[0][0]), toCanvasY(gnd[0][1]));
+        for (let i = 1; i < gnd.length; i++) ctx.lineTo(toCanvasX(gnd[i][0]), toCanvasY(gnd[i][1]));
+        ctx.stroke();
+    }
+    // Draw ledge markers
+    if (stage.ledge) {
+        ctx.fillStyle = '#ff6b6b';
+        ctx.shadowColor = '#ff4444';
+        ctx.shadowBlur = 6;
+        stage.ledge.forEach(([lx,ly]) => {
+            ctx.beginPath();
+            ctx.arc(toCanvasX(lx), toCanvasY(ly), 3, 0, Math.PI*2);
+            ctx.fill();
+        });
+    }
     ctx.restore();
 
     // Side platforms
     ctx.save();
-    ctx.fillStyle = '#4a6aaa';
+    ctx.strokeStyle = '#4a6aaa';
+    ctx.lineWidth = 3;
     ctx.shadowColor = '#667eea';
     ctx.shadowBlur = 6;
-    (stage.platforms || []).forEach(([px0, px1, py]) => {
-        ctx.fillRect(toCanvasX(px0), toCanvasY(py + 1.5), (px1 - px0) * scale, 3);
+    (stage.platforms || []).forEach(([[x1,y1],[x2,y2]]) => {
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(x1), toCanvasY(y1));
+        ctx.lineTo(toCanvasX(x2), toCanvasY(y2));
+        ctx.stroke();
     });
     ctx.restore();
+
+    // Randall (Yoshi's Story moving platform)
+    if (stage.randall && frameNum != null) {
+        const r = stage.randall;
+        const path = r.path;
+        // Calculate total path length and find position
+        let totalDist = 0;
+        const segs = [];
+        for (let i = 0; i < path.length - 1; i++) {
+            const dx = path[i+1][0] - path[i][0], dy = path[i+1][1] - path[i][1];
+            const d = Math.sqrt(dx*dx + dy*dy);
+            segs.push({sx:path[i][0],sy:path[i][1],dx,dy,start:totalDist,len:d});
+            totalDist += d;
+        }
+        const frac = ((frameNum + r.offset) % r.period) / r.period;
+        const target = frac * totalDist;
+        let rx = path[0][0], ry = path[0][1];
+        for (const s of segs) {
+            if (target >= s.start && target <= s.start + s.len) {
+                const t = (target - s.start) / s.len;
+                rx = s.sx + s.dx * t;
+                ry = s.sy + s.dy * t;
+                break;
+            }
+        }
+        ctx.save();
+        ctx.strokeStyle = '#4794c6';
+        ctx.fillStyle = 'rgba(71,148,198,0.3)';
+        ctx.lineWidth = 2;
+        const hw = r.width / 2;
+        ctx.beginPath();
+        ctx.moveTo(toCanvasX(rx-hw), toCanvasY(ry));
+        ctx.lineTo(toCanvasX(rx+hw), toCanvasY(ry));
+        ctx.stroke();
+        ctx.restore();
+    }
 
     // Stage name
     ctx.fillStyle = 'rgba(100,130,220,0.4)';
