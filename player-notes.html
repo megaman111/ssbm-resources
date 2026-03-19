@@ -2311,18 +2311,19 @@ function updateControllerPanel(frameIdx) {
         if (!isDoubles) {
             html += `<button class="savestate-btn" onclick="downloadSavestate(${player.playerIndex})">Download savestate</button>`;
         }
-        html += `</div><div class="controller-svg-wrap" style="position:relative;">${buildControllerSVG(pre, color, i)}
-        <div class="stickmap-click-target" data-stickmap="${i}" style="position:absolute;left:6%;top:35%;width:24%;height:24%;border-radius:50%;cursor:pointer;z-index:5;"></div>`;
-        // Stick map overlay: if this player's stick map is open, render it
-        if (stickMapPlayerIdx === i) {
+        // Stick map toggle button
+        const smActive = stickMapPlayerIdx === i;
+        html += `<button class="savestate-btn stickmap-toggle" data-stickmap="${i}" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
+
+        html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, i)}</div></div>`;
+        // Stick map overlay: if this player's stick map is open, render it below the card
+        if (smActive) {
             const jx = pre?.joystickX ?? 0;
             const jy = pre?.joystickY ?? 0;
-            html += `<div class="stickmap-overlay">
-                <button class="stickmap-close">&times;</button>
+            html += `<div class="stickmap-overlay" style="position:relative;width:100%;left:auto;top:auto;transform:none;margin-top:0.5rem;">
                 ${buildStickMapSVG(jx, jy, color)}
             </div>`;
         }
-        html += `</div></div>`;
     });
     html += '</div>';
     panel.innerHTML = html;
@@ -2331,14 +2332,11 @@ function updateControllerPanel(frameIdx) {
 
 // Persistent delegated click handler for stick map (survives innerHTML rebuilds)
 document.addEventListener('click', (e) => {
-    const target = e.target.closest('.stickmap-click-target');
-    if (target) {
-        const idx = parseInt(target.getAttribute('data-stickmap'));
+    const toggle = e.target.closest('.stickmap-toggle');
+    if (toggle) {
+        e.preventDefault();
+        const idx = parseInt(toggle.getAttribute('data-stickmap'));
         if (!isNaN(idx)) toggleStickMap(idx);
-        return;
-    }
-    if (e.target.closest('.stickmap-close')) {
-        closeStickMap();
         return;
     }
 });
