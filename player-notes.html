@@ -2150,16 +2150,18 @@ function buildControllerSVG(pre, color, playerIdx) {
     // GCC octagon: the diagonals are slightly shorter than cardinals
     // Cardinal radius = 1.0, Diagonal radius ≈ 0.7
     const octR = gR;
-    const diagR = gR * 0.7;
+    // GCC octagonal gate: diagonals reach ~0.9375 of cardinal distance
+    // The notch coords are (0.7, 0.7) normalized → magnitude ~0.9899, but physical gate is slightly shorter
+    const dOff = gR * 0.7;  // diagonal x and y offset from center (not multiplied by cos45 again)
     const octPoints = [
-        [gCx, gCy - octR],                          // N
-        [gCx + diagR * 0.707, gCy - diagR * 0.707], // NE
-        [gCx + octR, gCy],                           // E
-        [gCx + diagR * 0.707, gCy + diagR * 0.707], // SE
-        [gCx, gCy + octR],                           // S
-        [gCx - diagR * 0.707, gCy + diagR * 0.707], // SW
-        [gCx - octR, gCy],                           // W
-        [gCx - diagR * 0.707, gCy - diagR * 0.707], // NW
+        [gCx, gCy - octR],          // N
+        [gCx + dOff, gCy - dOff],   // NE
+        [gCx + octR, gCy],          // E
+        [gCx + dOff, gCy + dOff],   // SE
+        [gCx, gCy + octR],          // S
+        [gCx - dOff, gCy + dOff],   // SW
+        [gCx - octR, gCy],          // W
+        [gCx - dOff, gCy - dOff],   // NW
     ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
     // Analog trigger fill: lAn/rAn range 0-140, map to bar height
@@ -2218,16 +2220,16 @@ let stickMapPlayerIdx = null;
 
 function buildStickMapSVG(jx, jy, color) {
     const sz = 300, cx = sz/2, cy = sz/2, r = 130;
-    const diagR = r * 0.7;
+    const dOff = r * 0.7;  // diagonal x and y offset (not multiplied by cos45 again)
     const octPts = [
         [cx, cy - r],
-        [cx + diagR * 0.707, cy - diagR * 0.707],
+        [cx + dOff, cy - dOff],
         [cx + r, cy],
-        [cx + diagR * 0.707, cy + diagR * 0.707],
+        [cx + dOff, cy + dOff],
         [cx, cy + r],
-        [cx - diagR * 0.707, cy + diagR * 0.707],
+        [cx - dOff, cy + dOff],
         [cx - r, cy],
-        [cx - diagR * 0.707, cy - diagR * 0.707],
+        [cx - dOff, cy - dOff],
     ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
     // Melee deadzone ~0.2875
     const dz = 0.2875 * r;
