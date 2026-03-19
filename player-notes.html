@@ -2147,23 +2147,18 @@ function buildControllerSVG(pre, color, playerIdx) {
     // Octagonal gate for control stick (GCC has octagonal gate, not circular)
     // Center: (104.7, 274.5), radius ~69
     const gCx = 104.7, gCy = 274.5, gR = 69.1;
-    // GCC octagon: the diagonals are slightly shorter than cardinals
-    // Cardinal radius = 1.0, Diagonal radius ≈ 0.7
+    // GCC octagonal gate: cardinal reach = gR, diagonal notch x/y offset = 0.7*gR
     const octR = gR;
-    // GCC octagonal gate: diagonal notches are visibly indented
-    // Real GCC: cardinal reach ~1.0, diagonal reach ~0.7 (as distance from center)
-    // So diagonal distance = 0.7 * gR, and x/y components = 0.7*gR / sqrt(2)
-    const diagDist = gR * 0.7;
-    const dComp = diagDist * 0.7071; // x and y component of diagonal point
+    const dOff = gR * 0.7;
     const octPoints = [
-        [gCx, gCy - octR],            // N
-        [gCx + dComp, gCy - dComp],   // NE
-        [gCx + octR, gCy],            // E
-        [gCx + dComp, gCy + dComp],   // SE
-        [gCx, gCy + octR],            // S
-        [gCx - dComp, gCy + dComp],   // SW
-        [gCx - octR, gCy],            // W
-        [gCx - dComp, gCy - dComp],   // NW
+        [gCx, gCy - octR],          // N
+        [gCx + dOff, gCy - dOff],   // NE
+        [gCx + octR, gCy],          // E
+        [gCx + dOff, gCy + dOff],   // SE
+        [gCx, gCy + octR],          // S
+        [gCx - dOff, gCy + dOff],   // SW
+        [gCx - octR, gCy],          // W
+        [gCx - dOff, gCy - dOff],   // NW
     ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
     // Analog trigger fill: lAn/rAn range 0-140, map to bar height
@@ -2220,18 +2215,16 @@ let stickMapPlayerIdx = null;
 
 function buildStickMapSVG(jx, jy, color) {
     const sz = 300, cx = sz/2, cy = sz/2, r = 130;
-    // Diagonal distance = 0.7 * r, component = that / sqrt(2)
-    const diagDist = r * 0.7;
-    const dComp = diagDist * 0.7071;
+    const dOff = r * 0.7;
     const octPts = [
         [cx, cy - r],
-        [cx + dComp, cy - dComp],
+        [cx + dOff, cy - dOff],
         [cx + r, cy],
-        [cx + dComp, cy + dComp],
+        [cx + dOff, cy + dOff],
         [cx, cy + r],
-        [cx - dComp, cy + dComp],
+        [cx - dOff, cy + dOff],
         [cx - r, cy],
-        [cx - dComp, cy - dComp],
+        [cx - dOff, cy - dOff],
     ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
     // Melee deadzone ~0.2875
     const dz = 0.2875 * r;
@@ -2265,7 +2258,9 @@ function buildStickMapSVG(jx, jy, color) {
 }
 
 window.toggleStickMap = (playerIdx) => {
+    console.log('toggleStickMap called, playerIdx:', playerIdx, 'current:', stickMapPlayerIdx);
     stickMapPlayerIdx = (stickMapPlayerIdx === playerIdx) ? null : playerIdx;
+    console.log('stickMapPlayerIdx now:', stickMapPlayerIdx);
     renderFrame(currentFrame);
 };
 window.closeStickMap = () => {
@@ -2319,8 +2314,9 @@ function updateControllerPanel(frameIdx) {
             html += `<button class="savestate-btn" onclick="downloadSavestate(${player.playerIndex})">Download savestate</button>`;
         }
         html += `</div><div class="controller-svg-wrap" style="position:relative;">${buildControllerSVG(pre, color, i)}
-        <div class="stickmap-click-target" data-stickmap="${i}" style="position:absolute;left:6%;top:35%;width:24%;height:24%;border-radius:50%;cursor:pointer;z-index:5;"></div>`;
+        <div class="stickmap-click-target" data-stickmap="${i}" style="position:absolute;left:6%;top:35%;width:24%;height:24%;border-radius:50%;cursor:pointer;z-index:5;background:rgba(255,0,0,0.15);"></div>`;
         // Stick map overlay: if this player's stick map is open, render it
+        if (stickMapPlayerIdx !== null) console.log('checking stickmap for player', i, 'stickMapPlayerIdx:', stickMapPlayerIdx);
         if (stickMapPlayerIdx === i) {
             const jx = pre?.joystickX ?? 0;
             const jy = pre?.joystickY ?? 0;
