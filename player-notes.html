@@ -416,7 +416,9 @@ async function loadCharAnimations(charId) {
 
     const promise = (async () => {
         try {
-            const res = await fetch(`${ANIM_BASE}/${zipName}.zip`);
+            const url = `${ANIM_BASE}/${zipName}.zip`;
+            console.log(`[anim] fetching ${url}`);
+            const res = await fetch(url);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const buf = await res.arrayBuffer();
             const files = unzipSync(new Uint8Array(buf));
@@ -425,10 +427,10 @@ async function loadCharAnimations(charId) {
                 const name = filename.replace(/^.*\//, '').replace(/\.json$/, '');
                 try {
                     const json = JSON.parse(new TextDecoder().decode(data));
-                    // Each json is an array of frame objects with a 'path' string
                     animMap.set(name, json);
                 } catch {}
             }
+            console.log(`[anim] loaded ${charId} (${zipName}): ${animMap.size} animations, keys sample:`, [...animMap.keys()].slice(0,5));
             animCache.set(charId, animMap);
             animLoading.set(charId, 'loaded');
         } catch (e) {
@@ -444,17 +446,16 @@ async function loadCharAnimations(charId) {
 
 function getAnimFrame(charId, actionStateId, frameCounter) {
     const anims = animCache.get(charId);
-    if (!anims) return null;
+    if (!anims) { console.log(`[anim] cache miss for charId ${charId}`); return null; }
 
-    // Resolve animation name
     const specials = CHAR_SPECIALS[charId] || {};
-    let animName = specials[actionStateId] || ACTION_MAP[actionStateId] || 'Wait';
+    let animName = specials[actionStateId] || ACTION_MAP[actionStateId] || 'Wait1';
+    console.log(`[anim] charId=${charId} actionState=${actionStateId} -> animName=${animName}, has it: ${anims.has(animName)}`);
 
-    // Try exact match, then fallback chain
     let frames = anims.get(animName);
-    if (!frames) frames = anims.get('Wait1'); // slippilab uses Wait1 not Wait
+    if (!frames) frames = anims.get('Wait1');
     if (!frames) frames = anims.get('Wait2');
-    if (!frames || !frames.length) return null;
+    if (!frames || !frames.length) { console.log(`[anim] no frames found for ${animName}`); return null; }
 
     const idx = Math.max(0, frameCounter) % frames.length;
     const frame = frames[idx];
