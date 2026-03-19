@@ -32,7 +32,14 @@
         .note-content { color: #333; line-height: 1.6; white-space: pre-wrap; }
         .note-date { font-size: 0.875rem; color: #999; margin-top: 1rem; }
         .note-replay-badge { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
-        .note-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; }
+        .note-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; max-width: 60%; }
+        .attach-btn { background: #2d2d4e; color: #a78bfa; border: 1px solid #a78bfa; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+        .attach-btn:hover { background: #3d3d6e; }
+        .attach-btn.attached { background: #1a3a2a; color: #4ade80; border-color: #4ade80; }
+        .attach-btn.attached:hover { background: #2a4a3a; }
+        .detach-btn { background: none; color: #ff6b6b; border: 1px solid #ff6b6b; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .detach-btn:hover { background: rgba(255,107,107,0.1); }
+        .replay-attached-label { font-size: 0.75rem; color: #4ade80; margin-top: 0.5rem; }
         .edit-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
         .edit-btn:hover { background: #5568d3; }
         .delete-btn { background: #ff4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
@@ -99,8 +106,8 @@
             </div>
             <div class="replay-load-area" id="replayLoadArea">
                 <div class="filename-hint" id="replayFilenameHint"></div>
-                <p>Load the .slp file for this note to watch the replay</p>
-                <label for="slpFileInput" class="load-slp-btn" style="display:inline-block;cursor:pointer;">📂 Browse for .slp File</label>
+                <p id="replayLoadMsg">Attach a .slp file to this note to watch the replay</p>
+                <label for="slpFileInput" class="load-slp-btn" style="display:inline-block;cursor:pointer;" id="replayLoadLabel">📂 Attach .slp File</label>
                 <input type="file" id="slpFileInput" accept=".slp" onchange="loadSlpFile(event)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
             </div>
             <div id="replayStatus" class="replay-status" style="display:none;"></div>
@@ -193,11 +200,6 @@
                     <label for="notes">Notes</label>
                     <textarea id="notes" placeholder="What does this player like to do? Tendencies, habits, gameplan notes, lessons learned..." required></textarea>
                 </div>
-                <div class="form-group">
-                    <label for="slpFileName">Replay File Name (optional)</label>
-                    <input type="text" id="slpFileName" placeholder="e.g., Game_20260308T123456.slp">
-                    <div class="slp-hint">💡 Save the filename here so you know which .slp to load. Double-click any note card to open the replay viewer.</div>
-                </div>
                 <button type="submit" class="submit-btn">Add Note</button>
             </form>
         </div>
@@ -271,6 +273,16 @@ const STAGE_DATA = {
     32: { name:'Final Destination',  x:[-246,246], y:[-140,188], platforms:[] },
 };
 
+// ===== localStorage replay storage =====
+function slpKey(note) { return 'slp_' + note.date; }
+function getAttachedReplay(note) { try { return localStorage.getItem(slpKey(note)); } catch { return null; } }
+function setAttachedReplay(note, base64) {
+    try { localStorage.setItem(slpKey(note), base64); return true; }
+    catch { alert('Storage full — .slp may be too large for browser storage (~5MB limit).'); return false; }
+}
+function removeAttachedReplay(note) { try { localStorage.removeItem(slpKey(note)); } catch {} }
+function hasAttachedReplay(note) { return !!getAttachedReplay(note); }
+
 // ===== Notes state =====
 let currentFilter = 'all';
 let currentTypeFilter = 'all';
@@ -288,9 +300,6 @@ async function loadNotesFromFile() {
     } catch { notes = []; }
     displayNotes();
 }
-
-function loadNotes() { return notes; }
-function saveNotes(n) { notes = n; }
 
 function exportNotes() {
     const blob = new Blob([JSON.stringify(notes, null, 2)], {type:'application/json'});
@@ -328,18 +337,22 @@ function displayNotes() {
 
     container.innerHTML = filtered.map(note => {
         const idx = notes.indexOf(note);
-        const hasReplay = !!note.slpFileName;
-        const replayBadge = hasReplay ? `<span class="note-replay-badge">🎮 ${note.slpFileName}</span>` : '';
+        const attached = hasAttachedReplay(note);
+        const attachBtn = attached
+            ? `<button class="attach-btn attached" onclick="event.stopPropagation();triggerAttach(${idx})" title="Replace attached replay">🎮 Replay Attached</button>
+               <button class="detach-btn" onclick="event.stopPropagation();detachReplay(${idx})" title="Remove replay">✕</button>`
+            : `<button class="attach-btn" onclick="event.stopPropagation();triggerAttach(${idx})">📎 Attach Replay</button>`;
         return `
-        <div class="note-card ${hasReplay ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})">
+        <div class="note-card ${attached ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})" title="${attached ? 'Double-click to watch replay' : 'Double-click to open replay viewer'}">
             <div class="note-actions">
+                ${attachBtn}
                 <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
             <div class="note-header">
                 <img src="${characterIcons[note.character] || ''}" alt="${note.character}">
                 <div>
-                    <div class="note-player">${note.playerName}${replayBadge}</div>
+                    <div class="note-player">${note.playerName}${attached ? '<span class="note-replay-badge">🎮 replay</span>' : ''}</div>
                     <div style="color:#667eea;font-weight:600;">${note.character}</div>
                 </div>
             </div>
@@ -350,15 +363,50 @@ function displayNotes() {
                     ${['Fox','Falco','Marth','Sheik','Peach','Jigglypuff','Captain Falcon','Samus','Ice Climbers','Pikachu','Yoshi','Luigi','Ganondorf','Dr. Mario','Donkey Kong'].map(c=>`<option value="${c}" ${note.character===c?'selected':''}>${c}</option>`).join('')}
                 </select>
                 <textarea id="edit-notes-${idx}">${note.notes}</textarea>
-                <input type="text" id="edit-slp-${idx}" value="${note.slpFileName||''}" placeholder="Replay filename (e.g. Game_20260308T123456.slp)">
                 <div style="display:flex;gap:0.5rem;">
                     <button class="save-btn" onclick="saveEdit(${idx})">Save</button>
                     <button class="cancel-btn" onclick="cancelEdit(${idx})">Cancel</button>
                 </div>
             </div>
-            <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}</div>
+            <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}${attached ? ' · <span style="color:#4ade80">🎮 double-click to watch</span>' : ''}</div>
         </div>`;
     }).join('');
+
+    // Shared hidden file input for attaching replays
+    if (!document.getElementById('attachSlpInput')) {
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.id = 'attachSlpInput'; inp.accept = '.slp';
+        inp.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+        inp.addEventListener('change', handleAttachFile);
+        document.body.appendChild(inp);
+    }
+}
+
+let pendingAttachIdx = null;
+
+window.triggerAttach = idx => {
+    pendingAttachIdx = idx;
+    const inp = document.getElementById('attachSlpInput');
+    inp.value = '';
+    inp.click();
+};
+
+window.detachReplay = idx => {
+    if (confirm('Remove attached replay from this note?')) {
+        removeAttachedReplay(notes[idx]);
+        displayNotes();
+    }
+};
+
+async function handleAttachFile(event) {
+    const file = event.target.files[0];
+    if (!file || pendingAttachIdx === null) return;
+    const note = notes[pendingAttachIdx];
+    const reader = new FileReader();
+    reader.onload = e => {
+        if (setAttachedReplay(note, e.target.result)) displayNotes();
+    };
+    reader.readAsDataURL(file);
 }
 
 document.getElementById('noteForm').addEventListener('submit', e => {
@@ -367,7 +415,6 @@ document.getElementById('noteForm').addEventListener('submit', e => {
         playerName: document.getElementById('playerName').value,
         character: document.getElementById('character').value,
         notes: document.getElementById('notes').value,
-        slpFileName: document.getElementById('slpFileName').value.trim() || null,
         date: new Date().toISOString()
     };
     notes.unshift(newNote);
@@ -376,7 +423,11 @@ document.getElementById('noteForm').addEventListener('submit', e => {
 });
 
 window.deleteNote = idx => {
-    if (confirm('Delete this note?')) { notes.splice(idx, 1); displayNotes(); }
+    if (confirm('Delete this note?')) {
+        removeAttachedReplay(notes[idx]);
+        notes.splice(idx, 1);
+        displayNotes();
+    }
 };
 window.editNote = idx => document.getElementById(`note-${idx}`).classList.add('edit-mode');
 window.cancelEdit = idx => document.getElementById(`note-${idx}`).classList.remove('edit-mode');
@@ -384,9 +435,8 @@ window.saveEdit = idx => {
     const p = document.getElementById(`edit-player-${idx}`).value;
     const c = document.getElementById(`edit-char-${idx}`).value;
     const n = document.getElementById(`edit-notes-${idx}`).value;
-    const s = document.getElementById(`edit-slp-${idx}`).value.trim();
     if (!p || !c || !n) { alert('Fill in all required fields'); return; }
-    notes[idx] = { ...notes[idx], playerName: p, character: c, notes: n, slpFileName: s || null };
+    notes[idx] = { ...notes[idx], playerName: p, character: c, notes: n };
     displayNotes();
 };
 
@@ -418,18 +468,41 @@ let lastTimestamp = null;
 let frameAccum = 0;
 let activeNoteIdx = null;
 
-window.openReplayModal = idx => {
+window.openReplayModal = async idx => {
     activeNoteIdx = idx;
     const note = notes[idx];
     document.getElementById('replayModalTitle').textContent = `🎮 ${note.playerName} — ${note.character}`;
-    const hint = document.getElementById('replayFilenameHint');
-    hint.textContent = note.slpFileName ? `Looking for: ${note.slpFileName}` : 'No filename saved for this note';
-    document.getElementById('replayLoadArea').style.display = 'block';
     document.getElementById('replayViewerArea').style.display = 'none';
-    document.getElementById('replayStatus').style.display = 'none';
     document.getElementById('replayModalOverlay').classList.add('open');
     stopPlayback();
     replayGame = null; replayFrames = null;
+
+    const stored = getAttachedReplay(note);
+    if (stored) {
+        document.getElementById('replayLoadArea').style.display = 'none';
+        const status = document.getElementById('replayStatus');
+        status.style.display = 'block';
+        status.textContent = '⏳ Loading attached replay...';
+        try {
+            const base64 = stored.split(',')[1];
+            const binary = atob(base64);
+            const uint8 = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) uint8[i] = binary.charCodeAt(i);
+            await initReplayFromBuffer(uint8, note.playerName + '.slp');
+        } catch(err) {
+            status.textContent = `❌ Error: ${err.message}`;
+            document.getElementById('replayLoadArea').style.display = 'block';
+            document.getElementById('replayFilenameHint').textContent = 'Stored replay failed — try re-attaching';
+            document.getElementById('replayLoadLabel').textContent = '📂 Re-attach .slp File';
+            document.getElementById('replayLoadMsg').textContent = 'The stored replay could not be loaded.';
+        }
+    } else {
+        document.getElementById('replayStatus').style.display = 'none';
+        document.getElementById('replayLoadArea').style.display = 'block';
+        document.getElementById('replayFilenameHint').textContent = '';
+        document.getElementById('replayLoadLabel').textContent = '📂 Attach .slp File';
+        document.getElementById('replayLoadMsg').textContent = 'Attach a .slp file — it will be saved so you never have to browse again.';
+    }
 };
 
 window.closeReplayModal = () => {
@@ -447,39 +520,43 @@ window.loadSlpFile = async event => {
     if (!file) return;
     const status = document.getElementById('replayStatus');
     status.style.display = 'block';
-    status.textContent = '⏳ Parsing replay...';
+    status.textContent = '⏳ Attaching replay...';
     document.getElementById('replayLoadArea').style.display = 'none';
-
     try {
         const buffer = await file.arrayBuffer();
         const uint8 = new Uint8Array(buffer);
-        replayGame = new SlippiGame(uint8);
-        replaySettings = replayGame.getSettings();
-        replayFrames = replayGame.getFrames();
-
-        const frameKeys = Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
-        totalFrames = frameKeys.length;
-
-        if (!totalFrames) throw new Error('No frames found in replay');
-
-        currentFrame = 0;
-        isPlaying = true;
-        document.getElementById('replayTimeline').max = totalFrames - 1;
-        document.getElementById('replayTimeline').value = 0;
-
-        buildInfoBar(replaySettings, file.name);
-        status.style.display = 'none';
-        document.getElementById('replayViewerArea').style.display = 'block';
-        document.getElementById('playPauseBtn').textContent = '⏸ Pause';
-        document.getElementById('playPauseBtn').classList.add('active');
-
-        startPlayback();
+        // Save to localStorage so it auto-loads next time
+        if (activeNoteIdx !== null) {
+            const reader = new FileReader();
+            reader.onload = e2 => { setAttachedReplay(notes[activeNoteIdx], e2.target.result); displayNotes(); };
+            reader.readAsDataURL(file);
+        }
+        await initReplayFromBuffer(uint8, file.name);
     } catch(err) {
         status.textContent = `❌ Error: ${err.message}`;
         document.getElementById('replayLoadArea').style.display = 'block';
     }
     event.target.value = '';
 };
+
+async function initReplayFromBuffer(uint8, filename) {
+    const status = document.getElementById('replayStatus');
+    replayGame = new SlippiGame(uint8);
+    replaySettings = replayGame.getSettings();
+    replayFrames = replayGame.getFrames();
+    const frameKeys = Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
+    totalFrames = frameKeys.length;
+    if (!totalFrames) throw new Error('No frames found in replay');
+    currentFrame = 0; isPlaying = true;
+    document.getElementById('replayTimeline').max = totalFrames - 1;
+    document.getElementById('replayTimeline').value = 0;
+    buildInfoBar(replaySettings, filename);
+    status.style.display = 'none';
+    document.getElementById('replayViewerArea').style.display = 'block';
+    document.getElementById('playPauseBtn').textContent = '⏸ Pause';
+    document.getElementById('playPauseBtn').classList.add('active');
+    startPlayback();
+}
 
 function buildInfoBar(settings, filename) {
     const stage = STAGE_DATA[settings.stageId];
