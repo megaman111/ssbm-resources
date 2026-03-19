@@ -63,7 +63,7 @@
         /* ===== REPLAY MODAL ===== */
         .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; }
         .replay-modal-overlay.open { display: flex; }
-        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 95vw; max-width: 900px; max-height: 95vh; overflow-y: auto; color: white; position: relative; }
+        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 98vw; max-width: 1300px; max-height: 95vh; overflow-y: auto; color: white; position: relative; }
         .replay-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .replay-modal-title { font-size: 1.2rem; font-weight: 700; color: #a78bfa; }
         .replay-close-btn { background: none; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; }
@@ -89,17 +89,38 @@
         .replay-info-bar { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.8rem; color: #888; padding: 0.5rem 0; }
         .replay-info-bar span { color: #a78bfa; }
         .replay-status { text-align: center; color: #667eea; padding: 1rem; font-size: 0.9rem; }
-        .controller-panel { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; padding: 0.75rem 0; }
-        .controller-card { background: #16213e; border-radius: 10px; padding: 0.75rem; display: flex; gap: 0.75rem; align-items: flex-start; min-width: 320px; }
-        .controller-info { flex: 0 0 auto; min-width: 120px; }
+        .controller-panel { display: flex; flex-direction: column; gap: 0.75rem; padding: 0; }
+        .controller-card { background: #16213e; border-radius: 10px; padding: 0.6rem; display: flex; gap: 0.6rem; align-items: flex-start; }
+        .controller-info { flex: 0 0 auto; min-width: 100px; }
         .controller-info .port-badge { display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; font-size: 0.7rem; font-weight: 700; margin-right: 0.4rem; vertical-align: middle; }
-        .controller-info .char-name { font-size: 1.05rem; font-weight: 700; color: #fff; }
-        .controller-info .anim-name { font-size: 0.8rem; color: #a78bfa; margin-top: 0.15rem; }
-        .controller-info .frame-num { font-size: 0.8rem; color: #888; }
-        .controller-info .extra-info { font-size: 0.7rem; color: #667eea; margin-top: 0.1rem; }
-        .savestate-btn { background: #2d2d4e; color: #ccc; border: 1px solid #555; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.75rem; margin-top: 0.4rem; transition: background 0.15s; }
+        .controller-info .char-name { font-size: 0.95rem; font-weight: 700; color: #fff; }
+        .controller-info .anim-name { font-size: 0.75rem; color: #a78bfa; margin-top: 0.15rem; }
+        .controller-info .frame-num { font-size: 0.75rem; color: #888; }
+        .controller-info .extra-info { font-size: 0.65rem; color: #667eea; margin-top: 0.1rem; }
+        .savestate-btn { background: #2d2d4e; color: #ccc; border: 1px solid #555; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.7rem; margin-top: 0.3rem; transition: background 0.15s; }
         .savestate-btn:hover { background: #3d3d6e; color: #fff; }
-        .controller-svg-wrap { flex: 1; max-width: 240px; }
+        .controller-svg-wrap { flex: 1; max-width: 180px; }
+        .replay-main-row { display: flex; gap: 1rem; }
+        .replay-left { flex: 1; min-width: 0; }
+        .replay-right { flex: 0 0 380px; max-height: 600px; overflow-y: auto; }
+        @media (max-width: 900px) { .replay-main-row { flex-direction: column; } .replay-right { flex: none; } }
+        /* Clips panel */
+        .clips-panel { background: #111827; border-radius: 10px; padding: 0.75rem; margin-top: 0.75rem; }
+        .clips-section { border: 1px solid #2a2a4a; border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; }
+        .clips-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #1a1a3e; cursor: pointer; user-select: none; font-size: 0.9rem; color: #ccc; }
+        .clips-header:hover { background: #222250; }
+        .clips-header .clips-count { font-size: 0.75rem; color: #667eea; }
+        .clips-header .clips-chevron { color: #667eea; transition: transform 0.2s; }
+        .clips-section.open .clips-chevron { transform: rotate(180deg); }
+        .clips-body { display: none; max-height: 200px; overflow-y: auto; }
+        .clips-section.open .clips-body { display: block; }
+        .clip-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; border-top: 1px solid #1a1a3e; cursor: pointer; font-size: 0.8rem; color: #aaa; transition: background 0.1s; }
+        .clip-row:hover { background: #1e1e4a; color: #fff; }
+        .clip-row .clip-port { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+        .clip-row .clip-frames { flex: 1; text-align: center; font-family: monospace; }
+        .clips-dropdown-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; border: 1px solid #2a2a4a; border-radius: 8px; margin-bottom: 0.4rem; background: #1a1a3e; }
+        .clips-dropdown-row label { color: #ccc; font-size: 0.85rem; white-space: nowrap; }
+        .clips-dropdown-row select { flex: 1; background: #2d2d4e; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.8rem; }
         .stickmap-overlay { position: absolute; z-index: 10; background: rgba(10,10,26,0.97); border: 1px solid #334; border-radius: 12px; padding: 0.5rem; box-shadow: 0 8px 32px rgba(0,0,0,0.6); width: 260px; left: 50%; transform: translateX(-50%); top: 0; }
         .stickmap-overlay .stickmap-close { position: absolute; top: 4px; right: 8px; background: none; border: none; color: #888; font-size: 1.1rem; cursor: pointer; z-index: 2; }
         .stickmap-overlay .stickmap-close:hover { color: #fff; }
@@ -127,33 +148,40 @@
             <div id="replayStatus" class="replay-status" style="display:none;"></div>
             <div id="replayViewerArea" style="display:none;">
                 <div class="replay-hud" id="replayHud"></div>
-                <div class="replay-canvas-wrap">
-                    <canvas id="replayCanvas" width="800" height="600"></canvas>
+                <div class="replay-main-row">
+                    <div class="replay-left">
+                        <div class="replay-canvas-wrap">
+                            <canvas id="replayCanvas" width="800" height="600"></canvas>
+                        </div>
+                        <div class="replay-controls">
+                            <button class="ctrl-btn" onclick="stepFrame(-300)" title="Jump back 5s">⏮ 5s</button>
+                            <button class="ctrl-btn" onclick="stepFrame(-1)">◀ Frame</button>
+                            <button class="ctrl-btn active" id="playPauseBtn" onclick="togglePlayback()">⏸ Pause</button>
+                            <button class="ctrl-btn" onclick="stepFrame(1)">Frame ▶</button>
+                            <button class="ctrl-btn" onclick="stepFrame(300)" title="Jump forward 5s">5s ⏭</button>
+                            <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
+                            <span class="frame-counter" id="frameCounter">0 / 0</span>
+                            <select class="speed-select" id="speedSelect" onchange="setSpeed(parseFloat(this.value))">
+                                <option value="0.25">0.25x</option>
+                                <option value="0.5">0.5x</option>
+                                <option value="1" selected>1x</option>
+                                <option value="2">2x</option>
+                                <option value="4">4x</option>
+                            </select>
+                            <span style="color:#555;margin:0 0.25rem">|</span>
+                            <button class="ctrl-btn" onclick="zoomOut()" title="Zoom out">🔍−</button>
+                            <button class="ctrl-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
+                            <button class="ctrl-btn" onclick="resetView()" title="Reset view">⟲</button>
+                            <button class="ctrl-btn" id="debugBtn" onclick="toggleDebug()" title="Debug mode (D key)">🐛</button>
+                        </div>
+                        <div class="replay-info-bar" id="replayInfoBar"></div>
+                        <div style="font-size:0.7rem;color:#555;padding:0.25rem 0;">Keys: Space/K=play/pause · ←→=frame · Shift+←→=10f · J/L=±1s · 0-9=jump · D=debug · F=fullscreen</div>
+                    </div>
+                    <div class="replay-right">
+                        <div id="controllerPanel" style="display:none;"></div>
+                    </div>
                 </div>
-                <div class="replay-controls">
-                    <button class="ctrl-btn" onclick="stepFrame(-300)" title="Jump back 5s">⏮ 5s</button>
-                    <button class="ctrl-btn" onclick="stepFrame(-1)">◀ Frame</button>
-                    <button class="ctrl-btn active" id="playPauseBtn" onclick="togglePlayback()">⏸ Pause</button>
-                    <button class="ctrl-btn" onclick="stepFrame(1)">Frame ▶</button>
-                    <button class="ctrl-btn" onclick="stepFrame(300)" title="Jump forward 5s">5s ⏭</button>
-                    <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
-                    <span class="frame-counter" id="frameCounter">0 / 0</span>
-                    <select class="speed-select" id="speedSelect" onchange="setSpeed(parseFloat(this.value))">
-                        <option value="0.25">0.25x</option>
-                        <option value="0.5">0.5x</option>
-                        <option value="1" selected>1x</option>
-                        <option value="2">2x</option>
-                        <option value="4">4x</option>
-                    </select>
-                    <span style="color:#555;margin:0 0.25rem">|</span>
-                    <button class="ctrl-btn" onclick="zoomOut()" title="Zoom out">🔍−</button>
-                    <button class="ctrl-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
-                    <button class="ctrl-btn" onclick="resetView()" title="Reset view">⟲</button>
-                    <button class="ctrl-btn" id="debugBtn" onclick="toggleDebug()" title="Debug mode (D key)">🐛</button>
-                </div>
-                <div class="replay-info-bar" id="replayInfoBar"></div>
-                <div style="font-size:0.7rem;color:#555;padding:0.25rem 0;">Keys: Space/K=play/pause · ←→=frame · Shift+←→=10f · J/L=±1s · 0-9=jump · D=debug · F=fullscreen</div>
-                <div id="controllerPanel" style="display:none;"></div>
+                <div id="clipsPanel" class="clips-panel" style="display:none;"></div>
             </div>
         </div>
     </div>
@@ -1659,6 +1687,9 @@ async function initReplayFromBuffer(uint8, filename) {
     document.getElementById('playPauseBtn').classList.add('active');
     startPlayback();
 
+    // Detect clips (kills, grabs, edgeguards, etc.) for the clips panel
+    setTimeout(() => detectClips(), 100);
+
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
     charIds.forEach(id => loadCharAnimations(id));
@@ -2469,6 +2500,296 @@ document.addEventListener('mousedown', (e) => {
         if (!isNaN(idx)) toggleStickMap(idx);
     }
 }, true);
+
+// ===== CLIPS DETECTION ENGINE =====
+let detectedClips = null;
+
+function detectClips() {
+    if (!replayFrames || !replaySettings) return;
+    const keys = getFrameKeys();
+    const players = replaySettings.players;
+    const clips = {
+        kills: [], grabs: [], edgeguards: [], crouchCancels: [],
+        missedLCancels: [], shieldOptions: [], ledgeOptions: []
+    };
+    // Per-player action state tracking
+    const actionsByPlayer = {};
+    // Track all action state ranges for Action/Attack dropdowns
+    const actionRanges = {}; // actionName -> [{player, start, end}]
+    const prevState = {};
+
+    players.forEach(p => {
+        prevState[p.playerIndex] = { actionStateId: -1, startFrame: 0, stocks: 4, offstage: false, opponent: null };
+    });
+    // Find opponent for each player (for 2-player games)
+    if (players.length === 2) {
+        prevState[players[0].playerIndex].opponent = players[1].playerIndex;
+        prevState[players[1].playerIndex].opponent = players[0].playerIndex;
+    }
+
+    for (let fi = 0; fi < keys.length; fi++) {
+        const frameNum = keys[fi];
+        const frame = replayFrames[frameNum];
+        if (!frame) continue;
+
+        players.forEach(p => {
+            const pf = frame.players?.[p.playerIndex];
+            if (!pf) return;
+            const post = pf.post;
+            if (!post) return;
+            const ps = prevState[p.playerIndex];
+            const asId = post.actionStateId ?? 14;
+            const asName = asId < ACTION_NAMES.length ? ACTION_NAMES[asId] : `AS${asId}`;
+            const stocks = post.stocksRemaining ?? 4;
+            const posY = post.positionY ?? 0;
+            const lCancel = post.lCancelStatus ?? 0;
+
+            // Track action state changes for Action/Attack dropdowns
+            if (asId !== ps.actionStateId) {
+                // Close previous action range
+                if (ps.actionStateId >= 0) {
+                    const prevName = ps.actionStateId < ACTION_NAMES.length ? ACTION_NAMES[ps.actionStateId] : `AS${ps.actionStateId}`;
+                    if (!actionRanges[prevName]) actionRanges[prevName] = [];
+                    actionRanges[prevName].push({ player: p.playerIndex, port: p.port, start: ps.startFrame, end: fi });
+                }
+                ps.actionStateId = asId;
+                ps.startFrame = fi;
+            }
+
+            // Kill detection: stock count decreased
+            if (stocks < ps.stocks && ps.stocks > 0) {
+                // This player lost a stock — attribute kill to opponent
+                const killerIdx = ps.opponent;
+                const killerPort = killerIdx != null ? (players.find(x=>x.playerIndex===killerIdx)?.port ?? 0) : p.port;
+                clips.kills.push({ player: killerIdx ?? p.playerIndex, victim: p.playerIndex, port: killerPort, victimPort: p.port, frame: fi });
+            }
+            ps.stocks = stocks;
+
+            // Grab detection: Catch through ThrowLw (212-222)
+            if (asId >= 212 && asId <= 222) {
+                // In grab sequence (Catch through ThrowLw)
+                if (ps._grabStart == null) ps._grabStart = fi;
+                ps._grabEnd = fi;
+            } else {
+                if (ps._grabStart != null) {
+                    clips.grabs.push({ player: p.playerIndex, port: p.port, start: ps._grabStart, end: ps._grabEnd });
+                    ps._grabStart = null;
+                }
+            }
+
+            // Edgeguard detection: opponent is offstage (below stage or past blast zone X)
+            const stageId = replaySettings.stageId;
+            const stage = STAGE_DATA[stageId];
+            if (stage && ps.opponent != null) {
+                const oppFrame = frame.players?.[ps.opponent]?.post;
+                if (oppFrame) {
+                    const oppX = oppFrame.positionX ?? 0;
+                    const oppY = oppFrame.positionY ?? 0;
+                    const offstage = oppY < stage.y[0] + 5 || Math.abs(oppX) > (stage.x[1] + 20);
+                    if (offstage && !ps._edgeguardStart) {
+                        ps._edgeguardStart = fi;
+                    } else if (!offstage && ps._edgeguardStart) {
+                        if (fi - ps._edgeguardStart > 15) {
+                            clips.edgeguards.push({ player: p.playerIndex, port: p.port, start: ps._edgeguardStart, end: fi });
+                        }
+                        ps._edgeguardStart = null;
+                    }
+                }
+            }
+
+            // Crouch cancel: in Squat/SquatWait (39-40) and taking damage
+            if ((asId >= 75 && asId <= 86) && (ps._prevAsId === 39 || ps._prevAsId === 40)) {
+                clips.crouchCancels.push({ player: p.playerIndex, port: p.port, frame: fi });
+            }
+
+            // Missed L-cancel: lCancelStatus === 2
+            if (lCancel === 2 && ps._prevLCancel !== 2) {
+                clips.missedLCancels.push({ player: p.playerIndex, port: p.port, frame: fi });
+            }
+            ps._prevLCancel = lCancel;
+
+            // Shield options: GuardOn/Guard/GuardReflect/GuardSetOff (178-182) transitions
+            if (asId >= 178 && asId <= 182) {
+                if (ps._shieldStart == null) ps._shieldStart = fi;
+                ps._shieldEnd = fi;
+            } else {
+                if (ps._shieldStart != null) {
+                    const exitName = asName;
+                    clips.shieldOptions.push({ player: p.playerIndex, port: p.port, start: ps._shieldStart, end: fi, exit: exitName });
+                    ps._shieldStart = null;
+                }
+            }
+
+            // Ledge options: CliffCatch through CliffJumpQuick2 (252-263)
+            if (asId >= 252 && asId <= 263) {
+                if (ps._ledgeStart == null) ps._ledgeStart = fi;
+                ps._ledgeEnd = fi;
+            } else {
+                if (ps._ledgeStart != null) {
+                    const exitName = asName;
+                    clips.ledgeOptions.push({ player: p.playerIndex, port: p.port, start: ps._ledgeStart, end: fi, exit: exitName });
+                    ps._ledgeStart = null;
+                }
+            }
+
+            ps._prevAsId = asId;
+        });
+    }
+
+    // Close any open ranges
+    players.forEach(p => {
+        const ps = prevState[p.playerIndex];
+        if (ps.actionStateId >= 0) {
+            const name = ps.actionStateId < ACTION_NAMES.length ? ACTION_NAMES[ps.actionStateId] : `AS${ps.actionStateId}`;
+            if (!actionRanges[name]) actionRanges[name] = [];
+            actionRanges[name].push({ player: p.playerIndex, port: p.port, start: ps.startFrame, end: keys.length - 1 });
+        }
+    });
+
+    clips.actionRanges = actionRanges;
+    detectedClips = clips;
+    buildClipsPanel();
+}
+
+function buildClipsPanel() {
+    const panel = document.getElementById('clipsPanel');
+    if (!panel || !detectedClips) return;
+    const clips = detectedClips;
+    const players = replaySettings.players;
+
+    const portColor = (port) => PLAYER_COLORS[(players.findIndex(p => p.port === port)) % PLAYER_COLORS.length] || '#888';
+
+    function buildSection(id, title, items, renderRow) {
+        const count = items.length;
+        return `<div class="clips-section" id="clips-${id}">
+            <div class="clips-header" onclick="document.getElementById('clips-${id}').classList.toggle('open')">
+                <span>${title} <span class="clips-count">(${count})</span></span>
+                <span class="clips-chevron">▼</span>
+            </div>
+            <div class="clips-body">${count === 0 ? '<div style="padding:0.5rem 0.75rem;color:#555;font-size:0.8rem;">None detected</div>' : items.map(renderRow).join('')}</div>
+        </div>`;
+    }
+
+    const frameClick = (f) => `onclick="seekToFrame(${f});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${f})"`;
+
+    let html = '<div style="font-size:0.95rem;color:#a78bfa;font-weight:700;margin-bottom:0.5rem;">📋 Clips</div>';
+
+    // Kill Combos
+    html += buildSection('kills', 'Kill Combos', clips.kills, k => {
+        const c = portColor(k.port);
+        const vc = portColor(k.victimPort);
+        return `<div class="clip-row" ${frameClick(Math.max(0, k.frame - 120))}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${k.port+1}</span>
+            <span style="color:#666;font-size:0.7rem;">KO'd</span>
+            <span class="clip-port" style="background:${vc}20;color:${vc};">P${k.victimPort+1}</span>
+            <span class="clip-frames">Frame ${k.frame}</span>
+        </div>`;
+    });
+
+    // Grabs
+    html += buildSection('grabs', 'Grabs', clips.grabs, g => {
+        const c = portColor(g.port);
+        return `<div class="clip-row" ${frameClick(g.start)}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${g.port+1}</span>
+            <span class="clip-frames">${g.start}–${g.end}</span>
+        </div>`;
+    });
+
+    // Edgeguards
+    html += buildSection('edgeguards', 'Edgeguards', clips.edgeguards, eg => {
+        const c = portColor(eg.port);
+        return `<div class="clip-row" ${frameClick(eg.start)}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${eg.port+1}</span>
+            <span class="clip-frames">${eg.start}–${eg.end}</span>
+        </div>`;
+    });
+
+    // Crouch Cancels
+    html += buildSection('cc', 'Crouch Cancels', clips.crouchCancels, cc => {
+        const c = portColor(cc.port);
+        return `<div class="clip-row" ${frameClick(Math.max(0, cc.frame - 30))}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${cc.port+1}</span>
+            <span class="clip-frames">Frame ${cc.frame}</span>
+        </div>`;
+    });
+
+    // Missed L-Cancels
+    html += buildSection('lcancel', 'Missed L-Cancels', clips.missedLCancels, lc => {
+        const c = portColor(lc.port);
+        return `<div class="clip-row" ${frameClick(Math.max(0, lc.frame - 15))}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${lc.port+1}</span>
+            <span class="clip-frames">Frame ${lc.frame}</span>
+        </div>`;
+    });
+
+    // Shield Options
+    html += buildSection('shield', 'Shield Options', clips.shieldOptions, so => {
+        const c = portColor(so.port);
+        return `<div class="clip-row" ${frameClick(so.start)}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${so.port+1}</span>
+            <span class="clip-frames">${so.start}–${so.end}</span>
+            <span style="color:#667eea;font-size:0.7rem;">→${so.exit}</span>
+        </div>`;
+    });
+
+    // Ledge Options
+    html += buildSection('ledge', 'Ledge Options', clips.ledgeOptions, lo => {
+        const c = portColor(lo.port);
+        return `<div class="clip-row" ${frameClick(lo.start)}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${lo.port+1}</span>
+            <span class="clip-frames">${lo.start}–${lo.end}</span>
+            <span style="color:#667eea;font-size:0.7rem;">→${lo.exit}</span>
+        </div>`;
+    });
+
+    // Action dropdown
+    const actionNames = Object.keys(clips.actionRanges).sort();
+    html += `<div class="clips-dropdown-row">
+        <label>Action:</label>
+        <select id="clipActionSelect" onchange="showActionClips(this.value)">
+            <option value="">— select —</option>
+            ${actionNames.map(n => `<option value="${n}">${n} (${clips.actionRanges[n].length})</option>`).join('')}
+        </select>
+    </div>`;
+    html += `<div id="clipActionResults"></div>`;
+
+    // Attack dropdown (subset of actions that are attacks)
+    const attackNames = actionNames.filter(n => n.startsWith('Attack') || n.startsWith('Landing'));
+    html += `<div class="clips-dropdown-row">
+        <label>Attack:</label>
+        <select id="clipAttackSelect" onchange="showActionClips(this.value)">
+            <option value="">— select —</option>
+            ${attackNames.map(n => `<option value="${n}">${n} (${clips.actionRanges[n].length})</option>`).join('')}
+        </select>
+    </div>`;
+
+    panel.innerHTML = html;
+    panel.style.display = 'block';
+}
+
+window.showActionClips = (actionName) => {
+    const resultsDiv = document.getElementById('clipActionResults');
+    if (!resultsDiv || !actionName || !detectedClips?.actionRanges?.[actionName]) {
+        if (resultsDiv) resultsDiv.innerHTML = '';
+        return;
+    }
+    const ranges = detectedClips.actionRanges[actionName];
+    const players = replaySettings.players;
+    const portColor = (port) => PLAYER_COLORS[(players.findIndex(p => p.port === port)) % PLAYER_COLORS.length] || '#888';
+    const frameClick = (f) => `onclick="seekToFrame(${f});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${f})"`;
+
+    let html = `<div style="max-height:200px;overflow-y:auto;margin-bottom:0.4rem;">`;
+    ranges.slice(0, 100).forEach(r => {
+        const c = portColor(r.port);
+        html += `<div class="clip-row" ${frameClick(r.start)}>
+            <span class="clip-port" style="background:${c}20;color:${c};">P${r.port+1}</span>
+            <span class="clip-frames">${r.start}–${r.end}</span>
+        </div>`;
+    });
+    if (ranges.length > 100) html += `<div style="padding:0.3rem 0.75rem;color:#555;font-size:0.75rem;">...and ${ranges.length - 100} more</div>`;
+    html += '</div>';
+    resultsDiv.innerHTML = html;
+};
 
 // Savestate download using @gcpreston/tm_replay_wasm
 window.downloadSavestate = async (playerIndex) => {
