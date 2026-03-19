@@ -2313,7 +2313,7 @@ function updateControllerPanel(frameIdx) {
         }
         // Stick map toggle button
         const smActive = stickMapPlayerIdx === i;
-        html += `<button class="savestate-btn stickmap-toggle" data-stickmap="${i}" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
+        html += `<button class="savestate-btn stickmap-toggle" onclick="toggleStickMap(${i})" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
 
         html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, i)}</div></div>`;
         // Stick map overlay: if this player's stick map is open, render it below the card
@@ -2330,16 +2330,16 @@ function updateControllerPanel(frameIdx) {
     panel.style.display = 'block';
 }
 
-// Persistent delegated click handler for stick map (survives innerHTML rebuilds)
-document.addEventListener('click', (e) => {
+// Persistent delegated click handler for stick map (capture phase, survives innerHTML rebuilds)
+document.addEventListener('mousedown', (e) => {
     const toggle = e.target.closest('.stickmap-toggle');
     if (toggle) {
         e.preventDefault();
+        e.stopPropagation();
         const idx = parseInt(toggle.getAttribute('data-stickmap'));
         if (!isNaN(idx)) toggleStickMap(idx);
-        return;
     }
-});
+}, true);
 
 // Savestate download using @gcpreston/tm_replay_wasm
 window.downloadSavestate = async (playerIndex) => {
