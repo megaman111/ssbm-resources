@@ -1276,10 +1276,10 @@ function renderFrame(frameIdx) {
         const actionStateId = post?.actionStateId ?? pre?.actionStateId ?? 14;
         const actionStateCounter = post?.actionStateFrameCounter ?? pre?.actionStateFrameCounter ?? 0;
 
-        // Shadow ellipse on ground
+        // Shadow ellipse on ground (ground is at y=0 for all stages)
         ctx.save();
         ctx.beginPath();
-        ctx.ellipse(px, toCanvasY(groundY) + 2, 16 * scale / 4, 5, 0, 0, Math.PI * 2);
+        ctx.ellipse(px, toCanvasY(0) + 2, 16 * scale / 4, 5, 0, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(0,0,0,0.35)';
         ctx.fill();
         ctx.restore();
