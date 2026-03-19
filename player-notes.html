@@ -83,7 +83,9 @@
         .ctrl-btn { background: #2d2d4e; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.15s; }
         .ctrl-btn:hover { background: #3d3d6e; }
         .ctrl-btn.active { background: #667eea; }
-        .replay-timeline { flex: 1; min-width: 120px; accent-color: #667eea; }
+        .replay-timeline { width: 100%; accent-color: #667eea; height: 18px; cursor: pointer; margin: 0; }
+        .replay-timeline-wrap { position: relative; padding: 0.4rem 0 0; }
+        .replay-timeline-wrap canvas { display: block; width: 100%; height: 28px; border-radius: 4px; cursor: pointer; }
         .frame-counter { color: #aaa; font-size: 0.8rem; white-space: nowrap; }
         .speed-select { background: #2d2d4e; color: white; border: 1px solid #444; border-radius: 6px; padding: 0.3rem 0.5rem; font-size: 0.85rem; }
         .replay-info-bar { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.8rem; color: #888; padding: 0.5rem 0; }
@@ -159,7 +161,6 @@
                             <button class="ctrl-btn active" id="playPauseBtn" onclick="togglePlayback()">⏸ Pause</button>
                             <button class="ctrl-btn" onclick="stepFrame(1)">Frame ▶</button>
                             <button class="ctrl-btn" onclick="stepFrame(300)" title="Jump forward 5s">5s ⏭</button>
-                            <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
                             <span class="frame-counter" id="frameCounter">0 / 0</span>
                             <select class="speed-select" id="speedSelect" onchange="setSpeed(parseFloat(this.value))">
                                 <option value="0.25">0.25x</option>
@@ -173,6 +174,10 @@
                             <button class="ctrl-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
                             <button class="ctrl-btn" onclick="resetView()" title="Reset view">⟲</button>
                             <button class="ctrl-btn" id="debugBtn" onclick="toggleDebug()" title="Debug mode (D key)">🐛</button>
+                        </div>
+                        <div class="replay-timeline-wrap">
+                            <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
+                            <canvas id="stockTimeline" height="28"></canvas>
                         </div>
                         <div class="replay-info-bar" id="replayInfoBar"></div>
                         <div style="font-size:0.7rem;color:#555;padding:0.25rem 0;">Keys: Space/K=play/pause · ←→=frame · Shift+←→=10f · J/L=±1s · 0-9=jump · D=debug · F=fullscreen</div>
@@ -1688,7 +1693,7 @@ async function initReplayFromBuffer(uint8, filename) {
     startPlayback();
 
     // Detect clips (kills, grabs, edgeguards, etc.) for the clips panel
-    setTimeout(() => detectClips(), 100);
+    setTimeout(() => { detectClips(); buildStockTimeline(); }, 100);
 
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
@@ -2192,6 +2197,7 @@ function renderFrame(frameIdx) {
     document.getElementById('replayTimeline').value = frameIdx;
     document.getElementById('frameCounter').textContent = `${frameIdx} / ${totalFrames - 1}`;
     updateControllerPanel(frameIdx);
+    renderStockTimeline();
 }
 
 function startPlayback() {
@@ -2513,6 +2519,141 @@ function updateControllerPanel(frameIdx) {
     panel.style.display = 'block';
     updateStickMapContainer();
 }
+
+// ===== STOCK TIMELINE =====
+let stockTimelineData = null; // { players: [{port, color, deaths: [frameIdx]}], totalFrames }
+
+function buildStockTimeline() {
+    if (!replayFrames || !replaySettings) return;
+    const keys = getFrameKeys();
+    const players = replaySettings.players;
+    const data = { players: [], totalFrames: keys.length };
+
+    players.forEach((p, i) => {
+        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const deaths = [];
+        let prevStocks = 4;
+        for (let fi = 0; fi < keys.length; fi++) {
+            const frame = replayFrames[keys[fi]];
+            const post = frame?.players?.[p.playerIndex]?.post;
+            const stocks = post?.stocksRemaining ?? prevStocks;
+            if (stocks < prevStocks && prevStocks > 0) {
+                deaths.push(fi);
+            }
+            prevStocks = stocks;
+        }
+        data.players.push({ port: p.port, color, deaths, startStocks: 4 });
+    });
+
+    stockTimelineData = data;
+    renderStockTimeline();
+}
+
+function renderStockTimeline() {
+    const canvas = document.getElementById('stockTimeline');
+    if (!canvas || !stockTimelineData) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 28 * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const w = rect.width, h = 28;
+    const total = stockTimelineData.totalFrames;
+    if (total <= 0) return;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, w, h);
+
+    const numPlayers = stockTimelineData.players.length;
+    const rowH = h / numPlayers;
+    const dotR = Math.min(rowH * 0.3, 5);
+
+    stockTimelineData.players.forEach((p, pi) => {
+        const y = pi * rowH + rowH / 2;
+        // Draw base line (full game, colored)
+        ctx.strokeStyle = p.color + '40';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+
+        // Draw stock dots at death positions
+        // Each death = one dot lost. Show remaining stocks as colored dots, lost as grey
+        const maxStocks = p.startStocks;
+        p.deaths.forEach((deathFrame, di) => {
+            const x = (deathFrame / total) * w;
+            // Draw death marker — X mark
+            ctx.strokeStyle = p.color;
+            ctx.lineWidth = 2;
+            const sz = dotR + 1;
+            ctx.beginPath();
+            ctx.moveTo(x - sz, y - sz); ctx.lineTo(x + sz, y + sz);
+            ctx.moveTo(x + sz, y - sz); ctx.lineTo(x - sz, y + sz);
+            ctx.stroke();
+
+            // Draw stock dots after the death marker showing remaining
+            const remaining = maxStocks - (di + 1);
+            const dotSpacing = dotR * 2.5;
+            const dotsStartX = x + 8;
+            for (let s = 0; s < maxStocks; s++) {
+                const dx = dotsStartX + s * dotSpacing;
+                if (dx > w - 4) break;
+                ctx.beginPath();
+                ctx.arc(dx, y, dotR, 0, Math.PI * 2);
+                if (s < remaining) {
+                    ctx.fillStyle = p.color;
+                } else {
+                    ctx.fillStyle = '#333';
+                }
+                ctx.fill();
+            }
+        });
+
+        // Draw initial stock dots at the start
+        const dotSpacing = dotR * 2.5;
+        for (let s = 0; s < p.startStocks; s++) {
+            const dx = 4 + s * dotSpacing;
+            ctx.beginPath();
+            ctx.arc(dx, y, dotR, 0, Math.PI * 2);
+            ctx.fillStyle = p.color;
+            ctx.fill();
+        }
+    });
+
+    // Draw playhead
+    if (typeof currentFrame === 'number' && total > 0) {
+        const px = (currentFrame / total) * w;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px, 0);
+        ctx.lineTo(px, h);
+        ctx.stroke();
+    }
+}
+
+// Click on stock timeline to seek
+document.addEventListener('DOMContentLoaded', () => {
+    const stCanvas = document.getElementById('stockTimeline');
+    if (stCanvas) {
+        stCanvas.addEventListener('click', (e) => {
+            if (!stockTimelineData || stockTimelineData.totalFrames <= 0) return;
+            const rect = stCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const frac = x / rect.width;
+            const frame = Math.round(frac * (stockTimelineData.totalFrames - 1));
+            seekToFrame(frame);
+            isPlaying = false;
+            document.getElementById('playPauseBtn').textContent = '▶ Play';
+            document.getElementById('playPauseBtn').classList.remove('active');
+            renderFrame(frame);
+        });
+    }
+    window.addEventListener('resize', () => renderStockTimeline());
+});
 
 // ===== CLIPS DETECTION ENGINE =====
 let detectedClips = null;
