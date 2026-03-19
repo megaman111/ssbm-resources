@@ -131,6 +131,10 @@
                         <option value="2">2x</option>
                         <option value="4">4x</option>
                     </select>
+                    <span style="color:#555;margin:0 0.25rem">|</span>
+                    <button class="ctrl-btn" onclick="zoomOut()" title="Zoom out">🔍−</button>
+                    <button class="ctrl-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
+                    <button class="ctrl-btn" onclick="resetView()" title="Reset view">⟲</button>
                 </div>
                 <div class="replay-info-bar" id="replayInfoBar"></div>
             </div>
@@ -993,11 +997,21 @@ let lastTimestamp = null;
 let frameAccum = 0;
 let activeNoteIdx = null;
 
+// Zoom/pan state for replay viewer
+let viewZoom = 1.0;       // 1.0 = fit stage to canvas, >1 = zoomed in
+let viewPanX = 0;         // pan offset in game units
+let viewPanY = 0;
+let isDragging = false;
+let dragStartX = 0, dragStartY = 0;
+let dragStartPanX = 0, dragStartPanY = 0;
+
 window.openReplayModal = async idx => {
     activeNoteIdx = idx;
     const note = notes[idx];
     document.getElementById('replayModalTitle').textContent = `🎮 ${note.playerName} — ${note.character}`;
     document.getElementById('replayViewerArea').style.display = 'none';
+    // Reset zoom/pan when opening new replay
+    viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
     document.getElementById('replayModalOverlay').classList.add('open');
     stopPlayback();
     replayGame = null; replayFrames = null;
@@ -1039,6 +1053,111 @@ window.closeReplayModal = () => {
 document.getElementById('replayModalOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('replayModalOverlay')) closeReplayModal();
 });
+
+// ===== ZOOM/PAN CONTROLS =====
+const replayCanvas = document.getElementById('replayCanvas');
+
+// Mouse wheel zoom
+replayCanvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.5, Math.min(5, viewZoom * zoomFactor));
+    
+    // Zoom toward mouse position
+    const rect = replayCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // Convert mouse position to game coords at current zoom, then adjust pan so it stays under cursor
+    const W = replayCanvas.width, H = replayCanvas.height;
+    const stageId = replaySettings?.stageId;
+    const stage = STAGE_DATA[stageId] || { x:[-230,230], y:[-150,200] };
+    const [bx0, bx1] = stage.x;
+    const [by0, by1] = stage.y;
+    const stageW = bx1 - bx0, stageH = by1 - by0;
+    const baseScale = Math.min((W - 100) / stageW, (H - 100) / stageH);
+    const stageCenterX = (bx0 + bx1) / 2;
+    const stageCenterY = (by0 + by1) / 2;
+    
+    // Current game coords under mouse
+    const oldScale = baseScale * viewZoom;
+    const oldOffX = W/2 - (stageCenterX + viewPanX) * oldScale;
+    const oldOffY = H/2 + (stageCenterY + viewPanY) * oldScale;
+    const gameX = (mouseX - oldOffX) / oldScale;
+    const gameY = -(mouseY - oldOffY) / oldScale;
+    
+    // Update zoom
+    viewZoom = newZoom;
+    
+    // Adjust pan so gameX,gameY stays under mouse
+    const newScale = baseScale * viewZoom;
+    viewPanX = (W/2 - mouseX) / newScale + gameX - stageCenterX;
+    viewPanY = (mouseY - H/2) / newScale + gameY - stageCenterY;
+    
+    renderFrame(currentFrame);
+}, { passive: false });
+
+// Pan with mouse drag
+replayCanvas.addEventListener('mousedown', e => {
+    if (e.button !== 0) return; // left click only
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragStartPanX = viewPanX;
+    dragStartPanY = viewPanY;
+    replayCanvas.style.cursor = 'grabbing';
+});
+
+document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    
+    // Convert pixel delta to game units
+    const stageId = replaySettings?.stageId;
+    const stage = STAGE_DATA[stageId] || { x:[-230,230], y:[-150,200] };
+    const [bx0, bx1] = stage.x;
+    const [by0, by1] = stage.y;
+    const stageW = bx1 - bx0, stageH = by1 - by0;
+    const W = replayCanvas.width, H = replayCanvas.height;
+    const baseScale = Math.min((W - 100) / stageW, (H - 100) / stageH);
+    const scale = baseScale * viewZoom;
+    
+    viewPanX = dragStartPanX - dx / scale;
+    viewPanY = dragStartPanY + dy / scale; // inverted because canvas Y is down
+    renderFrame(currentFrame);
+});
+
+document.addEventListener('mouseup', () => {
+    if (isDragging) {
+        isDragging = false;
+        replayCanvas.style.cursor = 'grab';
+    }
+});
+
+// Set grab cursor when hovering canvas
+replayCanvas.addEventListener('mouseenter', () => {
+    if (!isDragging) replayCanvas.style.cursor = 'grab';
+});
+replayCanvas.addEventListener('mouseleave', () => {
+    if (!isDragging) replayCanvas.style.cursor = 'default';
+});
+
+// Zoom control functions
+window.zoomIn = () => {
+    viewZoom = Math.min(5, viewZoom * 1.25);
+    renderFrame(currentFrame);
+};
+window.zoomOut = () => {
+    viewZoom = Math.max(0.5, viewZoom / 1.25);
+    renderFrame(currentFrame);
+};
+window.resetView = () => {
+    viewZoom = 1.0;
+    viewPanX = 0;
+    viewPanY = 0;
+    renderFrame(currentFrame);
+};
 
 window.loadSlpFile = async event => {
     const file = event.target.files[0];
@@ -1125,14 +1244,28 @@ function renderFrame(frameIdx) {
     const [by0, by1] = stage.y;
     const stageW = bx1 - bx0, stageH = by1 - by0;
     const pad = 50;
-    const scaleX = (W - pad*2) / stageW;
-    const scaleY = (H - pad*2) / stageH;
-    const scale = Math.min(scaleX, scaleY);
-    const offX = W/2 - (bx0 + stageW/2) * scale;
-    const offY = H/2 + (by0 + stageH/2) * scale;
+    
+    // Base scale to fit stage in canvas
+    const baseScaleX = (W - pad*2) / stageW;
+    const baseScaleY = (H - pad*2) / stageH;
+    const baseScale = Math.min(baseScaleX, baseScaleY);
+    
+    // Apply zoom
+    const scale = baseScale * viewZoom;
+    
+    // Center of stage in game coords
+    const stageCenterX = (bx0 + bx1) / 2;
+    const stageCenterY = (by0 + by1) / 2;
+    
+    // Offset: center of canvas maps to (stageCenterX + panX, stageCenterY + panY)
+    const offX = W/2 - (stageCenterX + viewPanX) * scale;
+    const offY = H/2 + (stageCenterY + viewPanY) * scale;
 
     const toCanvasX = x => x * scale + offX;
     const toCanvasY = y => -y * scale + offY;
+    // Inverse: canvas coords to game coords (for pan)
+    const toGameX = cx => (cx - offX) / scale;
+    const toGameY = cy => -(cy - offY) / scale;
 
     // Background gradient
     const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -1250,7 +1383,7 @@ function renderFrame(frameIdx) {
     ctx.fillStyle = 'rgba(180,180,180,0.5)';
     ctx.font = '11px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`Frame ${frameNum}  (${Math.floor(Math.max(0,frameNum)/60)}s)`, W - 10, 18);
+    ctx.fillText(`Frame ${frameNum}  (${Math.floor(Math.max(0,frameNum)/60)}s)  ${viewZoom.toFixed(1)}x`, W - 10, 18);
     ctx.textAlign = 'left';
 
     const players = replaySettings.players;
@@ -1318,6 +1451,27 @@ function renderFrame(frameIdx) {
             ctx.strokeStyle = 'rgba(255,255,255,0.7)';
             ctx.lineWidth = 2;
             ctx.globalAlpha = 1;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Shield bubble (when shielding)
+        // Action states 178-182 are GuardOn, Guard, GuardOff, GuardSetOff, GuardReflect
+        const isShielding = actionStateId >= 178 && actionStateId <= 182;
+        const shieldStrength = post?.shieldStrength ?? 60; // max is 60
+        if (isShielding && shieldStrength > 0) {
+            const shieldRadius = (shieldStrength / 60) * 12 * scale; // scale with shield health
+            const shieldAlpha = 0.4 + (shieldStrength / 60) * 0.3;
+            ctx.save();
+            ctx.beginPath();
+            // Shield is centered slightly above character center
+            ctx.arc(px, py - 5 * scale, shieldRadius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.globalAlpha = shieldAlpha;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.8;
             ctx.stroke();
             ctx.restore();
         }
