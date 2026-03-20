@@ -2227,7 +2227,7 @@ function renderFrame(frameIdx) {
             ctx.translate(px, py);
             // Apply rotation around approximate center (0, 8 game units above feet)
             if (rotation !== 0) {
-                const rotRad = rotation * Math.PI / 180;
+                const rotRad = -rotation * Math.PI / 180; // negate: game Y-up → canvas Y-down
                 const cy8 = -8 * scale; // 8 game units up in canvas space
                 ctx.translate(0, cy8);
                 ctx.rotate(rotRad);
@@ -2648,6 +2648,16 @@ function buildControllerSVG(pre, color, playerIdx) {
     const dOff = gR * 0.7;
     const isNotched = notchedPlayers[playerIdx] === true;
 
+    // C-stick octagonal gate: center (395.2, 411.6), radius 44.1
+    const csGCx = 395.2, csGCy = 411.6, csGR = 44.1;
+    const csDOff = csGR * 0.7;
+    const csOctPoints = [
+        [csGCx, csGCy - csGR], [csGCx + csDOff, csGCy - csDOff],
+        [csGCx + csGR, csGCy], [csGCx + csDOff, csGCy + csDOff],
+        [csGCx, csGCy + csGR], [csGCx - csDOff, csGCy + csDOff],
+        [csGCx - csGR, csGCy], [csGCx - csDOff, csGCy - csDOff],
+    ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+
     // Build gate SVG
     let gatePath;
     if (isNotched) {
@@ -2727,7 +2737,7 @@ function buildControllerSVG(pre, color, playerIdx) {
         ${gatePath}
         <circle fill="gray" stroke="black" stroke-width="2.5" cx="${stickCx}" cy="${stickCy}" r="35.1"/>
         <path fill="transparent" d="M402 361.3c.4 0 .8.1 1.1.3l31.2 18a3 3 0 0 1 1.4 1.8l10.3 34.1a3 3 0 0 1-.3 2.4L427 451.2a3 3 0 0 1-1.9 1.5l-36.2 9.2a3 3 0 0 1-2.3-.3l-32.2-18.9a3 3 0 0 1-1.4-2l-8.7-37.1a3 3 0 0 1 .4-2.4l19.3-30a3 3 0 0 1 1.8-1.3l35-8.6h1.2z"/>
-        <circle fill="gold" stroke="black" stroke-width="2.5" cx="395.2" cy="411.6" r="44.1"/>
+        <polygon fill="gold" stroke="black" stroke-width="2.5" points="${csOctPoints}"/>
         <circle fill="yellow" stroke="black" stroke-width="2.5" cx="${csCx}" cy="${csCy}" r="24.6"/>
         <circle fill="${w(start)||'gray'}" stroke="black" stroke-width="2.5" cx="292.9" cy="271.9" r="13.7"/>
         <path fill="transparent" d="M478.2 187.8a21.5 21.5 0 0 1 21.6 24.8 69 69 0 0 1 26.6 16 21.4 21.4 0 0 1 13.8-5c9.8 0 18.4 6.6 21 16l.2 1c5.7 18.8 5.7 18.8 9.7 36l.2.9a21.9 21.9 0 0 1-21 27.2 21 21 0 0 1-7.8-1.6 69 69 0 0 1-109.8 26.2 29 29 0 1 1-23.7-45.7h.8l-.2-5.6c0-16.5 5.8-31.6 15.5-43.5a21.6 21.6 0 0 1 10-35.9l1-.3c18.8-5.7 18.8-5.7 36-9.7l.8-.2c1.7-.4 3.5-.6 5.3-.6z"/>
