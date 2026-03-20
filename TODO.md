@@ -47,7 +47,7 @@
 - [ ] Pokemon Stadium transformations indicator
 
 ### Controller & State Display
-- [x] **Controller visualization** — SVG GameCube controller per player showing all inputs (sticks, buttons, triggers, d-pad) in real-time
+- [x] **Controller visualization** — SVG GameCube controller per player showing all inputs (sticks, buttons  triggers, d-pad) in real-time
 - [x] **Player state info** — character name, animation state name, frame counter, hitlag/hitstun/invulnerability indicators
 - [x] **Download savestate button** — generates .gci savestate file (300 frames) using `@gcpreston/tm_replay_wasm`, loadable in Training Mode Community Edition
 - [x] **Hide savestate for doubles** — savestate button hidden when replay has >2 players (doubles .gci not supported yet)
@@ -60,32 +60,55 @@
 - [x] **Debug mode** — show action state ID, frame counter, position, animation name per player (toggle with 'd' key)
 - [x] **Fullscreen mode** (toggle with 'f' key)
 - [x] **Keyboard shortcuts** — j/k/l for seek, number keys for percentage jump
+- [x] **Toggleable grid overlay** — Slippi Lab style coordinate grid with adaptive spacing, origin axes, and labels (toggle with 'g' key)
+- [x] **Toggleable hitbox data overlay** — shows FightCore frame data (move name, active frames, damage, angle, KBG/BKB) per player during attacks (toggle with 'h' key)
 - [ ] **Timer display** — Melee-accurate timer with hundredths conversion
 - [ ] **Highlight navigation** — jump between notable moments (kills, combos, etc.)
 
+### FightCore Integration
+- [x] **FightCore module** (`fightcore.js`) — reusable ES module that loads/caches character move data from FightCore GitHub repo, calculates CC and ASDI Down max percents using Melee knockback formula
+- [x] **CC / ASDI Down quick-reference panel** — collapsible panel in replay viewer showing crouch cancel and ASDI down max percents for every attacker→defender matchup in the current replay
+
 ### Clips Panel
 - [x] **Clips panel** — collapsible sections for Kill Combos, Grabs, Edgeguards, Crouch Cancels, Missed L-Cancels, Shield Options, Ledge Options
-- [x] **Action dropdown** — select any action state to see all occurrences with frame ranges
-- [x] **Attack dropdown** — filtered to Attack/Landing actions
-- [x] **Click-to-seek** — clicking a clip row jumps to that frame
-- [x] **Layout restructure** — canvas+controls on left, controllers on right, clips panel below
+### FightCore Integration
+- [x] **FightCore module** (`fightcore.js`) — reusable ES module for frame data, CC/ASDI calculations
+- [x] **CC/ASDI Down collapsible panel** — per-matchup table showing max CC% and ASDI Down% for every move
+- [x] **Toggleable grid overlay** — adaptive coordinate grid with minor/major lines, origin axes, labels (G key)
+- [x] **Toggleable hitbox data overlay** — FightCore move data circles on canvas + frame data in controller panel (H key)
+- [x] **Frame data in controller panel** — move name, active frames, total/IASA, best hitbox stats when hitbox mode on
+
+### Modularity
+- [ ] Extract replay viewer into standalone reusable module (embeddable on any page)
+- [ ] Concept-to-replay linking — click a concept and it opens the replay viewer at a specific moment
+- [ ] Doubles support (4 players)nvas+controls on left, controllers on right, clips panel below
 - [x] **Stick map overlay** — persistent container outside controller panel, updates with frame data
 
 ### Modularity
 - [ ] Extract replay viewer into standalone reusable module (embeddable on any page)
 - [ ] Concept-to-replay linking — click a concept and it opens the replay viewer at a specific moment
-- [ ] Doubles support (4 players)
-
----
-
-## Future Modules
-
 ### IKneeData Calculator Module
 - [ ] Melee frame data calculator (like IKneeData)
 - [ ] Knockback calculator
 - [ ] Combo/DI calculator
 - [ ] Hitbox visualization
 - [ ] Embeddable as a module on any page
+
+### FightCore Data Module (Reusable)
+- [x] `fightcore.js` — standalone ES module, importable from any page
+- [x] Loads per-character move data from FightCore GitHub (cached)
+- [x] CC / ASDI Down percent calculator (Melee knockback formula)
+- [x] Action state → move name mapping for real-time frame data lookup
+- [ ] Integrate into matchup pages for per-matchup CC/ASDI reference tables
+- [ ] Integrate into Way of Fox for character-specific frame data quick reference
+- [ ] Add kill percent calculations
+### IKneeData Calculator Module
+- [ ] Melee frame data calculator (like IKneeData)
+- [ ] Knockback calculator
+- [ ] Combo/DI calculator
+- [ ] Hitbox visualization
+- [ ] Embeddable as a module on any page
+- [ ] Once functional make a button that takes the frame you are paused on and inputs it into the ikneedata recreation for you to tinker with that ikneedata calculation 
 
 ### VOD Linking Module
 - [ ] Link VODs (YouTube/Twitch timestamps) to notes

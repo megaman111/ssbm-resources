@@ -188,6 +188,8 @@
                             <button class="ctrl-btn" onclick="zoomIn()" title="Zoom in">🔍+</button>
                             <button class="ctrl-btn" onclick="resetView()" title="Reset view">⟲</button>
                             <button class="ctrl-btn" id="debugBtn" onclick="toggleDebug()" title="Debug mode (D key)">🐛</button>
+                            <button class="ctrl-btn" id="gridBtn" onclick="toggleGrid()" title="Toggle grid (G key)">⊞</button>
+                            <button class="ctrl-btn" id="hitboxDataBtn" onclick="toggleHitboxData()" title="Toggle hitbox data (H key)">🎯</button>
                         </div>
                         <div class="replay-timeline-wrap">
                             <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
@@ -217,6 +219,13 @@
                         <span class="clips-chevron">▼</span>
                     </div>
                     <div id="clipsPanel" class="clips-panel"></div>
+                </div>
+                <div class="clips-panel-wrap" id="ccAsdiPanelWrap" style="display:none;">
+                    <div class="clips-panel-toggle" onclick="document.getElementById('ccAsdiPanelWrap').classList.toggle('open')">
+                        <span>🛡️ CC / ASDI Down Percents</span>
+                        <span class="clips-chevron">▼</span>
+                    </div>
+                    <div id="ccAsdiPanel" class="clips-panel" style="max-height:50vh;"></div>
                 </div>
                 <div id="shortcutsOverlay" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;" onclick="if(event.target===this)toggleShortcuts()">
                     <div style="background:#1a1a2e;border:1px solid #334;border-radius:12px;padding:1.5rem;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;color:#ccc;font-family:monospace;">
@@ -339,6 +348,7 @@
 // ===== slippi-js + fflate via esm.sh =====
 import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
 import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
+import { FightCore } from './fightcore.js';
 
 // Savestate WASM module (lazy-loaded only when user clicks download)
 let tmReplayWasm = null;
@@ -1632,6 +1642,9 @@ let isDragging = false;
 let dragStartX = 0, dragStartY = 0;
 let dragStartPanX = 0, dragStartPanY = 0;
 let debugMode = false; // Toggle with 'd' key — shows action state, anim name, position
+let gridMode = false;    // Toggle grid overlay (like Slippi Lab)
+let hitboxDataMode = false; // Toggle hitbox frame data overlay
+const fightCore = new FightCore(); // Reusable FightCore module instance
 
 window.openReplayModal = async idx => {
     activeNoteIdx = idx;
@@ -1909,6 +1922,92 @@ window.toggleDebug = () => {
     renderFrame(currentFrame);
 };
 
+window.toggleGrid = () => {
+    gridMode = !gridMode;
+    const btn = document.getElementById('gridBtn');
+    if (btn) btn.classList.toggle('active', gridMode);
+    renderFrame(currentFrame);
+};
+
+window.toggleHitboxData = () => {
+    hitboxDataMode = !hitboxDataMode;
+    const btn = document.getElementById('hitboxDataBtn');
+    if (btn) btn.classList.toggle('active', hitboxDataMode);
+    renderFrame(currentFrame);
+};
+
+async function buildCCAsdiPanel() {
+    if (!replaySettings) return;
+    const wrap = document.getElementById('ccAsdiPanelWrap');
+    const panel = document.getElementById('ccAsdiPanel');
+    if (!wrap || !panel) return;
+    wrap.style.display = 'block';
+    panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Loading FightCore data...</div>';
+
+    const players = replaySettings.players;
+    // Preload FightCore data for all characters (also used by hitbox overlay)
+    await Promise.all(players.map(p => fightCore.getMoves(p.characterId)));
+
+    let html = '';
+    // For each pair of attacker → defender, show CC/ASDI percents
+    for (let a = 0; a < players.length; a++) {
+        for (let d = 0; d < players.length; d++) {
+            if (a === d) continue;
+            const atkId = players[a].characterId;
+            const defId = players[d].characterId;
+            const atkName = CHAR_NAMES[atkId] || `P${players[a].port+1}`;
+            const defName = CHAR_NAMES[defId] || `P${players[d].port+1}`;
+            const atkColor = PLAYER_COLORS[a % PLAYER_COLORS.length];
+            const defColor = PLAYER_COLORS[d % PLAYER_COLORS.length];
+
+            const ccData = await fightCore.getCCPercents(atkId, defId);
+            if (!ccData || !ccData.length) continue;
+
+            // Filter to common/useful moves (tilts, smashes, aerials, specials)
+            const useful = ccData.filter(m =>
+                m.ccMaxPercent > 0 && m.ccMaxPercent < 999
+            ).sort((a, b) => b.ccMaxPercent - a.ccMaxPercent);
+
+            if (!useful.length) continue;
+
+            html += `<div style="border:1px solid #2a2a4a;border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">`;
+            html += `<div style="padding:0.4rem 0.6rem;background:#1a1a3e;font-size:0.85rem;">`;
+            html += `<span style="color:${atkColor};font-weight:700;">${atkName}</span>`;
+            html += ` <span style="color:#666;">→</span> `;
+            html += `<span style="color:${defColor};font-weight:700;">${defName}</span>`;
+            html += `</div>`;
+            html += `<table style="width:100%;border-collapse:collapse;font-size:0.75rem;">`;
+            html += `<thead><tr style="color:#888;border-bottom:1px solid #2a2a4a;">`;
+            html += `<th style="text-align:left;padding:0.25rem 0.4rem;">Move</th>`;
+            html += `<th style="text-align:center;padding:0.25rem;">Dmg</th>`;
+            html += `<th style="text-align:center;padding:0.25rem;color:#4f4;">CC%</th>`;
+            html += `<th style="text-align:center;padding:0.25rem;color:#4af;">ASDI↓%</th>`;
+            html += `</tr></thead><tbody>`;
+
+            for (const m of useful.slice(0, 30)) {
+                const ccStr = m.ccMaxPercent >= 999 ? '∞' : m.ccMaxPercent < 0 ? '✗' : `${m.ccMaxPercent}%`;
+                const asdiStr = m.asdiMaxPercent >= 999 ? '∞' : m.asdiMaxPercent < 0 ? '✗' : `${m.asdiMaxPercent}%`;
+                const ccColor = m.ccMaxPercent >= 999 ? '#4f4' : m.ccMaxPercent < 0 ? '#f44' : '#cfc';
+                const asdiColor = m.asdiMaxPercent >= 999 ? '#4af' : m.asdiMaxPercent < 0 ? '#f44' : '#cdf';
+                const hitLabel = m.hitName && m.hitName !== 'unknown' ? ` (${m.hitName})` : '';
+                html += `<tr style="border-bottom:1px solid #1a1a3e;">`;
+                html += `<td style="padding:0.2rem 0.4rem;color:#ddd;">${m.moveName}${hitLabel}</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:#faa;">${m.damage}%</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:${ccColor};font-weight:600;">${ccStr}</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:${asdiColor};font-weight:600;">${asdiStr}</td>`;
+                html += `</tr>`;
+            }
+            html += `</tbody></table></div>`;
+        }
+    }
+
+    if (!html) {
+        panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">No CC/ASDI data available</div>';
+    } else {
+        panel.innerHTML = html;
+    }
+}
+
 window.loadSlpFile = async event => {
     const file = event.target.files[0];
     if (!file) return;
@@ -1957,6 +2056,9 @@ async function initReplayFromBuffer(uint8, filename) {
 
     // Detect clips (kills, grabs, edgeguards, etc.) for the clips panel
     setTimeout(() => { detectClips(); buildStockTimeline(); detectNotchedPlayers(); }, 100);
+
+    // Load FightCore data for characters in this replay and build CC/ASDI panel
+    setTimeout(() => buildCCAsdiPanel(), 200);
 
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
@@ -2040,6 +2142,77 @@ function renderFrame(frameIdx) {
     bg.addColorStop(1, '#0d1a2e');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
+
+    // Grid overlay (toggleable, Slippi Lab style)
+    if (gridMode) {
+        ctx.save();
+        // Determine grid spacing in game units (adaptive based on zoom)
+        let gridStep = 10;
+        if (viewZoom > 2) gridStep = 5;
+        if (viewZoom < 0.8) gridStep = 20;
+        if (viewZoom < 0.5) gridStep = 50;
+
+        // Calculate visible game-coord range
+        const gxMin = toGameX(0), gxMax = toGameX(W);
+        const gyMin = toGameY(H), gyMax = toGameY(0);
+        const startX = Math.floor(Math.min(gxMin, gxMax) / gridStep) * gridStep;
+        const endX = Math.ceil(Math.max(gxMin, gxMax) / gridStep) * gridStep;
+        const startY = Math.floor(Math.min(gyMin, gyMax) / gridStep) * gridStep;
+        const endY = Math.ceil(Math.max(gyMin, gyMax) / gridStep) * gridStep;
+
+        // Minor grid lines
+        ctx.strokeStyle = 'rgba(60,80,140,0.15)';
+        ctx.lineWidth = 0.5;
+        for (let gx = startX; gx <= endX; gx += gridStep) {
+            const cx = toCanvasX(gx);
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+        }
+        for (let gy = startY; gy <= endY; gy += gridStep) {
+            const cy = toCanvasY(gy);
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+        }
+
+        // Major grid lines (every 50 units)
+        const majorStep = 50;
+        ctx.strokeStyle = 'rgba(80,110,180,0.25)';
+        ctx.lineWidth = 1;
+        const mStartX = Math.floor(Math.min(gxMin, gxMax) / majorStep) * majorStep;
+        const mEndX = Math.ceil(Math.max(gxMin, gxMax) / majorStep) * majorStep;
+        const mStartY = Math.floor(Math.min(gyMin, gyMax) / majorStep) * majorStep;
+        const mEndY = Math.ceil(Math.max(gyMin, gyMax) / majorStep) * majorStep;
+        for (let gx = mStartX; gx <= mEndX; gx += majorStep) {
+            const cx = toCanvasX(gx);
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke();
+        }
+        for (let gy = mStartY; gy <= mEndY; gy += majorStep) {
+            const cy = toCanvasY(gy);
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(W, cy); ctx.stroke();
+        }
+
+        // Origin axes (x=0, y=0)
+        ctx.strokeStyle = 'rgba(120,160,255,0.35)';
+        ctx.lineWidth = 1.5;
+        const ox = toCanvasX(0);
+        ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, H); ctx.stroke();
+        const oy = toCanvasY(0);
+        ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(W, oy); ctx.stroke();
+
+        // Grid labels on major lines
+        ctx.fillStyle = 'rgba(100,140,220,0.4)';
+        ctx.font = '9px monospace';
+        ctx.textAlign = 'center';
+        for (let gx = mStartX; gx <= mEndX; gx += majorStep) {
+            if (gx === 0) continue;
+            ctx.fillText(gx.toString(), toCanvasX(gx), oy + 12);
+        }
+        ctx.textAlign = 'right';
+        for (let gy = mStartY; gy <= mEndY; gy += majorStep) {
+            if (gy === 0) continue;
+            ctx.fillText(gy.toString(), ox - 4, toCanvasY(gy) + 3);
+        }
+        ctx.textAlign = 'left';
+        ctx.restore();
+    }
 
     // Blast zone border
     ctx.save();
@@ -2371,6 +2544,46 @@ function renderFrame(frameIdx) {
             ctx.restore();
         }
 
+        // Hitbox data overlay per player (from FightCore) — draw hitbox circles on canvas
+        if (hitboxDataMode && resolvedAnimName) {
+            const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
+            if (moveData && moveData.hits) {
+                // Check if current frame is within any hit's active window
+                const moveFrame = Math.floor(actionStateCounter);
+                for (const hit of moveData.hits) {
+                    const hStart = hit.start || 0;
+                    const hEnd = hit.end || 0;
+                    if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
+                        // Draw hitbox circles around the character
+                        const numHitboxes = hit.hitboxes ? hit.hitboxes.length : 1;
+                        for (let hi = 0; hi < numHitboxes; hi++) {
+                            const hb = hit.hitboxes?.[hi];
+                            if (!hb || hb.damage <= 0) continue;
+                            // Approximate hitbox radius from damage (no position data in FightCore)
+                            // Use a visual radius proportional to damage, centered on character
+                            const baseR = 4 + hb.damage * 0.4;
+                            const r = baseR * scale;
+                            // Offset each hitbox slightly so they don't all stack
+                            const offsetAngle = (hi / numHitboxes) * Math.PI * 2;
+                            const offsetDist = numHitboxes > 1 ? 3 * scale : 0;
+                            const hx = px + Math.cos(offsetAngle) * offsetDist;
+                            const hy = py - 6 * scale + Math.sin(offsetAngle) * offsetDist;
+
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                            ctx.fillStyle = 'rgba(255,50,50,0.18)';
+                            ctx.fill();
+                            ctx.strokeStyle = 'rgba(255,80,80,0.55)';
+                            ctx.lineWidth = 1.5;
+                            ctx.stroke();
+                            ctx.restore();
+                        }
+                    }
+                }
+            }
+        }
+
         const stocks = post?.stocksRemaining ?? pre?.stocksRemaining ?? '?';
         const percent = (post?.percent ?? pre?.percent ?? 0).toFixed(1);
         hudParts.push({ tag, charName, color, stocks, percent });
@@ -2539,6 +2752,8 @@ document.addEventListener('keydown', e => {
         closeReplayModal();
     }
     else if (e.key === 'd' || e.key === 'D') { debugMode = !debugMode; renderFrame(currentFrame); }
+    else if (e.key === 'g' || e.key === 'G') { toggleGrid(); }
+    else if (e.key === 'h' || e.key === 'H') { toggleHitboxData(); }
     else if (e.key === 'f' || e.key === 'F') {
         const modal = document.getElementById('replayModal');
         if (document.fullscreenElement) document.exitFullscreen();
@@ -2593,6 +2808,8 @@ const SHORTCUT_LIST = [
     ['+ / =', 'Zoom in'],
     ['- / _', 'Zoom out'],
     ['D', 'Toggle debug overlay'],
+    ['G', 'Toggle grid overlay'],
+    ['H', 'Toggle hitbox data overlay'],
     ['?', 'Show this shortcuts panel'],
     ['Esc', 'Close shortcuts / Close viewer'],
 ];
@@ -2960,6 +3177,29 @@ function updateControllerPanel(frameIdx) {
         html += `<button class="savestate-btn stickmap-toggle" data-action="stickmap" data-idx="${i}" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
         // Enforcer button
         html += `<button class="savestate-btn" data-action="enforcer" data-pidx="${player.playerIndex}" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
+
+        // FightCore frame data info (when hitbox data mode is on)
+        if (hitboxDataMode) {
+            const resolvedAnim = animName;
+            const moveData = fightCore.getFrameDataForAction(charId, resolvedAnim);
+            if (moveData) {
+                const activeStr = moveData.start && moveData.end ? `F${moveData.start}-${moveData.end}` : '';
+                const totalStr = moveData.totalFrames ? `/${moveData.totalFrames}` : '';
+                const iasaStr = moveData.iasa ? ` IASA:${moveData.iasa}` : '';
+                html += `<div class="extra-info" style="color:#ffa;margin-top:0.2rem;">🎯 ${moveData.name}</div>`;
+                html += `<div class="extra-info" style="color:#adf;">${activeStr}${totalStr}${iasaStr}</div>`;
+                // Best hitbox
+                let bestHb = null;
+                for (const hit of (moveData.hits || [])) {
+                    for (const hb of (hit.hitboxes || [])) {
+                        if (!bestHb || hb.damage > bestHb.damage) bestHb = hb;
+                    }
+                }
+                if (bestHb) {
+                    html += `<div class="extra-info" style="color:#fcc;">${bestHb.damage}% ${bestHb.angle}° KBG:${bestHb.knockbackGrowth} BKB:${bestHb.baseKnockback}</div>`;
+                }
+            }
+        }
 
         html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, player.playerIndex)}</div></div>`;
     });
