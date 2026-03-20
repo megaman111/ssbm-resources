@@ -186,6 +186,7 @@
                     </div>
                     <div class="replay-right">
                         <div id="controllerPanel" style="display:none;"></div>
+                        <div id="stickMapContainer" style="display:none;"></div>
                     </div>
                 </div>
                 <div id="clipsPanel" class="clips-panel" style="display:none;"></div>
@@ -2548,8 +2549,8 @@ function buildControllerSVG(pre, color, playerIdx) {
     </svg>`;
 }
 
-// Stick map overlay state: which player index is showing, null = none
-let stickMapPlayerIdx = null;
+// Stick map overlay state: Set of player indices with open stick maps
+let stickMapOpenPlayers = new Set();
 
 function buildStickMapSVG(jx, jy, color) {
     const sz = 300, cx = sz/2, cy = sz/2, r = 130;
@@ -2596,18 +2597,26 @@ function buildStickMapSVG(jx, jy, color) {
 }
 
 window.toggleStickMap = (playerIdx) => {
-    stickMapPlayerIdx = (stickMapPlayerIdx === playerIdx) ? null : playerIdx;
+    if (stickMapOpenPlayers.has(playerIdx)) {
+        stickMapOpenPlayers.delete(playerIdx);
+    } else {
+        stickMapOpenPlayers.add(playerIdx);
+    }
     updateStickMapContainer();
 };
-window.closeStickMap = () => {
-    stickMapPlayerIdx = null;
+window.closeStickMap = (playerIdx) => {
+    if (playerIdx !== undefined) {
+        stickMapOpenPlayers.delete(playerIdx);
+    } else {
+        stickMapOpenPlayers.clear();
+    }
     updateStickMapContainer();
 };
 
 function updateStickMapContainer() {
     const container = document.getElementById('stickMapContainer');
     if (!container) return;
-    if (stickMapPlayerIdx == null || !replayFrames || !replaySettings) {
+    if (stickMapOpenPlayers.size === 0 || !replayFrames || !replaySettings) {
         container.style.display = 'none';
         container.innerHTML = '';
         return;
@@ -2617,21 +2626,25 @@ function updateStickMapContainer() {
     const frame = replayFrames[frameNum];
     if (!frame) { container.style.display = 'none'; return; }
     const players = replaySettings.players;
-    const i = stickMapPlayerIdx;
-    const player = players[i];
-    if (!player) { container.style.display = 'none'; return; }
-    const pFrame = frame.players?.[player.playerIndex];
-    const pre = pFrame?.pre;
-    const jx = pre?.joystickX ?? 0;
-    const jy = pre?.joystickY ?? 0;
-    const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
-    container.innerHTML = `<div style="background:#111827;border-radius:10px;padding:0.5rem;margin-top:0.5rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
-            <span style="color:#a78bfa;font-size:0.85rem;font-weight:700;">🎯 Stick Map — P${player.port+1}</span>
-            <button onclick="closeStickMap()" style="background:none;border:none;color:#888;font-size:1.1rem;cursor:pointer;">✕</button>
-        </div>
-        ${buildStickMapSVG(jx, jy, color)}
-    </div>`;
+    let html = '<div style="display:flex;flex-wrap:wrap;gap:0.5rem;">';
+    for (const i of stickMapOpenPlayers) {
+        const player = players[i];
+        if (!player) continue;
+        const pFrame = frame.players?.[player.playerIndex];
+        const pre = pFrame?.pre;
+        const jx = pre?.joystickX ?? 0;
+        const jy = pre?.joystickY ?? 0;
+        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        html += `<div style="background:#111827;border-radius:10px;padding:0.5rem;margin-top:0.5rem;flex:1;min-width:200px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+                <span style="color:#a78bfa;font-size:0.85rem;font-weight:700;">🎯 Stick Map — P${player.port+1}</span>
+                <button onclick="closeStickMap(${i})" style="background:none;border:none;color:#888;font-size:1.1rem;cursor:pointer;">✕</button>
+            </div>
+            ${buildStickMapSVG(jx, jy, color)}
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
     container.style.display = 'block';
 }
 
@@ -2681,7 +2694,7 @@ function updateControllerPanel(frameIdx) {
             html += `<button class="savestate-btn" onclick="downloadSavestate(${player.playerIndex})">Download savestate</button>`;
         }
         // Stick map toggle button
-        const smActive = stickMapPlayerIdx === i;
+        const smActive = stickMapOpenPlayers.has(i);
         html += `<button class="savestate-btn stickmap-toggle" onclick="toggleStickMap(${i})" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
         // Enforcer button
         html += `<button class="savestate-btn" onclick="runEnforcer(${player.playerIndex})" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
