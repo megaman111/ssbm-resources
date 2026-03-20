@@ -2511,70 +2511,59 @@ function buildControllerSVG(pre, color, playerIdx) {
     // Octagonal gate for control stick (GCC has octagonal gate, not circular)
     // Center: (104.7, 274.5), radius ~69
     const gCx = 104.7, gCy = 274.5, gR = 69.1;
-    // GCC octagonal gate: cardinal reach = gR, diagonal notch x/y offset = 0.7*gR
     const octR = gR;
     const dOff = gR * 0.7;
     const isNotched = notchedPlayers[playerIdx] === true;
 
-    // Build gate path
-    // Stock octagon: 8 vertices. Notched: each edge between cardinal and diagonal
-    // gets a concave U-shaped indentation (notch carved into the gate).
+    // Build gate SVG
     let gatePath;
     if (isNotched) {
-        // Notch positions in stick-space, mapped to SVG coords
-        const nA = 0.3875 * gR; // off-axis offset from center
-        const nM = 0.9125 * gR; // on-axis offset from center
-        const nW = 4;  // half-width of notch opening along edge
-        const nD = 6;  // depth of notch inward toward center
+        // A notched GCC gate has 16 notch grooves: the stock 8 (4 cardinals + 4 diagonals)
+        // plus 8 firefox/wavedash notches. Between each groove, the gate rim follows a circle.
+        // Each notch is a V-shaped indentation pointing inward.
+        const outerR = gR + 2; // outer rim radius (ridges between notches)
+        const nD = 7;          // notch depth inward from outer rim
+        const nHW = 3.5;       // notch half-width (angular spread in SVG units)
 
-        // Helper: given a notch center on the gate edge, compute the 4 points
-        // of a concave rectangular cutout (2 edge points + 2 inward points)
-        function notchCutout(nx, ny) {
-            const dx = nx - gCx, dy = ny - gCy;
-            const len = Math.sqrt(dx*dx + dy*dy);
-            const ux = dx/len, uy = dy/len; // outward unit
-            const px = -uy, py = ux;         // perpendicular along edge
-            return {
-                e1: [nx + px*nW, ny + py*nW],           // edge point 1
-                i1: [nx + px*nW - ux*nD, ny + py*nW - uy*nD], // inner point 1
-                i2: [nx - px*nW - ux*nD, ny - py*nW - uy*nD], // inner point 2
-                e2: [nx - px*nW, ny - py*nW],           // edge point 2
-            };
-        }
+        // All 16 notch angles in degrees, clockwise from top (0° = North = -Y in SVG)
+        // Stock: N(0), NE(45), E(90), SE(135), S(180), SW(225), W(270), NW(315)
+        // Firefox/WD notches at ~23° off each cardinal:
+        // N±23 → 337°, 23°; E±23 → 67°, 113°; S±23 → 157°, 203°; W±23 → 247°, 293°
+        const notchAngles = [
+            0, 23, 45, 67, 90, 113, 135, 157,
+            180, 203, 225, 247, 270, 293, 315, 337
+        ];
 
-        // 8 notch positions (between each cardinal-diagonal pair)
-        const notches = {
-            NR: notchCutout(gCx + nA, gCy - nM),  // N to NE edge
-            NL: notchCutout(gCx - nA, gCy - nM),  // NW to N edge
-            EU: notchCutout(gCx + nM, gCy - nA),  // NE to E edge
-            ED: notchCutout(gCx + nM, gCy + nA),  // E to SE edge
-            WU: notchCutout(gCx - nM, gCy - nA),  // NW to W edge (W side, going up)
-            WD: notchCutout(gCx - nM, gCy + nA),  // W to SW edge
-            SR: notchCutout(gCx + nA, gCy + nM),  // SE to S edge
-            SL: notchCutout(gCx - nA, gCy + nM),  // S to SW edge
+        // Convert angle (degrees, 0=N clockwise) to SVG coords
+        const toXY = (deg, r) => {
+            const rad = (deg - 90) * Math.PI / 180; // -90 because 0°=N=top
+            return [gCx + Math.cos(rad) * r, gCy + Math.sin(rad) * r];
         };
 
-        // Build polygon going clockwise: N → (notch NR) → NE → (notch EU) → E → ...
-        const p = (pt) => `${pt[0].toFixed(1)},${pt[1].toFixed(1)}`;
-        const pts = [
-            [gCx, gCy - octR],                                    // N
-            notches.NR.e1, notches.NR.i1, notches.NR.i2, notches.NR.e2, // notch N-right
-            [gCx + dOff, gCy - dOff],                             // NE
-            notches.EU.e1, notches.EU.i1, notches.EU.i2, notches.EU.e2, // notch E-up
-            [gCx + octR, gCy],                                    // E
-            notches.ED.e1, notches.ED.i1, notches.ED.i2, notches.ED.e2, // notch E-down (WD-R)
-            [gCx + dOff, gCy + dOff],                             // SE
-            notches.SR.e1, notches.SR.i1, notches.SR.i2, notches.SR.e2, // notch S-right
-            [gCx, gCy + octR],                                    // S
-            notches.SL.e1, notches.SL.i1, notches.SL.i2, notches.SL.e2, // notch S-left
-            [gCx - dOff, gCy + dOff],                             // SW
-            notches.WD.e1, notches.WD.i1, notches.WD.i2, notches.WD.e2, // notch W-down (WD-L)
-            [gCx - octR, gCy],                                    // W
-            notches.WU.e1, notches.WU.i1, notches.WU.i2, notches.WU.e2, // notch W-up
-            [gCx - dOff, gCy - dOff],                             // NW
-            notches.NL.e1, notches.NL.i1, notches.NL.i2, notches.NL.e2, // notch N-left
-        ];
-        gatePath = `<polygon fill="lightgray" stroke="black" stroke-width="2.5" points="${pts.map(p).join(' ')}"/>`;
+        // Build path: arc between notches, V-groove at each notch
+        let d = '';
+        for (let i = 0; i < 16; i++) {
+            const ang = notchAngles[i];
+            const nextAng = notchAngles[(i + 1) % 16];
+
+            // Notch tip (inward)
+            const [tipX, tipY] = toXY(ang, outerR - nD);
+            // Notch entry/exit points on outer rim
+            const [e1X, e1Y] = toXY(ang - 3, outerR);
+            const [e2X, e2Y] = toXY(ang + 3, outerR);
+
+            if (i === 0) {
+                d += `M${e1X.toFixed(1)},${e1Y.toFixed(1)} `;
+            }
+            // V-groove into notch
+            d += `L${tipX.toFixed(1)},${tipY.toFixed(1)} `;
+            d += `L${e2X.toFixed(1)},${e2Y.toFixed(1)} `;
+            // Arc along outer rim to next notch entry
+            const [n1X, n1Y] = toXY(nextAng - 3, outerR);
+            d += `A${outerR.toFixed(1)},${outerR.toFixed(1)} 0 0,1 ${n1X.toFixed(1)},${n1Y.toFixed(1)} `;
+        }
+        d += 'Z';
+        gatePath = `<path fill="lightgray" stroke="black" stroke-width="2" d="${d}"/>`;
     } else {
         const octPoints = [
             [gCx, gCy - octR], [gCx + dOff, gCy - dOff],
