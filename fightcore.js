@@ -325,9 +325,15 @@ export class FightCore {
         if (!moves.length) return [];
         const defWeight = CHAR_WEIGHTS[defenderId] || 100;
         const results = [];
-        // Moves that can't be CC'd (you're grabbed/thrown, not in neutral)
+        // Moves filtered from CC/ASDI panel:
+        // - Throws/grabs/pummel: can't CC (you're grabbed)
+        // - Ledge attacks: setKB 90 means ASDI down never works, CC is impractical
+        // - Getup attacks: BKB 80 means ASDI down never works, CC is impractical
         const NON_CC_MOVES = new Set([
             'fthrow','bthrow','uthrow','dthrow','grab','dashgrab','pummel',
+            'ledgeattackslow','ledgeattackfast','edge',
+            'getupattackback','getupattackstomach',
+            'bgetup','fgetup',
         ]);
         for (const move of moves) {
             if (!move.hits || !move.hits.length) continue;
