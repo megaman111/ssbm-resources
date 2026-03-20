@@ -1341,23 +1341,29 @@ async function initSlpKeyCache() {
         const store = tx.objectStore(SLP_STORE);
         const req = store.getAllKeys();
         req.onsuccess = () => { _slpLocalKeys.clear(); req.result.forEach(k => _slpLocalKeys.add(k)); };
-        // Migrate any old localStorage entries
+        // Migrate any old localStorage entries then remove them regardless
+        const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('slp_')) {
-                const val = localStorage.getItem(key);
-                if (val) {
-                    try {
-                        const b64 = val.split(',')[1];
-                        const bin = atob(b64);
-                        const arr = new Uint8Array(bin.length);
-                        for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
-                        await idbPut(key, arr.buffer);
-                        localStorage.removeItem(key);
-                        _slpLocalKeys.add(key);
-                    } catch {}
-                }
+            if (key && key.startsWith('slp_')) keysToRemove.push(key);
+        }
+        for (const key of keysToRemove) {
+            const val = localStorage.getItem(key);
+            if (val) {
+                try {
+                    const b64 = val.includes(',') ? val.split(',')[1] : val;
+                    const bin = atob(b64);
+                    const arr = new Uint8Array(bin.length);
+                    for (let j = 0; j < bin.length; j++) arr[j] = bin.charCodeAt(j);
+                    await idbPut(key, arr.buffer);
+                    _slpLocalKeys.add(key);
+                } catch {}
             }
+            // Always remove from localStorage even if migration failed
+            localStorage.removeItem(key);
+        }
+        if (keysToRemove.length > 0) {
+            console.log(`Cleaned ${keysToRemove.length} old replay(s) from localStorage → IndexedDB`);
         }
     } catch(e) { console.warn('IndexedDB init failed:', e); }
 }
@@ -1397,7 +1403,11 @@ async function getAttachedReplay(note) {
 // Async: stores ArrayBuffer
 async function setAttachedReplay(note, arrayBuffer) {
     try { await idbPut(slpKey(note), arrayBuffer); return true; }
-    catch(e) { alert('Storage error: ' + e.message); return false; }
+    catch(e) {
+        console.warn('IndexedDB storage failed:', e);
+        alert('Could not save replay to browser storage: ' + e.message + '\nThe replay will still play but won\'t persist between sessions.\nReplays are stored in IndexedDB (no 5MB limit). If this persists, try clearing site data.');
+        return false;
+    }
 }
 
 // Async: removes
@@ -1641,7 +1651,7 @@ window.openReplayModal = async idx => {
             document.getElementById('replayLoadMsg').textContent = 'The stored replay could not be loaded.';
         }
     } else if (note.replayFile) {
-        // No localStorage data — fetch from repo (remote visitors / phone)
+        // No IndexedDB data — fetch from repo (remote visitors / phone)
         document.getElementById('replayLoadArea').style.display = 'none';
         const status = document.getElementById('replayStatus');
         status.style.display = 'block';
