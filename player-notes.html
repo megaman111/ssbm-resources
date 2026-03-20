@@ -61,11 +61,13 @@
         .slp-hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
 
         /* ===== REPLAY MODAL ===== */
-        .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; }
-        .replay-modal-overlay.open { display: flex; }
-        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 98vw; max-width: 1400px; max-height: 95vh; overflow-y: auto; color: white; position: relative; }
-        .replay-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; }
+        .replay-modal-overlay.open { display: block; }
+        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 90vw; max-width: 1400px; height: 85vh; overflow: hidden; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); resize: both; min-width: 600px; min-height: 400px; display: flex; flex-direction: column; }
+        .replay-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; cursor: grab; user-select: none; flex-shrink: 0; }
+        .replay-modal-header:active { cursor: grabbing; }
         .replay-modal-title { font-size: 1.2rem; font-weight: 700; color: #a78bfa; }
+        .replay-modal-content-wrap { flex: 1; overflow-y: auto; min-height: 0; }
         .replay-close-btn { background: none; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; }
         .replay-close-btn:hover { background: rgba(255,255,255,0.1); color: white; }
         .replay-load-area { text-align: center; padding: 2rem; border: 2px dashed #444; border-radius: 12px; margin-bottom: 1rem; }
@@ -142,6 +144,7 @@
                 <div class="replay-modal-title" id="replayModalTitle">🎮 Replay Viewer</div>
                 <button class="replay-close-btn" onclick="closeReplayModal()">✕</button>
             </div>
+            <div class="replay-modal-content-wrap">
             <div class="replay-load-area" id="replayLoadArea">
                 <div class="filename-hint" id="replayFilenameHint"></div>
                 <p id="replayLoadMsg">Attach a .slp file to this note to watch the replay</p>
@@ -212,6 +215,7 @@
                         <div style="text-align:right;margin-top:1rem;"><button onclick="toggleShortcuts()" style="background:#2d2d4e;color:#ccc;border:1px solid #555;padding:0.4rem 1rem;border-radius:6px;cursor:pointer;">Close</button></div>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -1610,6 +1614,10 @@ window.openReplayModal = async idx => {
     document.getElementById('replayViewerArea').style.display = 'none';
     // Reset zoom/pan when opening new replay
     viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
+    // Reset modal position to center
+    const modal = document.getElementById('replayModal');
+    modal.style.top = '50%'; modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
     document.getElementById('replayModalOverlay').classList.add('open');
     stopPlayback();
     replayGame = null; replayFrames = null;
@@ -1668,6 +1676,34 @@ window.closeReplayModal = () => {
 document.getElementById('replayModalOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('replayModalOverlay')) closeReplayModal();
 });
+
+// Draggable modal via header
+(function() {
+    const header = document.querySelector('.replay-modal-header');
+    const modal = document.getElementById('replayModal');
+    let dragging = false, startX, startY, startLeft, startTop;
+
+    header.addEventListener('mousedown', e => {
+        if (e.target.closest('.replay-close-btn')) return; // don't drag on close button
+        dragging = true;
+        const rect = modal.getBoundingClientRect();
+        // Switch from transform-based centering to fixed position on first drag
+        modal.style.transform = 'none';
+        modal.style.left = rect.left + 'px';
+        modal.style.top = rect.top + 'px';
+        startX = e.clientX; startY = e.clientY;
+        startLeft = rect.left; startTop = rect.top;
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        modal.style.left = (startLeft + e.clientX - startX) + 'px';
+        modal.style.top = (startTop + e.clientY - startY) + 'px';
+    });
+
+    document.addEventListener('mouseup', () => { dragging = false; });
+})();
 
 // Event delegation for controller panel buttons (survives innerHTML rebuilds during playback)
 document.getElementById('controllerPanel').addEventListener('mousedown', e => {
