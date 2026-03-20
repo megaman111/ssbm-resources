@@ -1671,6 +1671,12 @@ document.getElementById('controllerPanel').addEventListener('mousedown', e => {
     else if (action === 'savestate') downloadSavestate(parseInt(btn.dataset.pidx));
     else if (action === 'enforcer') runEnforcer(parseInt(btn.dataset.pidx));
 });
+// Slider for controller scale (input event fires continuously while dragging)
+document.getElementById('controllerPanel').addEventListener('input', e => {
+    if (e.target.dataset.action === 'scale-slider') {
+        controllerScale = parseFloat(e.target.value);
+    }
+});
 
 // ===== ZOOM/PAN CONTROLS =====
 const replayCanvas = document.getElementById('replayCanvas');
@@ -2503,49 +2509,73 @@ function buildControllerSVG(pre, color, playerIdx) {
     const dOff = gR * 0.7;
     const isNotched = notchedPlayers[playerIdx] === true;
 
-    // Build gate polygon — always use stock octagon shape
-    const gatePoints = [
-        [gCx, gCy - octR],          // N
-        [gCx + dOff, gCy - dOff],   // NE
-        [gCx + octR, gCy],          // E
-        [gCx + dOff, gCy + dOff],   // SE
-        [gCx, gCy + octR],          // S
-        [gCx - dOff, gCy + dOff],   // SW
-        [gCx - octR, gCy],          // W
-        [gCx - dOff, gCy - dOff],   // NW
-    ];
-    const octPoints = gatePoints.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-
-    // Notch marker positions on the gate (small triangular bumps outward)
-    const notchMarkers = [];
+    // Build gate path
+    // Stock octagon: 8 vertices. Notched: each edge between cardinal and diagonal
+    // gets a concave U-shaped indentation (notch carved into the gate).
+    let gatePath;
     if (isNotched) {
-        const nA = 0.3875 * gR; // off-axis
-        const nM = 0.9125 * gR; // on-axis
-        const bumpR = 8; // bump size (tip distance outward)
-        const notchPts = [
-            [gCx + nA, gCy - nM],   // N-right
-            [gCx - nA, gCy - nM],   // N-left
-            [gCx + nM, gCy - nA],   // E-up
-            [gCx + nM, gCy + nA],   // E-down (WD-R)
-            [gCx - nM, gCy - nA],   // W-up
-            [gCx - nM, gCy + nA],   // W-down (WD-L)
-            [gCx + nA, gCy + nM],   // S-right
-            [gCx - nA, gCy + nM],   // S-left
-        ];
-        notchPts.forEach(([nx, ny]) => {
-            // Direction from center to notch point
+        // Notch positions in stick-space, mapped to SVG coords
+        const nA = 0.3875 * gR; // off-axis offset from center
+        const nM = 0.9125 * gR; // on-axis offset from center
+        const nW = 4;  // half-width of notch opening along edge
+        const nD = 6;  // depth of notch inward toward center
+
+        // Helper: given a notch center on the gate edge, compute the 4 points
+        // of a concave rectangular cutout (2 edge points + 2 inward points)
+        function notchCutout(nx, ny) {
             const dx = nx - gCx, dy = ny - gCy;
             const len = Math.sqrt(dx*dx + dy*dy);
-            const ux = dx/len, uy = dy/len;
-            // Perpendicular
-            const px = -uy, py = ux;
-            // Triangle bump: base on gate edge, tip pointing outward
-            const tipX = nx + ux * bumpR;
-            const tipY = ny + uy * bumpR;
-            const b1X = nx + px * 5, b1Y = ny + py * 5;
-            const b2X = nx - px * 5, b2Y = ny - py * 5;
-            notchMarkers.push(`<polygon points="${b1X.toFixed(1)},${b1Y.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)} ${b2X.toFixed(1)},${b2Y.toFixed(1)}" fill="#a78bfa" stroke="black" stroke-width="0.6"/>`);
-        });
+            const ux = dx/len, uy = dy/len; // outward unit
+            const px = -uy, py = ux;         // perpendicular along edge
+            return {
+                e1: [nx + px*nW, ny + py*nW],           // edge point 1
+                i1: [nx + px*nW - ux*nD, ny + py*nW - uy*nD], // inner point 1
+                i2: [nx - px*nW - ux*nD, ny - py*nW - uy*nD], // inner point 2
+                e2: [nx - px*nW, ny - py*nW],           // edge point 2
+            };
+        }
+
+        // 8 notch positions (between each cardinal-diagonal pair)
+        const notches = {
+            NR: notchCutout(gCx + nA, gCy - nM),  // N to NE edge
+            NL: notchCutout(gCx - nA, gCy - nM),  // NW to N edge
+            EU: notchCutout(gCx + nM, gCy - nA),  // NE to E edge
+            ED: notchCutout(gCx + nM, gCy + nA),  // E to SE edge
+            WU: notchCutout(gCx - nM, gCy - nA),  // NW to W edge (W side, going up)
+            WD: notchCutout(gCx - nM, gCy + nA),  // W to SW edge
+            SR: notchCutout(gCx + nA, gCy + nM),  // SE to S edge
+            SL: notchCutout(gCx - nA, gCy + nM),  // S to SW edge
+        };
+
+        // Build polygon going clockwise: N → (notch NR) → NE → (notch EU) → E → ...
+        const p = (pt) => `${pt[0].toFixed(1)},${pt[1].toFixed(1)}`;
+        const pts = [
+            [gCx, gCy - octR],                                    // N
+            notches.NR.e1, notches.NR.i1, notches.NR.i2, notches.NR.e2, // notch N-right
+            [gCx + dOff, gCy - dOff],                             // NE
+            notches.EU.e1, notches.EU.i1, notches.EU.i2, notches.EU.e2, // notch E-up
+            [gCx + octR, gCy],                                    // E
+            notches.ED.e1, notches.ED.i1, notches.ED.i2, notches.ED.e2, // notch E-down (WD-R)
+            [gCx + dOff, gCy + dOff],                             // SE
+            notches.SR.e1, notches.SR.i1, notches.SR.i2, notches.SR.e2, // notch S-right
+            [gCx, gCy + octR],                                    // S
+            notches.SL.e1, notches.SL.i1, notches.SL.i2, notches.SL.e2, // notch S-left
+            [gCx - dOff, gCy + dOff],                             // SW
+            notches.WD.e1, notches.WD.i1, notches.WD.i2, notches.WD.e2, // notch W-down (WD-L)
+            [gCx - octR, gCy],                                    // W
+            notches.WU.e1, notches.WU.i1, notches.WU.i2, notches.WU.e2, // notch W-up
+            [gCx - dOff, gCy - dOff],                             // NW
+            notches.NL.e1, notches.NL.i1, notches.NL.i2, notches.NL.e2, // notch N-left
+        ];
+        gatePath = `<polygon fill="lightgray" stroke="black" stroke-width="2.5" points="${pts.map(p).join(' ')}"/>`;
+    } else {
+        const octPoints = [
+            [gCx, gCy - octR], [gCx + dOff, gCy - dOff],
+            [gCx + octR, gCy], [gCx + dOff, gCy + dOff],
+            [gCx, gCy + octR], [gCx - dOff, gCy + dOff],
+            [gCx - octR, gCy], [gCx - dOff, gCy - dOff],
+        ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+        gatePath = `<polygon fill="lightgray" stroke="black" stroke-width="2.5" points="${octPoints}"/>`;
     }
 
     // Analog trigger fill: lAn/rAn range 0.0-1.0 (float from slippi-js)
@@ -2565,8 +2595,7 @@ function buildControllerSVG(pre, color, playerIdx) {
         ${dLeft?'<rect x="143" y="393" width="20" height="18" fill="white" rx="2"/>':''}
         ${dRight?'<rect x="198" y="393" width="20" height="18" fill="white" rx="2"/>':''}
         <path fill="transparent" d="m 104.65234,199.2793 c 41.488,0 75.23438,33.75128 75.23438,75.23828 0,41.487 -33.74638,75.24023 -75.23438,75.24023 -41.486996,0 -75.238278,-33.75323 -75.238278,-75.24023 0,-41.487 33.751282,-75.23828 75.238278,-75.23828 z"/>
-        <polygon fill="lightgray" stroke="black" stroke-width="2.5" points="${octPoints}"/>
-        ${notchMarkers.join('')}
+        ${gatePath}
         <circle fill="gray" stroke="black" stroke-width="2.5" cx="${stickCx}" cy="${stickCy}" r="35.1"/>
         <path fill="transparent" d="M402 361.3c.4 0 .8.1 1.1.3l31.2 18a3 3 0 0 1 1.4 1.8l10.3 34.1a3 3 0 0 1-.3 2.4L427 451.2a3 3 0 0 1-1.9 1.5l-36.2 9.2a3 3 0 0 1-2.3-.3l-32.2-18.9a3 3 0 0 1-1.4-2l-8.7-37.1a3 3 0 0 1 .4-2.4l19.3-30a3 3 0 0 1 1.8-1.3l35-8.6h1.2z"/>
         <circle fill="gold" stroke="black" stroke-width="2.5" cx="395.2" cy="411.6" r="44.1"/>
@@ -2738,6 +2767,9 @@ function updateStickMapContainer() {
     container.style.display = 'block';
 }
 
+// Controller scale (persisted in session)
+let controllerScale = 1.0;
+
 function updateControllerPanel(frameIdx) {
     const panel = document.getElementById('controllerPanel');
     if (!panel || !replayFrames || !replaySettings) { if(panel) panel.style.display='none'; return; }
@@ -2750,7 +2782,13 @@ function updateControllerPanel(frameIdx) {
     const players = replaySettings.players;
     const isDoubles = players.length > 2;
 
-    let html = '<div class="controller-panel">';
+    let html = `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;padding:0 0.2rem;">
+        <span style="color:#888;font-size:0.75rem;">🎮 Size</span>
+        <input type="range" min="0.6" max="2" step="0.1" value="${controllerScale}" data-action="scale-slider"
+            style="flex:1;accent-color:#a78bfa;height:4px;cursor:pointer;">
+        <span style="color:#aaa;font-size:0.7rem;min-width:28px;text-align:right;">${(controllerScale*100).toFixed(0)}%</span>
+    </div>`;
+    html += '<div class="controller-panel">';
     players.forEach((player, i) => {
         const pFrame = frame.players?.[player.playerIndex];
         if (!pFrame) return;
@@ -2790,7 +2828,7 @@ function updateControllerPanel(frameIdx) {
         // Enforcer button
         html += `<button class="savestate-btn" data-action="enforcer" data-pidx="${player.playerIndex}" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
 
-        html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, player.playerIndex)}</div></div>`;
+        html += `</div><div class="controller-svg-wrap" style="max-width:${Math.round(240 * controllerScale)}px">${buildControllerSVG(pre, color, player.playerIndex)}</div></div>`;
     });
     html += '</div>';
     panel.innerHTML = html;
