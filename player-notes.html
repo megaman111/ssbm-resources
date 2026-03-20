@@ -1945,8 +1945,11 @@ async function buildCCAsdiPanel() {
     panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Loading FightCore data...</div>';
 
     const players = replaySettings.players;
-    // Preload FightCore data for all characters (also used by hitbox overlay)
-    await Promise.all(players.map(p => fightCore.getMoves(p.characterId)));
+    // Preload FightCore data + extractor hitbox geometry for all characters
+    await Promise.all(players.map(p => Promise.all([
+        fightCore.getMoves(p.characterId),
+        fightCore.getExtractorData(p.characterId),
+    ])));
 
     let html = '';
     // For each pair of attacker → defender, show CC/ASDI percents
@@ -2628,21 +2631,20 @@ function renderFrame(frameIdx) {
         }
 
         // Hitbox & hurtbox overlay (FightCore-style colored circles)
-        // Hurtbox: always shown when hitbox mode is on (yellow = vulnerable, blue = invincible/intangible)
-        // Hitbox: colored per ID (red/green/blue/purple) during active frames, positioned by move type
+        // Hurtbox: approximate 3-circle body (yellow=vulnerable, blue=invincible/intangible)
+        // Hitbox: exact geometry from pfirsich's meleeFrameDataExtractor, colored per ID
         if (hitboxDataMode) {
             const cs = (CHAR_SCALE_MAP[charId] || 1.0);
-            // --- HURTBOX: approximate character's vulnerable area as 3 overlapping circles (body) ---
+            // --- HURTBOX: approximate character's vulnerable area as 3 overlapping circles ---
             const hurtColor = hurtboxState === 0
-                ? {fill:'rgba(255,220,50,0.10)', stroke:'rgba(255,220,50,0.35)'}  // vulnerable = yellow
-                : {fill:'rgba(50,140,255,0.12)', stroke:'rgba(80,160,255,0.45)'}; // invincible/intangible = blue
-            const bodyH = 12 * cs; // approximate body height in game units
+                ? {fill:'rgba(255,220,50,0.10)', stroke:'rgba(255,220,50,0.35)'}
+                : {fill:'rgba(50,140,255,0.12)', stroke:'rgba(80,160,255,0.45)'};
+            const bodyH = 12 * cs;
             const bodyW = 3.5 * cs;
-            // Three circles: lower body, torso, head
             const hurtParts = [
-                {ox: 0, oy: bodyH * 0.15, r: bodyW * 1.0},  // lower body / hips
-                {ox: 0, oy: bodyH * 0.50, r: bodyW * 0.9},  // torso
-                {ox: 0, oy: bodyH * 0.82, r: bodyW * 0.7},  // head
+                {ox: 0, oy: bodyH * 0.15, r: bodyW * 1.0},
+                {ox: 0, oy: bodyH * 0.50, r: bodyW * 0.9},
+                {ox: 0, oy: bodyH * 0.82, r: bodyW * 0.7},
             ];
             ctx.save();
             for (const hp of hurtParts) {
@@ -2659,52 +2661,76 @@ function renderFrame(frameIdx) {
             }
             ctx.restore();
 
-            // --- HITBOXES: position based on move type during active frames ---
+            // --- HITBOXES: exact geometry from extractor data ---
             if (resolvedAnimName) {
-                const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
-                if (moveData && moveData.hits) {
-                    const moveFrame = Math.floor(actionStateCounter);
-                    const fcName = moveData.normalizedName || '';
-                    // FightCore hitbox colors: id0=red, id1=green, id2=blue, id3=purple
-                    const hbColors = [
-                        {fill:'rgba(255,50,50,0.25)', stroke:'rgba(255,80,80,0.8)'},
-                        {fill:'rgba(50,220,50,0.25)', stroke:'rgba(80,255,80,0.8)'},
-                        {fill:'rgba(50,100,255,0.25)', stroke:'rgba(80,130,255,0.8)'},
-                        {fill:'rgba(180,50,255,0.25)', stroke:'rgba(200,80,255,0.8)'},
-                    ];
-                    // Determine hitbox placement region based on move type
-                    // Returns {baseX, baseY, spreadDir} in game units relative to character pos
-                    // spreadDir: angle in radians that hitboxes spread along (e.g. forward for ftilt)
-                    const placement = getHitboxPlacement(fcName, cs, renderFacing);
-
-                    for (const hit of moveData.hits) {
-                        const hStart = hit.start || 0;
-                        const hEnd = hit.end || 0;
-                        if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
-                            const numHb = hit.hitboxes ? hit.hitboxes.length : 0;
-                            for (let hi = 0; hi < numHb; hi++) {
-                                const hb = hit.hitboxes[hi];
-                                if (!hb || hb.damage <= 0) continue;
-                                // Radius: Melee hitboxes are typically 2.5-6 game units
-                                const gameR = 1.8 + Math.min(hb.damage * 0.1, 2.5);
-                                const r = gameR * scale;
-                                // Position: base placement + spread each hitbox along the move direction
-                                const spreadT = numHb > 1 ? hi / (numHb - 1) : 0.5;
-                                const hbGameX = gameX + placement.baseX + Math.cos(placement.spreadDir) * placement.spreadLen * spreadT * renderFacing;
-                                const hbGameY = gameY + placement.baseY + Math.sin(placement.spreadDir) * placement.spreadLen * spreadT;
-                                const hx = toCanvasX(hbGameX);
-                                const hy = toCanvasY(hbGameY);
-                                const col = hbColors[hi % hbColors.length];
-
-                                ctx.save();
-                                ctx.beginPath();
-                                ctx.arc(hx, hy, r, 0, Math.PI * 2);
-                                ctx.fillStyle = col.fill;
-                                ctx.fill();
-                                ctx.strokeStyle = col.stroke;
-                                ctx.lineWidth = 1.5;
-                                ctx.stroke();
-                                ctx.restore();
+                const moveFrame = Math.floor(actionStateCounter);
+                const hitboxes = fightCore.getHitboxesForFrame(charId, resolvedAnimName, moveFrame);
+                // FightCore hitbox colors: id0=red, id1=green, id2=blue, id3=purple
+                const hbColors = [
+                    {fill:'rgba(255,50,50,0.25)', stroke:'rgba(255,80,80,0.8)'},
+                    {fill:'rgba(50,220,50,0.25)', stroke:'rgba(80,255,80,0.8)'},
+                    {fill:'rgba(50,100,255,0.25)', stroke:'rgba(80,130,255,0.8)'},
+                    {fill:'rgba(180,50,255,0.25)', stroke:'rgba(200,80,255,0.8)'},
+                ];
+                if (hitboxes) {
+                    for (const hb of hitboxes) {
+                        // hb.x is forward (facing dir), hb.y is up, hb.size is radius
+                        const hbGameX = gameX + hb.x * renderFacing;
+                        const hbGameY = gameY + hb.y;
+                        const hx = toCanvasX(hbGameX);
+                        const hy = toCanvasY(hbGameY);
+                        const r = hb.size * scale;
+                        const col = hbColors[hb.id % hbColors.length];
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                        ctx.fillStyle = col.fill;
+                        ctx.fill();
+                        ctx.strokeStyle = col.stroke;
+                        ctx.lineWidth = 1.5;
+                        ctx.stroke();
+                        // Show damage number inside hitbox if large enough
+                        if (r > 8 && hb.damage > 0) {
+                            ctx.fillStyle = col.stroke;
+                            ctx.font = `${Math.max(8, Math.min(11, r * 0.6))}px monospace`;
+                            ctx.textAlign = 'center';
+                            ctx.globalAlpha = 0.9;
+                            ctx.fillText(`${hb.damage}%`, hx, hy + 3);
+                        }
+                        ctx.restore();
+                    }
+                } else {
+                    // Fallback: use FightCore data with getHitboxPlacement approximation
+                    const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
+                    if (moveData && moveData.hits) {
+                        const fcName = moveData.normalizedName || '';
+                        const placement = getHitboxPlacement(fcName, cs, renderFacing);
+                        for (const hit of moveData.hits) {
+                            const hStart = hit.start || 0;
+                            const hEnd = hit.end || 0;
+                            if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
+                                const numHb = hit.hitboxes ? hit.hitboxes.length : 0;
+                                for (let hi = 0; hi < numHb; hi++) {
+                                    const hb = hit.hitboxes[hi];
+                                    if (!hb || hb.damage <= 0) continue;
+                                    const gameR = 1.8 + Math.min(hb.damage * 0.1, 2.5);
+                                    const r = gameR * scale;
+                                    const spreadT = numHb > 1 ? hi / (numHb - 1) : 0.5;
+                                    const hbGameX = gameX + placement.baseX + Math.cos(placement.spreadDir) * placement.spreadLen * spreadT * renderFacing;
+                                    const hbGameY = gameY + placement.baseY + Math.sin(placement.spreadDir) * placement.spreadLen * spreadT;
+                                    const hx = toCanvasX(hbGameX);
+                                    const hy = toCanvasY(hbGameY);
+                                    const col = hbColors[hi % hbColors.length];
+                                    ctx.save();
+                                    ctx.beginPath();
+                                    ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                                    ctx.fillStyle = col.fill;
+                                    ctx.fill();
+                                    ctx.strokeStyle = col.stroke;
+                                    ctx.lineWidth = 1.5;
+                                    ctx.stroke();
+                                    ctx.restore();
+                                }
                             }
                         }
                     }
@@ -3325,6 +3351,11 @@ function updateControllerPanel(frameIdx) {
                 }
                 if (bestHb) {
                     html += `<div class="extra-info" style="color:#fcc;">${bestHb.damage}% ${bestHb.angle}° KBG:${bestHb.knockbackGrowth} BKB:${bestHb.baseKnockback}</div>`;
+                }
+                // Show active hitbox count from extractor data
+                const extHitboxes = fightCore.getHitboxesForFrame(charId, resolvedAnim, Math.floor(actionStateCounter));
+                if (extHitboxes) {
+                    html += `<div class="extra-info" style="color:#8f8;">⬤ ${extHitboxes.length} hitbox${extHitboxes.length>1?'es':''} active</div>`;
                 }
             }
         }

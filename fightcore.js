@@ -1,7 +1,11 @@
 ﻿/**
  * FightCore - Reusable Melee frame data module
- * Data source: https://github.com/FightCore/frame-data
+ * Data sources:
+ *   - FightCore: https://github.com/FightCore/frame-data
+ *   - Hitbox geometry: https://melee.theshoemaker.de (pfirsich's meleeFrameDataExtractor)
  */
+
+// ===== Character name mappings =====
 const FC_CHAR_NAMES = {
     0: "captainfalcon", 1: "donkeykong", 2: "fox", 3: "mrgame%26watch",
     4: "kirby", 5: "bowser", 6: "link", 7: "luigi", 8: "mario",
@@ -10,12 +14,26 @@ const FC_CHAR_NAMES = {
     18: "zelda", 19: "sheik", 20: "falco", 21: "younglink",
     22: "drmario", 23: "roy", 24: "pichu", 25: "ganondorf",
 };
+
+// theshoemaker.de uses display names with spaces/special chars
+const EXTRACTOR_CHAR_NAMES = {
+    0: "Captain%20Falcon", 1: "Donkey%20Kong", 2: "Fox",
+    3: "Game%20%26%20Watch", 4: "Kirby", 5: "Bowser", 6: "Link",
+    7: "Luigi", 8: "Mario", 9: "Marth", 10: "Mewtwo", 11: "Ness",
+    12: "Peach", 13: "Pikachu", 14: "Ice%20Climbers", 15: "Jigglypuff",
+    16: "Samus", 17: "Yoshi", 18: "Zelda", 19: "Sheik", 20: "Falco",
+    21: "Young%20Link", 22: "Dr.%20Mario", 23: "Roy", 24: "Pichu",
+    25: "Ganondorf",
+};
+
 const CHAR_WEIGHTS = {
     0: 104, 1: 114, 2: 75, 3: 60, 4: 70, 5: 117, 6: 104, 7: 100,
     8: 100, 9: 87, 10: 85, 11: 94, 12: 90, 13: 80, 14: 88, 15: 60,
     16: 110, 17: 108, 18: 90, 19: 90, 20: 80, 21: 85, 22: 100,
     23: 85, 24: 55, 25: 109,
 };
+
+// ===== Action state -> FightCore normalized name mapping =====
 const ACTION_TO_FC_MOVE = {
     "Attack11": "jab1", "Attack12": "jab2", "Attack13": "jab3",
     "Attack100Start": "rapidjabs", "Attack100Loop": "rapidjabs",
@@ -31,11 +49,10 @@ const ACTION_TO_FC_MOVE = {
     "Catch": "grab", "CatchDash": "dashgrab",
     "ThrowF": "fthrow", "ThrowB": "bthrow",
     "ThrowHi": "uthrow", "ThrowLw": "dthrow",
-    "CliffAttackSlow": "ledgeattackslow",
-    "CliffAttackQuick": "ledgeattackfast",
-    "DownAttackU": "getupattackback",
-    "DownAttackD": "getupattackstomach",
+    "CliffAttackSlow": "ledgeattackslow", "CliffAttackQuick": "ledgeattackfast",
+    "DownAttackU": "getupattackback", "DownAttackD": "getupattackstomach",
 };
+
 const SPECIAL_TO_FC_MOVE = {
     "SpecialN": "neutralb", "SpecialNStart": "neutralb",
     "SpecialNLoop": "neutralb", "SpecialNEnd": "neutralb",
@@ -55,6 +72,7 @@ const SPECIAL_TO_FC_MOVE = {
     "SpecialAirLwStart": "downb", "SpecialAirLwLoop": "downb",
     "SpecialAirLwHit": "downb", "SpecialAirLwEnd": "downb",
 };
+
 const DANCING_BLADE_MAP = {
     "SpecialS1": "sideb1", "SpecialAirS1": "sideb1",
     "SpecialS2Hi": "sideb2up", "SpecialAirS2Hi": "sideb2up",
@@ -66,14 +84,91 @@ const DANCING_BLADE_MAP = {
     "SpecialS4S": "sideb4side", "SpecialAirS4S": "sideb4side",
     "SpecialS4Lw": "sideb4down", "SpecialAirS4Lw": "sideb4down",
 };
+// ===== Action state -> Extractor key mapping =====
+// The extractor uses keys like "ftilt_h", "ftilt_m", "fsmash_m" etc.
+// We map action states to the specific variant key in the extractor JSON.
+const ACTION_TO_EXTRACTOR_KEY = {
+    "Attack11": "jab1", "Attack12": "jab2", "Attack13": "jab3",
+    "Attack100Start": "rapidjabs_start", "Attack100Loop": "rapidjabs_loop",
+    "Attack100End": "rapidjabs_end", "AttackDash": "dashattack",
+    "AttackS3Hi": "ftilt_h", "AttackS3HiS": "ftilt_mh", "AttackS3S": "ftilt_m",
+    "AttackS3LwS": "ftilt_ml", "AttackS3Lw": "ftilt_l",
+    "AttackHi3": "utilt", "AttackLw3": "dtilt",
+    "AttackS4Hi": "fsmash_h", "AttackS4HiS": "fsmash_mh", "AttackS4S": "fsmash_m",
+    "AttackS4LwS": "fsmash_ml", "AttackS4Lw": "fsmash_l",
+    "AttackHi4": "usmash", "AttackLw4": "dsmash",
+    "AttackAirN": "nair", "AttackAirF": "fair", "AttackAirB": "bair",
+    "AttackAirHi": "uair", "AttackAirLw": "dair",
+    "Catch": "grab", "CatchDash": "dashgrab", "CatchAttack": "pummel",
+    "ThrowF": "fthrow", "ThrowB": "bthrow",
+    "ThrowHi": "uthrow", "ThrowLw": "dthrow",
+};
+
+// ===== Approximate bone positions (game units, relative to character origin at feet) =====
+// Melee skeleton bone IDs -> approximate (x, y) in character-local space
+// x is forward (positive = facing direction), y is up
+// These are rough averages across the cast for a neutral standing pose
+const BONE_POSITIONS = {
+    0:  {x: 0, y: 0},       // TransN / root (origin)
+    1:  {x: 0, y: 0},       // HipN
+    2:  {x: 0, y: 2},       // FitN (waist)
+    3:  {x: 0, y: 5},       // XRotN (torso center)
+    4:  {x: 0, y: 7},       // YRotN (upper torso)
+    5:  {x: 0, y: 9},       // TransN2 (neck area)
+    6:  {x: 1, y: 5},       // LShoulderN (left shoulder)
+    7:  {x: 2, y: 5},       // LShoulderN2 (left upper arm)
+    8:  {x: 0, y: 10},      // HeadN (head)
+    9:  {x: -1, y: 5},      // RShoulderN (right shoulder)
+    10: {x: -2, y: 5},      // RShoulderN2 (right upper arm)
+    11: {x: 3, y: 4.5},     // LHandN (left hand area)
+    12: {x: 4, y: 4.5},     // LElbowN (left elbow/forearm)
+    13: {x: 5.5, y: 4.5},   // LWristN (left wrist/hand tip)
+    14: {x: -3, y: 4.5},    // RHandN
+    15: {x: -4, y: 4.5},    // RElbowN
+    16: {x: 1, y: 0},       // LLegN (left hip)
+    17: {x: 1.5, y: -1},    // LKneeN (left knee)
+    18: {x: 2, y: -3},      // LFootN (left foot)
+    19: {x: -1, y: 0},      // RLegN (right hip)
+    20: {x: -1.5, y: -1},   // RKneeN (right knee)
+    21: {x: -2, y: -3},     // RFootN (right foot)
+    22: {x: 0, y: 11},      // TopN (top of head)
+    23: {x: 0, y: 3},       // WaistN
+    24: {x: 3, y: 5},       // LClav (left clavicle)
+    25: {x: 6, y: 4},       // LFingerN (left fingertip)
+    26: {x: -3, y: 5},      // RClav
+    27: {x: -6, y: 4},      // RFingerN
+    // Tail/extra bones (Mewtwo, Pikachu, etc.)
+    50: {x: -2, y: 3},      // TailN
+    51: {x: -3, y: 2},      // Tail2
+    52: {x: -4, y: 1.5},    // Tail3
+    53: {x: -5, y: 1},      // Tail4
+    54: {x: 1, y: 0},       // LToeN
+    55: {x: -1, y: 0},      // RToeN
+    56: {x: 4, y: 5},       // LThumbN
+    57: {x: 0, y: 7},       // ThrowN (throw release point)
+    // Sword/weapon bones (Marth, Link, etc.)
+    100: {x: 7, y: 5},      // Sword tip area
+    101: {x: 8, y: 5},      // Extended weapon
+};
+
+// Default bone position for unknown bone IDs
+function getBonePos(boneId) {
+    return BONE_POSITIONS[boneId] || {x: 0, y: 5};
+}
+
 const FC_DATA_BASE = "https://raw.githubusercontent.com/FightCore/frame-data/main/data";
+const EXTRACTOR_BASE = "https://melee.theshoemaker.de/framedata-json-fullhitboxes";
+
 export class FightCore {
     constructor() {
-        this._cache = new Map();
+        this._cache = new Map();       // FightCore moves cache
         this._loading = new Map();
         this._moveMap = new Map();
+        this._extCache = new Map();    // Extractor hitbox data cache
+        this._extLoading = new Map();
     }
 
+    // ===== FightCore data (move names, frame data, KB values) =====
     async getMoves(charId) {
         if (this._cache.has(charId)) return this._cache.get(charId);
         if (this._loading.has(charId)) return this._loading.get(charId);
@@ -123,6 +218,108 @@ export class FightCore {
         return map.get(actionName.toLowerCase()) || null;
     }
 
+    // ===== Extractor hitbox geometry data (pfirsich's meleeFrameDataExtractor) =====
+    async getExtractorData(charId) {
+        if (this._extCache.has(charId)) return this._extCache.get(charId);
+        if (this._extLoading.has(charId)) return this._extLoading.get(charId);
+        const charName = EXTRACTOR_CHAR_NAMES[charId];
+        if (!charName) return null;
+        const promise = (async () => {
+            try {
+                const url = EXTRACTOR_BASE + "/" + charName + ".framedata.json";
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error("HTTP " + resp.status);
+                const data = await resp.json();
+                // Build subactionName -> move data lookup
+                const bySubaction = new Map();
+                for (const [key, moveData] of Object.entries(data)) {
+                    if (!moveData || !moveData.subactionName) continue;
+                    // Extract action name from subactionName like "PlyFox5K_Share_ACTION_Attack11_figatree"
+                    const m = moveData.subactionName.match(/ACTION_(\w+?)_figatree/);
+                    if (m) bySubaction.set(m[1], moveData);
+                }
+                const result = { moves: data, bySubaction };
+                this._extCache.set(charId, result);
+                this._extLoading.delete(charId);
+                return result;
+            } catch (e) {
+                console.warn("FightCore: failed to load extractor data for char " + charId, e);
+                this._extCache.set(charId, null);
+                this._extLoading.delete(charId);
+                return null;
+            }
+        })();
+        this._extLoading.set(charId, promise);
+        return promise;
+    }
+
+    /**
+     * Get exact hitbox geometry for a given action state and frame.
+     * Returns array of {id, x, y, size, damage, angle, kbGrowth, baseKb, element, bone} or null.
+     * x/y are in game units relative to character origin (feet).
+     * x is in the facing direction (positive = forward).
+     */
+    getHitboxesForFrame(charId, actionName, frame) {
+        const ext = this._extCache.get(charId);
+        if (!ext) return null;
+
+        // Try direct action name lookup via subactionName index
+        let moveData = ext.bySubaction.get(actionName);
+
+        // Try the explicit ACTION_TO_EXTRACTOR_KEY mapping
+        if (!moveData) {
+            const extKey = ACTION_TO_EXTRACTOR_KEY[actionName];
+            if (extKey && ext.moves[extKey]) moveData = ext.moves[extKey];
+        }
+
+        // For specials, try matching subaction name patterns
+        if (!moveData) {
+            // Try with "Special" prefix variations
+            for (const [subName, data] of ext.bySubaction) {
+                if (subName === actionName) { moveData = data; break; }
+            }
+        }
+
+        if (!moveData || !moveData.hitFrames) return null;
+
+        // Find active hitboxes for this frame
+        const results = [];
+        for (const hitFrame of moveData.hitFrames) {
+            if (frame >= hitFrame.start && frame <= hitFrame.end && hitFrame.hitboxes) {
+                for (const hb of hitFrame.hitboxes) {
+                    const bone = getBonePos(hb.bone);
+                    // For bone 0 (TransN/root), x/y offsets are absolute from character origin
+                    // For other bones, add bone position + offset
+                    // The extractor's z = forward axis, x = sideways (we project to 2D: z->x, y->y)
+                    let hbX, hbY;
+                    if (hb.bone === 0) {
+                        hbX = hb.x;  // x offset from root (forward/back in facing dir)
+                        hbY = hb.y;  // y offset from root (up/down)
+                    } else {
+                        // bone position + hitbox offset projected to 2D
+                        // z = forward along bone, x = perpendicular, y = up
+                        hbX = bone.x + hb.z;  // z is along the bone's forward axis
+                        hbY = bone.y + hb.y;  // y is vertical offset
+                    }
+                    results.push({
+                        id: hb.id,
+                        x: hbX,
+                        y: hbY,
+                        size: hb.size,
+                        damage: hb.damage,
+                        angle: hb.angle,
+                        kbGrowth: hb.kbGrowth,
+                        baseKb: hb.baseKb,
+                        element: hb.element,
+                        bone: hb.bone,
+                    });
+                }
+            }
+        }
+        return results.length > 0 ? results : null;
+    }
+
+    // ===== CC / ASDI Down percent calculator =====
     async getCCPercents(attackerId, defenderId) {
         const moves = await this.getMoves(attackerId);
         if (!moves.length) return [];
