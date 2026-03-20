@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -15,6 +15,28 @@
         .source-section ul { margin-left: 1.5rem; }
         .source-section li { margin-bottom: 0.5rem; line-height: 1.6; }
         .source-section strong { color: #667eea; }
+    
+        /* CC/ASDI Table Styles */
+        .cc-asdi-section { margin-top: 0.5rem; }
+        .cc-asdi-toggle { background: #667eea; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 600; width: 100%; text-align: left; }
+        .cc-asdi-toggle:hover { background: #5a6fd6; }
+        .cc-asdi-toggle::after { content: ' ▸'; float: right; }
+        .cc-asdi-toggle.open::after { content: ' ▾'; }
+        .cc-asdi-body { display: none; margin-top: 0.5rem; }
+        .cc-asdi-body.open { display: block; }
+        .cc-pair-block { margin-bottom: 1rem; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+        .cc-pair-header { background: #667eea; color: white; padding: 0.5rem 0.8rem; font-weight: 700; font-size: 0.9rem; }
+        .cc-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .cc-table th { padding: 0.35rem 0.5rem; border-bottom: 2px solid #ddd; color: #555; font-weight: 600; text-align: center; }
+        .cc-table td { padding: 0.3rem 0.5rem; border-bottom: 1px solid #eee; text-align: center; }
+        .cc-table .move-name { text-align: left; color: #333; }
+        .cc-table .dmg-cell { color: #c44; }
+        .cc-table .cc-cell { font-weight: 700; }
+        .cc-table .asdi-cell { font-weight: 700; }
+        .cc-col { color: #2a7; }
+        .asdi-col { color: #47a; }
+        .cc-attribution { font-size: 0.72rem; color: #888; text-align: center; margin-top: 0.5rem; }
+        .cc-attribution a { color: #667eea; }
     </style>
 </head>
 <body>
@@ -122,6 +144,16 @@
                 </ul>
             </div>
         </div>
+    
+        <div class="matchup-content">
+            <h2>CC / ASDI Down Reference</h2>
+            <div class="source-section cc-asdi-section">
+                <button class="cc-asdi-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">CC &amp; ASDI Down Max Percents</button>
+                <div class="cc-asdi-body" id="cc-asdi-tables">
+                    <p style="color:#888;text-align:center;padding:1rem;">Loading...</p>
+                </div>
+            </div>
+        </div>
     </main>
 
     <footer>
@@ -129,5 +161,10 @@
             <p>The Way of Fox - Donkey Kong Matchup Guide</p>
         </div>
     </footer>
+
+    <script type="module">
+        import { buildCCTables } from '../cc-table-builder.js';
+        buildCCTables('cc-asdi-tables', 2, 1, 'Donkey Kong');
+    </script>
 </body>
 </html>
