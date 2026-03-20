@@ -325,8 +325,13 @@ export class FightCore {
         if (!moves.length) return [];
         const defWeight = CHAR_WEIGHTS[defenderId] || 100;
         const results = [];
+        // Moves that can't be CC'd (you're grabbed/thrown, not in neutral)
+        const NON_CC_MOVES = new Set([
+            'fthrow','bthrow','uthrow','dthrow','grab','dashgrab','pummel',
+        ]);
         for (const move of moves) {
             if (!move.hits || !move.hits.length) continue;
+            if (move.normalizedName && NON_CC_MOVES.has(move.normalizedName)) continue;
             for (const hit of move.hits) {
                 if (!hit.hitboxes || !hit.hitboxes.length) continue;
                 let bestHb = null;
