@@ -186,6 +186,14 @@
                         </div>
                     </div>
                     <div class="replay-right">
+                        <div id="controllerScaleBar" style="display:none;padding:0 0.2rem 0.3rem;">
+                            <div style="display:flex;align-items:center;gap:0.5rem;">
+                                <span style="color:#888;font-size:0.75rem;">🎮 Size</span>
+                                <input type="range" id="controllerScaleSlider" min="0.6" max="2" step="0.1" value="1"
+                                    style="flex:1;accent-color:#a78bfa;height:4px;cursor:pointer;">
+                                <span id="controllerScaleLabel" style="color:#aaa;font-size:0.7rem;min-width:28px;text-align:right;">100%</span>
+                            </div>
+                        </div>
                         <div id="controllerPanel" style="display:none;"></div>
                         <div id="stickMapContainer" style="display:none;"></div>
                     </div>
@@ -1671,11 +1679,10 @@ document.getElementById('controllerPanel').addEventListener('mousedown', e => {
     else if (action === 'savestate') downloadSavestate(parseInt(btn.dataset.pidx));
     else if (action === 'enforcer') runEnforcer(parseInt(btn.dataset.pidx));
 });
-// Slider for controller scale (input event fires continuously while dragging)
-document.getElementById('controllerPanel').addEventListener('input', e => {
-    if (e.target.dataset.action === 'scale-slider') {
-        controllerScale = parseFloat(e.target.value);
-    }
+// Slider for controller scale (persistent element, not rebuilt)
+document.getElementById('controllerScaleSlider').addEventListener('input', e => {
+    controllerScale = parseFloat(e.target.value);
+    document.getElementById('controllerScaleLabel').textContent = `${(controllerScale*100).toFixed(0)}%`;
 });
 
 // ===== ZOOM/PAN CONTROLS =====
@@ -2782,13 +2789,7 @@ function updateControllerPanel(frameIdx) {
     const players = replaySettings.players;
     const isDoubles = players.length > 2;
 
-    let html = `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem;padding:0 0.2rem;">
-        <span style="color:#888;font-size:0.75rem;">🎮 Size</span>
-        <input type="range" min="0.6" max="2" step="0.1" value="${controllerScale}" data-action="scale-slider"
-            style="flex:1;accent-color:#a78bfa;height:4px;cursor:pointer;">
-        <span style="color:#aaa;font-size:0.7rem;min-width:28px;text-align:right;">${(controllerScale*100).toFixed(0)}%</span>
-    </div>`;
-    html += '<div class="controller-panel">';
+    let html = '<div class="controller-panel">';
     players.forEach((player, i) => {
         const pFrame = frame.players?.[player.playerIndex];
         if (!pFrame) return;
@@ -2833,6 +2834,7 @@ function updateControllerPanel(frameIdx) {
     html += '</div>';
     panel.innerHTML = html;
     panel.style.display = 'block';
+    document.getElementById('controllerScaleBar').style.display = 'block';
     updateStickMapContainer();
 }
 
