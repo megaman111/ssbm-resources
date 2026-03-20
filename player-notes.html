@@ -133,8 +133,11 @@
             .stickmap-overlay { width: 200px; }
         }
 
-        /* ===== PHONE LAYOUT ===== */
-        @media (max-width: 600px) {
+        /* ===== PHONE LAYOUT (portrait + landscape) ===== */
+        /* Portrait phones */
+        @media (max-width: 600px),
+        /* Landscape phones: wide but short screen */
+               (max-height: 500px) and (orientation: landscape) {
             /* Modal: true fullscreen, no wasted space */
             .replay-modal { width: 100vw; height: 100dvh; border-radius: 0; padding: 0; top: 0; left: 0; transform: none; min-width: 0; resize: none; }
             .replay-modal-content-wrap { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
@@ -210,6 +213,49 @@
             /* Load area */
             .replay-load-area { padding: 1.5rem 0.75rem; margin-bottom: 0.5rem; }
             .load-slp-btn { padding: 0.6rem 1rem; font-size: 0.9rem; }
+        }
+
+        /* ===== LANDSCAPE PHONE: side-by-side canvas + minimal controls ===== */
+        @media (max-height: 500px) and (orientation: landscape) {
+            /* In landscape, keep canvas and controls side by side to maximize canvas height */
+            .replay-main-row { flex-direction: row; }
+            .replay-left { flex: 1; min-width: 0; overflow-y: auto; }
+            .replay-right { display: none; width: 0; }
+            .replay-right.mobile-open { display: block; width: 200px; flex: 0 0 200px; overflow-y: auto; max-height: calc(100dvh - 60px); }
+
+            /* Canvas should fill available height */
+            #replayCanvas { aspect-ratio: 4/3; max-height: calc(100dvh - 130px); width: auto; margin: 0 auto; }
+            .replay-canvas-wrap { display: flex; justify-content: center; background: #0d0d1a; }
+
+            /* HUD: single compact line */
+            .replay-hud { padding: 0.15rem 0.4rem; font-size: 0.68rem; gap: 0.2rem; }
+            .stock-dot { width: 7px; height: 7px; }
+
+            /* Controls: tiny */
+            .replay-controls { padding: 0.15rem 0.3rem; gap: 0.15rem; }
+            .ctrl-btn { padding: 0.2rem 0.35rem; font-size: 0.65rem; min-height: 26px; min-width: 26px; }
+            .frame-counter { font-size: 0.6rem; }
+            .speed-select { font-size: 0.65rem; padding: 0.15rem 0.2rem; }
+
+            /* Timeline: minimal */
+            .replay-timeline { height: 18px; }
+            .replay-timeline-wrap { padding: 0.1rem 0.3rem 0; }
+            .replay-timeline-wrap canvas { height: 16px; }
+
+            /* Header: minimal */
+            .replay-modal-header { padding: 0.2rem 0.5rem; }
+            .replay-modal-title { font-size: 0.75rem; }
+            .replay-close-btn { font-size: 1.1rem; padding: 0.15rem 0.4rem; }
+
+            /* Controller cards in landscape: extra compact */
+            .controller-card { padding: 0.3rem; gap: 0.2rem; }
+            .controller-svg-wrap { flex: 0 0 80px; }
+            .controller-svg-wrap svg { max-height: 55px; }
+            .controller-info .char-name { font-size: 0.72rem; }
+            .controller-info .anim-name { font-size: 0.6rem; }
+
+            /* Mobile toggle in landscape */
+            .mobile-controllers-toggle { padding: 0.3rem 0.5rem; font-size: 0.72rem; margin-top: 0.15rem; }
         }
         /* Clips panel */
         .clips-panel-wrap { margin-top: 0.5rem; flex-shrink: 0; }
