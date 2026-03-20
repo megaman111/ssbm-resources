@@ -75,8 +75,10 @@
         .replay-load-area .filename-hint { color: #a78bfa; font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
         .load-slp-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
         .load-slp-btn:hover { opacity: 0.9; }
-        .replay-canvas-wrap { position: relative; background: #0d0d1a; border-radius: 12px; overflow: hidden; margin-bottom: 0.5rem; flex: 1; min-height: 0; }
-        #replayCanvas { display: block; width: 100%; height: 100%; }
+        .replay-canvas-wrap { position: relative; background: #0d0d1a; border-radius: 12px 12px 0 0; overflow: hidden; margin-bottom: 0; }
+        #replayCanvas { display: block; width: 100%; aspect-ratio: 4/3; }
+        .canvas-resize-handle { height: 6px; background: linear-gradient(180deg, transparent, #333); cursor: ns-resize; border-radius: 0 0 8px 8px; user-select: none; transition: background 0.15s; margin-bottom: 0.5rem; }
+        .canvas-resize-handle:hover { background: linear-gradient(180deg, transparent, #667eea); }
         .replay-hud { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.9rem; flex-shrink: 0; }
         .player-hud { display: flex; align-items: center; gap: 0.5rem; }
         .stock-icons { display: flex; gap: 3px; }
@@ -106,12 +108,18 @@
         .controller-svg-wrap { flex: 1; min-width: 0; }
         .controller-svg-wrap svg { width: 100%; height: auto; }
         .replay-main-row { display: flex; gap: 1rem; flex: 1; min-height: 0; }
-        .replay-left { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
-        .replay-canvas-wrap { flex: 1; min-height: 0; }
+        .replay-left { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
         .replay-right { flex: 0 0 auto; width: 500px; overflow-y: auto; }
         @media (max-width: 900px) { .replay-main-row { flex-direction: column; } .replay-right { flex: none; } }
         /* Clips panel */
-        .clips-panel { background: #111827; border-radius: 10px; padding: 0.75rem; margin-top: 0.5rem; flex-shrink: 0; max-height: 30vh; overflow-y: auto; }
+        .clips-panel-wrap { margin-top: 0.5rem; flex-shrink: 0; }
+        .clips-panel-toggle { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #1a1a3e; border-radius: 8px; cursor: pointer; user-select: none; font-size: 0.9rem; color: #a78bfa; font-weight: 700; }
+        .clips-panel-toggle:hover { background: #222250; }
+        .clips-panel-toggle .clips-chevron { color: #667eea; transition: transform 0.2s; font-size: 0.8rem; }
+        .clips-panel-wrap.open .clips-panel-toggle .clips-chevron { transform: rotate(180deg); }
+        .clips-panel-wrap.open .clips-panel-toggle { border-radius: 8px 8px 0 0; }
+        .clips-panel { background: #111827; border-radius: 0 0 10px 10px; padding: 0.75rem; max-height: 30vh; overflow-y: auto; display: none; }
+        .clips-panel-wrap.open .clips-panel { display: block; }
         .clips-section { border: 1px solid #2a2a4a; border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; }
         .clips-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #1a1a3e; cursor: pointer; user-select: none; font-size: 0.9rem; color: #ccc; }
         .clips-header:hover { background: #222250; }
@@ -157,9 +165,10 @@
                 <div class="replay-hud" id="replayHud"></div>
                 <div class="replay-main-row">
                     <div class="replay-left">
-                        <div class="replay-canvas-wrap">
+                        <div class="replay-canvas-wrap" id="replayCanvasWrap">
                             <canvas id="replayCanvas" width="800" height="600"></canvas>
                         </div>
+                        <div class="canvas-resize-handle" id="canvasResizeHandle" title="Drag to resize viewer"></div>
                         <div class="replay-controls">
                             <button class="ctrl-btn" onclick="stepFrame(-300)" title="Jump back 5s">⏮ 5s</button>
                             <button class="ctrl-btn" onclick="stepFrame(-1)">◀ Frame</button>
@@ -202,7 +211,13 @@
                         <div id="stickMapContainer" style="display:none;"></div>
                     </div>
                 </div>
-                <div id="clipsPanel" class="clips-panel" style="display:none;"></div>
+                <div class="clips-panel-wrap" id="clipsPanelWrap" style="display:none;">
+                    <div class="clips-panel-toggle" onclick="document.getElementById('clipsPanelWrap').classList.toggle('open')">
+                        <span>📋 Clips</span>
+                        <span class="clips-chevron">▼</span>
+                    </div>
+                    <div id="clipsPanel" class="clips-panel"></div>
+                </div>
                 <div id="shortcutsOverlay" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;" onclick="if(event.target===this)toggleShortcuts()">
                     <div style="background:#1a1a2e;border:1px solid #334;border-radius:12px;padding:1.5rem;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;color:#ccc;font-family:monospace;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
@@ -1743,6 +1758,42 @@ document.getElementById('controllerScaleSlider').addEventListener('input', e => 
     if (rp) rp.style.width = `${Math.round(500 * controllerScale)}px`;
     if (replayFrames) updateControllerPanel(currentFrame);
 });
+
+// ===== CANVAS RESIZE HANDLE =====
+(function() {
+    const handle = document.getElementById('canvasResizeHandle');
+    const wrap = document.getElementById('replayCanvasWrap');
+    const canvas = document.getElementById('replayCanvas');
+    let resizing = false, startY, startH;
+
+    handle.addEventListener('mousedown', e => {
+        resizing = true;
+        startY = e.clientY;
+        startH = wrap.getBoundingClientRect().height;
+        // Override aspect-ratio during manual resize
+        canvas.style.aspectRatio = 'unset';
+        canvas.style.height = '100%';
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', e => {
+        if (!resizing) return;
+        const newH = Math.max(200, startH + e.clientY - startY);
+        wrap.style.height = newH + 'px';
+        if (replayFrames) renderFrame(currentFrame);
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (resizing) {
+            resizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            if (replayFrames) renderFrame(currentFrame);
+        }
+    });
+})();
 
 // ===== ZOOM/PAN CONTROLS =====
 const replayCanvas = document.getElementById('replayCanvas');
@@ -3400,7 +3451,7 @@ function buildClipsPanel() {
 
     const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${t})"`; };
 
-    let html = '<div style="font-size:0.95rem;color:#a78bfa;font-weight:700;margin-bottom:0.5rem;">📋 Clips</div>';
+    let html = '';
 
     // Kill Combos
     html += buildSection('kills', 'Kill Combos', clips.kills, k => {
@@ -3492,7 +3543,9 @@ function buildClipsPanel() {
     </div>`;
 
     panel.innerHTML = html;
-    panel.style.display = 'block';
+    // Show the wrapper (collapsed by default — user clicks to expand)
+    const wrap = document.getElementById('clipsPanelWrap');
+    if (wrap) wrap.style.display = 'block';
 }
 
 window.showActionClips = (actionName) => {
