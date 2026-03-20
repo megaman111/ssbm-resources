@@ -339,8 +339,8 @@ export class FightCore {
                     if (hb.damage > 0 && (!bestHb || hb.damage > bestHb.damage)) bestHb = hb;
                 }
                 if (!bestHb) continue;
-                const ccMax = this._calcMaxPercent(bestHb, defWeight, 80, 1 / 3);
-                const asdiMax = this._calcMaxPercent(bestHb, defWeight, 47, 1.0);
+                const ccMax = this._calcMaxPercent(bestHb, defWeight, 80, 2 / 3);
+                const asdiMax = this._calcMaxPercent(bestHb, defWeight, 80, 1.0);
                 results.push({
                     moveName: move.name,
                     normalizedName: move.normalizedName,
@@ -368,7 +368,7 @@ export class FightCore {
     _calcMaxPercent(hb, weight, kbThreshold, ccMult) {
         const { damage, knockbackGrowth, baseKnockback, setKnockback } = hb;
         if (setKnockback > 0) {
-            const kb = (((setKnockback * 10) * 200 / (weight + 100) * 1.4 + 18) * knockbackGrowth / 100) * ccMult;
+            const kb = (((((1 + (10 * setKnockback / 20)) * (200 / (weight + 100)) * 1.4) + 18) * (knockbackGrowth / 100)) + baseKnockback) * ccMult;
             return kb < kbThreshold ? 999 : -1;
         }
         if (knockbackGrowth === 0 && baseKnockback === 0) return 999;
@@ -388,6 +388,7 @@ export class FightCore {
 
     _calcKB(damage, percent, weight, kbg, bkb, ccMult) {
         const p = percent + damage;
-        return (((p / 10 + p * damage / 20) * 200 / (weight + 100) * 1.4 + 18) * kbg / 100 + bkb) * ccMult;
+        // Correct Melee KB formula: BKB is added AFTER KBG scaling, CC mult applies to total
+        return ((((((p / 10) + (p * damage / 20)) * (200 / (weight + 100)) * 1.4) + 18) * (kbg / 100)) + bkb) * ccMult;
     }
 }
