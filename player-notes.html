@@ -2544,37 +2544,43 @@ function renderFrame(frameIdx) {
             ctx.restore();
         }
 
-        // Hitbox data overlay per player (from FightCore) — draw hitbox circles on canvas
+        // Hitbox data overlay per player (from FightCore) — colored circles like FightCore
+        // Colors per hitbox ID: id0=red, id1=green, id2=blue, id3=purple (FightCore convention)
         if (hitboxDataMode && resolvedAnimName) {
             const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
             if (moveData && moveData.hits) {
-                // Check if current frame is within any hit's active window
                 const moveFrame = Math.floor(actionStateCounter);
+                // FightCore hitbox colors: id0=red, id1=green, id2=blue, id3=purple
+                const hbColors = [
+                    {fill:'rgba(255,60,60,0.22)', stroke:'rgba(255,80,80,0.7)'},
+                    {fill:'rgba(60,220,60,0.22)', stroke:'rgba(80,220,80,0.7)'},
+                    {fill:'rgba(60,100,255,0.22)', stroke:'rgba(80,120,255,0.7)'},
+                    {fill:'rgba(180,60,255,0.22)', stroke:'rgba(200,80,255,0.7)'},
+                ];
                 for (const hit of moveData.hits) {
                     const hStart = hit.start || 0;
                     const hEnd = hit.end || 0;
                     if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
-                        // Draw hitbox circles around the character
-                        const numHitboxes = hit.hitboxes ? hit.hitboxes.length : 1;
-                        for (let hi = 0; hi < numHitboxes; hi++) {
-                            const hb = hit.hitboxes?.[hi];
+                        const numHb = hit.hitboxes ? hit.hitboxes.length : 0;
+                        for (let hi = 0; hi < numHb; hi++) {
+                            const hb = hit.hitboxes[hi];
                             if (!hb || hb.damage <= 0) continue;
-                            // Approximate hitbox radius from damage (no position data in FightCore)
-                            // Use a visual radius proportional to damage, centered on character
-                            const baseR = 4 + hb.damage * 0.4;
-                            const r = baseR * scale;
-                            // Offset each hitbox slightly so they don't all stack
-                            const offsetAngle = (hi / numHitboxes) * Math.PI * 2;
-                            const offsetDist = numHitboxes > 1 ? 3 * scale : 0;
-                            const hx = px + Math.cos(offsetAngle) * offsetDist;
-                            const hy = py - 6 * scale + Math.sin(offsetAngle) * offsetDist;
+                            // Small radius: 2-5 game units, scaled subtly by damage
+                            const gameR = 2 + Math.min(hb.damage * 0.12, 3);
+                            const r = gameR * scale;
+                            // Spread hitboxes around character center so they don't stack
+                            const spreadAngle = numHb > 1 ? (hi / numHb) * Math.PI * 2 - Math.PI/2 : 0;
+                            const spreadDist = numHb > 1 ? 2.5 * scale : 0;
+                            const hx = px + Math.cos(spreadAngle) * spreadDist * renderFacing;
+                            const hy = py - 5 * scale + Math.sin(spreadAngle) * spreadDist;
+                            const col = hbColors[hi % hbColors.length];
 
                             ctx.save();
                             ctx.beginPath();
                             ctx.arc(hx, hy, r, 0, Math.PI * 2);
-                            ctx.fillStyle = 'rgba(255,50,50,0.18)';
+                            ctx.fillStyle = col.fill;
                             ctx.fill();
-                            ctx.strokeStyle = 'rgba(255,80,80,0.55)';
+                            ctx.strokeStyle = col.stroke;
                             ctx.lineWidth = 1.5;
                             ctx.stroke();
                             ctx.restore();
