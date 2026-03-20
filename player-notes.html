@@ -110,7 +110,45 @@
         .replay-main-row { display: flex; gap: 1rem; flex: 1; min-height: 0; }
         .replay-left { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
         .replay-right { flex: 0 0 auto; width: 500px; overflow-y: auto; }
-        @media (max-width: 900px) { .replay-main-row { flex-direction: column; } .replay-right { flex: none; } }
+        @media (max-width: 900px) {
+            .replay-main-row { flex-direction: column; }
+            .replay-right { flex: none; width: 100%; }
+            .replay-modal { width: 96vw; height: 96vh; min-width: 0; padding: 0.75rem; border-radius: 10px; resize: none; }
+            .replay-modal-content-wrap { overflow-y: auto; overflow-x: hidden; }
+            .replay-left { overflow-y: visible; }
+            .replay-modal-header { margin-bottom: 0.5rem; }
+            .replay-modal-title { font-size: 1rem; }
+            .replay-hud { padding: 0.4rem 0.5rem; font-size: 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
+            .replay-controls { gap: 0.3rem; justify-content: center; flex-wrap: wrap; }
+            .ctrl-btn { padding: 0.45rem 0.55rem; font-size: 0.78rem; min-height: 36px; min-width: 36px; text-align: center; }
+            .frame-counter { font-size: 0.7rem; }
+            .speed-select { font-size: 0.78rem; padding: 0.3rem; }
+            .replay-info-bar { font-size: 0.7rem; gap: 0.5rem; }
+            .controller-card { flex-direction: column; align-items: stretch; padding: 0.5rem; }
+            .controller-info { min-width: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+            .controller-svg-wrap svg { max-height: 120px; }
+            .clips-panel { max-height: 25vh; }
+            .replay-canvas-wrap { border-radius: 8px 8px 0 0; }
+            .canvas-resize-handle { display: none; }
+            .stickmap-overlay { width: 200px; }
+        }
+        @media (max-width: 500px) {
+            .replay-modal { width: 100vw; height: 100vh; border-radius: 0; padding: 0.5rem; top: 0; left: 0; transform: none; }
+            .replay-modal-title { font-size: 0.9rem; }
+            .replay-hud { padding: 0.3rem 0.4rem; font-size: 0.75rem; }
+            .replay-hud .player-hud { gap: 0.3rem; }
+            .stock-dot { width: 9px; height: 9px; }
+            .replay-controls { gap: 0.2rem; }
+            .ctrl-btn { padding: 0.35rem 0.4rem; font-size: 0.72rem; min-height: 32px; min-width: 32px; }
+            .replay-info-bar { font-size: 0.65rem; }
+            .controller-card { gap: 0.4rem; }
+            .controller-info .char-name { font-size: 0.85rem; }
+            .controller-info .anim-name { font-size: 0.7rem; }
+            .controller-svg-wrap svg { max-height: 100px; }
+            .replay-load-area { padding: 1rem; }
+            .load-slp-btn { padding: 0.6rem 1rem; font-size: 0.9rem; }
+            .stickmap-overlay { width: 180px; }
+        }
         /* Clips panel */
         .clips-panel-wrap { margin-top: 0.5rem; flex-shrink: 0; }
         .clips-panel-toggle { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #1a1a3e; border-radius: 8px; cursor: pointer; user-select: none; font-size: 0.9rem; color: #a78bfa; font-weight: 700; }
