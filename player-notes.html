@@ -63,7 +63,7 @@
         /* ===== REPLAY MODAL ===== */
         .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; }
         .replay-modal-overlay.open { display: flex; }
-        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 98vw; max-width: 1300px; max-height: 95vh; overflow-y: auto; color: white; position: relative; }
+        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 98vw; max-width: 1400px; max-height: 95vh; overflow-y: auto; color: white; position: relative; }
         .replay-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .replay-modal-title { font-size: 1.2rem; font-weight: 700; color: #a78bfa; }
         .replay-close-btn { background: none; border: none; color: #aaa; font-size: 1.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; }
@@ -105,7 +105,7 @@
         .controller-svg-wrap svg { width: 100%; height: auto; }
         .replay-main-row { display: flex; gap: 1rem; }
         .replay-left { flex: 1; min-width: 0; }
-        .replay-right { flex: 0 0 440px; max-height: 600px; overflow-y: auto; }
+        .replay-right { flex: 0 0 500px; max-height: 650px; overflow-y: auto; }
         @media (max-width: 900px) { .replay-main-row { flex-direction: column; } .replay-right { flex: none; } }
         /* Clips panel */
         .clips-panel { background: #111827; border-radius: 10px; padding: 0.75rem; margin-top: 0.75rem; }
@@ -2521,7 +2521,7 @@ function buildControllerSVG(pre, color, playerIdx) {
     if (isNotched) {
         const nA = 0.3875 * gR; // off-axis
         const nM = 0.9125 * gR; // on-axis
-        const bumpR = 5; // bump size
+        const bumpR = 8; // bump size (tip distance outward)
         const notchPts = [
             [gCx + nA, gCy - nM],   // N-right
             [gCx - nA, gCy - nM],   // N-left
@@ -2542,8 +2542,8 @@ function buildControllerSVG(pre, color, playerIdx) {
             // Triangle bump: base on gate edge, tip pointing outward
             const tipX = nx + ux * bumpR;
             const tipY = ny + uy * bumpR;
-            const b1X = nx + px * 3, b1Y = ny + py * 3;
-            const b2X = nx - px * 3, b2Y = ny - py * 3;
+            const b1X = nx + px * 5, b1Y = ny + py * 5;
+            const b2X = nx - px * 5, b2Y = ny - py * 5;
             notchMarkers.push(`<polygon points="${b1X.toFixed(1)},${b1Y.toFixed(1)} ${tipX.toFixed(1)},${tipY.toFixed(1)} ${b2X.toFixed(1)},${b2Y.toFixed(1)}" fill="#a78bfa" stroke="black" stroke-width="0.6"/>`);
         });
     }
