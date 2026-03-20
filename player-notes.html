@@ -2136,11 +2136,11 @@ function renderFrame(frameIdx) {
                 const startPre = replayFrames[startFrameNum]?.players?.[player.playerIndex]?.pre;
                 const lt = startPre?.physicalLTrigger ?? 0;
                 const rt = startPre?.physicalRTrigger ?? 0;
-                triggerStrength = Math.max(lt, rt) / 140;
+                triggerStrength = Math.max(lt, rt);
             } else {
                 const lt = pre?.physicalLTrigger ?? 0;
                 const rt = pre?.physicalRTrigger ?? 0;
-                triggerStrength = Math.max(lt, rt) / 140;
+                triggerStrength = Math.max(lt, rt);
                 if (triggerStrength === 0) triggerStrength = 1; // released trigger during guard
             }
             const triggerMultiplier = 1 - (0.5 * (triggerStrength - 0.3)) / 0.7;
@@ -2512,12 +2512,9 @@ function buildControllerSVG(pre, color, playerIdx) {
         [gCx - dOff, gCy - dOff],   // NW
     ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
-    // Analog trigger fill: lAn/rAn range 0-140, map to bar height
-    // L trigger: bar inside the trigger shape, grows downward from top
-    // R trigger: same on right side
-    const lPct = Math.min(1, lAn / 140);
-    const rPct = Math.min(1, rAn / 140);
-    // L trigger bar: x=55..130, full height ~45 (y=140..185)
+    // Analog trigger fill: lAn/rAn range 0.0-1.0 (float from slippi-js)
+    const lPct = Math.min(1, lAn);
+    const rPct = Math.min(1, rAn);
     const lBarH = lPct * 40;
     const rBarH = rPct * 40;
     const lBarColor = lDig ? 'white' : (lPct > 0 ? `rgba(180,220,255,${0.4 + lPct * 0.6})` : 'transparent');
@@ -2553,10 +2550,10 @@ function buildControllerSVG(pre, color, playerIdx) {
         <!-- Analog trigger meters — large visible bars at bottom -->
         <rect x="30" y="560" width="200" height="16" rx="5" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>
         <rect x="30" y="560" width="${200 * lPct}" height="16" rx="5" fill="${lDig ? 'white' : (lPct > 0 ? '#6b9fff' : 'transparent')}"/>
-        <text x="30" y="555" fill="${lPct > 0 ? '#ddd' : '#777'}" font-size="18" font-family="monospace" font-weight="bold">L: ${lAn.toFixed(0)}/140</text>
+        <text x="30" y="555" fill="${lPct > 0 || lDig ? '#ddd' : '#777'}" font-size="18" font-family="monospace" font-weight="bold">L: ${(lAn * 100).toFixed(0)}%${lDig ? ' HARD' : ''}</text>
         <rect x="355" y="560" width="200" height="16" rx="5" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>
         <rect x="355" y="560" width="${200 * rPct}" height="16" rx="5" fill="${rDig ? 'white' : (rPct > 0 ? '#6b9fff' : 'transparent')}"/>
-        <text x="355" y="555" fill="${rPct > 0 ? '#ddd' : '#777'}" font-size="18" font-family="monospace" font-weight="bold">R: ${rAn.toFixed(0)}/140</text>
+        <text x="355" y="555" fill="${rPct > 0 || rDig ? '#ddd' : '#777'}" font-size="18" font-family="monospace" font-weight="bold">R: ${(rAn * 100).toFixed(0)}%${rDig ? ' HARD' : ''}</text>
     </svg>`;
 }
 
