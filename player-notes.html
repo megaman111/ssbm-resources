@@ -105,7 +105,7 @@
         .controller-svg-wrap svg { width: 100%; height: auto; }
         .replay-main-row { display: flex; gap: 1rem; }
         .replay-left { flex: 1; min-width: 0; }
-        .replay-right { flex: 0 0 500px; max-height: 650px; overflow-y: auto; }
+        .replay-right { flex: 0 0 auto; width: 500px; max-height: 650px; overflow-y: auto; }
         @media (max-width: 900px) { .replay-main-row { flex-direction: column; } .replay-right { flex: none; } }
         /* Clips panel */
         .clips-panel { background: #111827; border-radius: 10px; padding: 0.75rem; margin-top: 0.75rem; }
@@ -1683,7 +1683,9 @@ document.getElementById('controllerPanel').addEventListener('mousedown', e => {
 document.getElementById('controllerScaleSlider').addEventListener('input', e => {
     controllerScale = parseFloat(e.target.value);
     document.getElementById('controllerScaleLabel').textContent = `${(controllerScale*100).toFixed(0)}%`;
-    // Re-render current frame so scale takes effect immediately
+    // Apply scale to the right panel width
+    const rp = document.querySelector('.replay-right');
+    if (rp) rp.style.width = `${Math.round(500 * controllerScale)}px`;
     if (replayFrames) updateControllerPanel(currentFrame);
 });
 
@@ -2820,7 +2822,7 @@ function updateControllerPanel(frameIdx) {
         // Enforcer button
         html += `<button class="savestate-btn" data-action="enforcer" data-pidx="${player.playerIndex}" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
 
-        html += `</div><div class="controller-svg-wrap" style="max-width:${Math.round(240 * controllerScale)}px">${buildControllerSVG(pre, color, player.playerIndex)}</div></div>`;
+        html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, player.playerIndex)}</div></div>`;
     });
     html += '</div>';
     panel.innerHTML = html;
