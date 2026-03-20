@@ -76,7 +76,7 @@
         .load-slp-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; }
         .load-slp-btn:hover { opacity: 0.9; }
         .replay-canvas-wrap { position: relative; background: #0d0d1a; border-radius: 12px; overflow: hidden; margin-bottom: 1rem; }
-        #replayCanvas { display: block; width: 100%; height: auto; }
+        #replayCanvas { display: block; width: 100%; aspect-ratio: 4/3; }
         .replay-hud { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.9rem; }
         .player-hud { display: flex; align-items: center; gap: 0.5rem; }
         .stock-icons { display: flex; gap: 3px; }
@@ -1744,8 +1744,9 @@ replayCanvas.addEventListener('wheel', e => {
     
     // Zoom toward mouse position
     const rect = replayCanvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const dpr = window.devicePixelRatio || 1;
+    const mouseX = (e.clientX - rect.left) * dpr;
+    const mouseY = (e.clientY - rect.top) * dpr;
     
     // Convert mouse position to game coords at current zoom, then adjust pan so it stays under cursor
     const W = replayCanvas.width, H = replayCanvas.height;
@@ -1789,8 +1790,9 @@ replayCanvas.addEventListener('mousedown', e => {
 
 document.addEventListener('mousemove', e => {
     if (!isDragging) return;
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
+    const dpr = window.devicePixelRatio || 1;
+    const dx = (e.clientX - dragStartX) * dpr;
+    const dy = (e.clientY - dragStartY) * dpr;
     
     // Convert pixel delta to game units
     const stageId = replaySettings?.stageId;
@@ -1926,6 +1928,16 @@ function renderFrame(frameIdx) {
 
     const canvas = document.getElementById('replayCanvas');
     const ctx = canvas.getContext('2d');
+
+    // Match canvas internal resolution to its CSS display size × devicePixelRatio
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const displayW = Math.round(rect.width * dpr);
+    const displayH = Math.round(rect.height * dpr);
+    if (canvas.width !== displayW || canvas.height !== displayH) {
+        canvas.width = displayW;
+        canvas.height = displayH;
+    }
     const W = canvas.width, H = canvas.height;
 
     const stageId = replaySettings.stageId;
@@ -2491,6 +2503,14 @@ document.addEventListener('keydown', e => {
     else if (e.key >= '0' && e.key <= '9') {
         const pct = parseInt(e.key) / 10;
         seekToFrame(Math.floor(pct * (totalFrames - 1)));
+    }
+});
+
+// Re-render on fullscreen change so canvas resolution matches new display size
+document.addEventListener('fullscreenchange', () => {
+    if (replayFrames) {
+        // Small delay to let layout settle after fullscreen transition
+        requestAnimationFrame(() => renderFrame(currentFrame));
     }
 });
 
