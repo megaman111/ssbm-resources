@@ -1660,6 +1660,17 @@ document.getElementById('replayModalOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('replayModalOverlay')) closeReplayModal();
 });
 
+// Event delegation for controller panel buttons (survives innerHTML rebuilds during playback)
+document.getElementById('controllerPanel').addEventListener('mousedown', e => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    e.stopPropagation();
+    const action = btn.dataset.action;
+    if (action === 'stickmap') toggleStickMap(parseInt(btn.dataset.idx));
+    else if (action === 'savestate') downloadSavestate(parseInt(btn.dataset.pidx));
+    else if (action === 'enforcer') runEnforcer(parseInt(btn.dataset.pidx));
+});
+
 // ===== ZOOM/PAN CONTROLS =====
 const replayCanvas = document.getElementById('replayCanvas');
 
@@ -2691,13 +2702,13 @@ function updateControllerPanel(frameIdx) {
         if (hurtbox !== 0) html += `<div class="extra-info" style="color:#5b9aff;">${hurtbox===1?'Invulnerable':'Intangible'}</div>`;
         // Savestate button: only for singles (not doubles)
         if (!isDoubles) {
-            html += `<button class="savestate-btn" onclick="downloadSavestate(${player.playerIndex})">Download savestate</button>`;
+            html += `<button class="savestate-btn" data-action="savestate" data-pidx="${player.playerIndex}">Download savestate</button>`;
         }
         // Stick map toggle button
         const smActive = stickMapOpenPlayers.has(i);
-        html += `<button class="savestate-btn stickmap-toggle" onclick="toggleStickMap(${i})" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
+        html += `<button class="savestate-btn stickmap-toggle" data-action="stickmap" data-idx="${i}" style="${smActive ? 'background:#3a3a7a;color:#fff;' : ''}">${smActive ? '✕ Close Map' : '🎯 Stick Map'}</button>`;
         // Enforcer button
-        html += `<button class="savestate-btn" onclick="runEnforcer(${player.playerIndex})" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
+        html += `<button class="savestate-btn" data-action="enforcer" data-pidx="${player.playerIndex}" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
 
         html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, i)}</div></div>`;
     });
