@@ -190,7 +190,7 @@
                             <div style="display:flex;align-items:center;gap:0.5rem;">
                                 <span style="color:#888;font-size:0.75rem;">🎮 Size</span>
                                 <input type="range" id="controllerScaleSlider" min="0.6" max="2" step="0.1" value="1"
-                                    style="flex:1;accent-color:#a78bfa;height:4px;cursor:pointer;">
+                                    style="flex:1;accent-color:#a78bfa;cursor:pointer;">
                                 <span id="controllerScaleLabel" style="color:#aaa;font-size:0.7rem;min-width:28px;text-align:right;">100%</span>
                             </div>
                         </div>
@@ -1683,6 +1683,8 @@ document.getElementById('controllerPanel').addEventListener('mousedown', e => {
 document.getElementById('controllerScaleSlider').addEventListener('input', e => {
     controllerScale = parseFloat(e.target.value);
     document.getElementById('controllerScaleLabel').textContent = `${(controllerScale*100).toFixed(0)}%`;
+    // Re-render current frame so scale takes effect immediately
+    if (replayFrames) updateControllerPanel(currentFrame);
 });
 
 // ===== ZOOM/PAN CONTROLS =====
