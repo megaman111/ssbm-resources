@@ -1828,7 +1828,7 @@ async function initReplayFromBuffer(uint8, filename) {
     startPlayback();
 
     // Detect clips (kills, grabs, edgeguards, etc.) for the clips panel
-    setTimeout(() => { detectClips(); buildStockTimeline(); }, 100);
+    setTimeout(() => { detectClips(); buildStockTimeline(); detectNotchedPlayers(); }, 100);
 
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
@@ -2501,16 +2501,47 @@ function buildControllerSVG(pre, color, playerIdx) {
     // GCC octagonal gate: cardinal reach = gR, diagonal notch x/y offset = 0.7*gR
     const octR = gR;
     const dOff = gR * 0.7;
-    const octPoints = [
-        [gCx, gCy - octR],          // N
-        [gCx + dOff, gCy - dOff],   // NE
-        [gCx + octR, gCy],          // E
-        [gCx + dOff, gCy + dOff],   // SE
-        [gCx, gCy + octR],          // S
-        [gCx - dOff, gCy + dOff],   // SW
-        [gCx - octR, gCy],          // W
-        [gCx - dOff, gCy - dOff],   // NW
-    ].map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const isNotched = notchedPlayers[playerIdx] === true;
+
+    // Build gate polygon points
+    // Stock octagon: N, NE, E, SE, S, SW, W, NW (8 points)
+    // Notched (hybrid firefox+wavedash): 16 points — stock 8 + 8 firefox/WD notches
+    // Notch offsets on the gate: ~0.3875 * gR off-axis, ~0.9125 * gR on-axis
+    let gatePoints;
+    if (isNotched) {
+        const nA = 0.3875 * gR; // notch off-axis offset
+        const nM = 0.9125 * gR; // notch on-axis offset
+        gatePoints = [
+            [gCx, gCy - octR],              // N
+            [gCx + nA, gCy - nM],           // N-firefox-right
+            [gCx + dOff, gCy - dOff],       // NE
+            [gCx + nM, gCy - nA],           // E-firefox-up
+            [gCx + octR, gCy],              // E
+            [gCx + nM, gCy + nA],           // E-firefox-down (wavedash R)
+            [gCx + dOff, gCy + dOff],       // SE
+            [gCx + nA, gCy + nM],           // S-firefox-right
+            [gCx, gCy + octR],              // S
+            [gCx - nA, gCy + nM],           // S-firefox-left
+            [gCx - dOff, gCy + dOff],       // SW
+            [gCx - nM, gCy + nA],           // W-firefox-down (wavedash L)
+            [gCx - octR, gCy],              // W
+            [gCx - nM, gCy - nA],           // W-firefox-up
+            [gCx - dOff, gCy - dOff],       // NW
+            [gCx - nA, gCy - nM],           // N-firefox-left
+        ];
+    } else {
+        gatePoints = [
+            [gCx, gCy - octR],          // N
+            [gCx + dOff, gCy - dOff],   // NE
+            [gCx + octR, gCy],          // E
+            [gCx + dOff, gCy + dOff],   // SE
+            [gCx, gCy + octR],          // S
+            [gCx - dOff, gCy + dOff],   // SW
+            [gCx - octR, gCy],          // W
+            [gCx - dOff, gCy - dOff],   // NW
+        ];
+    }
+    const octPoints = gatePoints.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
     // Analog trigger fill: lAn/rAn range 0.0-1.0 (float from slippi-js)
     const lPct = Math.min(1, lAn);
@@ -2530,6 +2561,11 @@ function buildControllerSVG(pre, color, playerIdx) {
         ${dRight?'<rect x="198" y="393" width="20" height="18" fill="white" rx="2"/>':''}
         <path fill="transparent" d="m 104.65234,199.2793 c 41.488,0 75.23438,33.75128 75.23438,75.23828 0,41.487 -33.74638,75.24023 -75.23438,75.24023 -41.486996,0 -75.238278,-33.75323 -75.238278,-75.24023 0,-41.487 33.751282,-75.23828 75.238278,-75.23828 z"/>
         <polygon fill="lightgray" stroke="black" stroke-width="2.5" points="${octPoints}"/>
+        ${isNotched ? gatePoints.map(([px,py], gi) => {
+            // Only draw dots on the notch points (odd indices in the 16-point gate)
+            if (gi % 2 === 0) return '';
+            return `<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="2.5" fill="#a78bfa" stroke="black" stroke-width="0.8"/>`;
+        }).join('') : ''}
         <circle fill="gray" stroke="black" stroke-width="2.5" cx="${stickCx}" cy="${stickCy}" r="35.1"/>
         <path fill="transparent" d="M402 361.3c.4 0 .8.1 1.1.3l31.2 18a3 3 0 0 1 1.4 1.8l10.3 34.1a3 3 0 0 1-.3 2.4L427 451.2a3 3 0 0 1-1.9 1.5l-36.2 9.2a3 3 0 0 1-2.3-.3l-32.2-18.9a3 3 0 0 1-1.4-2l-8.7-37.1a3 3 0 0 1 .4-2.4l19.3-30a3 3 0 0 1 1.8-1.3l35-8.6h1.2z"/>
         <circle fill="gold" stroke="black" stroke-width="2.5" cx="395.2" cy="411.6" r="44.1"/>
@@ -2742,6 +2778,7 @@ function updateControllerPanel(frameIdx) {
         if (hitlag > 0) html += `<div class="extra-info">Hitlag ${hitlag.toFixed(0)}</div>`;
         if (hitstun > 0) html += `<div class="extra-info">Hitstun ${hitstun.toFixed(0)}</div>`;
         if (hurtbox !== 0) html += `<div class="extra-info" style="color:#5b9aff;">${hurtbox===1?'Invulnerable':'Intangible'}</div>`;
+        if (notchedPlayers[player.playerIndex]) html += `<div class="extra-info" style="color:#a78bfa;">🔧 Notched</div>`;
         // Savestate button: only for singles (not doubles)
         if (!isDoubles) {
             html += `<button class="savestate-btn" data-action="savestate" data-pidx="${player.playerIndex}">Download savestate</button>`;
@@ -2752,12 +2789,72 @@ function updateControllerPanel(frameIdx) {
         // Enforcer button
         html += `<button class="savestate-btn" data-action="enforcer" data-pidx="${player.playerIndex}" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
 
-        html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, i)}</div></div>`;
+        html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, player.playerIndex)}</div></div>`;
     });
     html += '</div>';
     panel.innerHTML = html;
     panel.style.display = 'block';
     updateStickMapContainer();
+}
+
+// ===== NOTCH DETECTION =====
+// Detect if players are using firefox/wavedash notched controllers
+// by checking if their stick coordinates repeatedly land on known notch positions
+// that are NOT on the stock octagonal gate.
+let notchedPlayers = {}; // playerIndex -> true/false
+
+// Known hybrid notch gate points (firefox + wavedash) in stick coordinate space.
+// Stock octagon has 8 points: cardinals (±1,0),(0,±1) and diagonals (±0.7,±0.7).
+// Firefox notches add points near each cardinal at ~22.9° off-cardinal.
+// Wavedash notches add points below horizontal cardinals at ~17° below horizontal.
+// These are the GATE positions (physical notch locations), not the in-game coordinate values.
+// Typical notch target coordinates (what modders aim for):
+const NOTCH_TARGETS = [
+    // Firefox notches near N cardinal (shallow up-B left/right of straight up)
+    { x:  0.3875, y:  0.9125 }, { x: -0.3875, y:  0.9125 },
+    // Firefox notches near E cardinal
+    { x:  0.9125, y:  0.3875 }, { x:  0.9125, y: -0.3875 },
+    // Firefox notches near W cardinal
+    { x: -0.9125, y:  0.3875 }, { x: -0.9125, y: -0.3875 },
+    // Firefox notches near S cardinal
+    { x:  0.3875, y: -0.9125 }, { x: -0.3875, y: -0.9125 },
+    // Wavedash notches (below horizontal, max wavedash angle ~17°)
+    // These overlap with the E/W firefox lower notches above
+];
+const NOTCH_TOLERANCE = 0.06; // how close a coordinate must be to a notch target
+const NOTCH_MIN_HITS = 4;    // minimum times a notch must be hit to count
+
+function detectNotchedPlayers() {
+    notchedPlayers = {};
+    if (!replayFrames || !replaySettings) return;
+    const keys = getFrameKeys();
+    const players = replaySettings.players;
+
+    players.forEach((player) => {
+        const pidx = player.playerIndex;
+        // Count hits near each notch target
+        const notchHits = NOTCH_TARGETS.map(() => 0);
+        // Sample every 3rd frame for performance
+        for (let fi = 0; fi < keys.length; fi += 3) {
+            const frame = replayFrames[keys[fi]];
+            const pre = frame?.players?.[pidx]?.pre;
+            if (!pre) continue;
+            const jx = pre.joystickX ?? 0;
+            const jy = pre.joystickY ?? 0;
+            const mag = Math.sqrt(jx*jx + jy*jy);
+            if (mag < 0.85) continue; // only check near-gate positions
+            // Check against each notch target
+            for (let ni = 0; ni < NOTCH_TARGETS.length; ni++) {
+                const nt = NOTCH_TARGETS[ni];
+                if (Math.abs(jx - nt.x) < NOTCH_TOLERANCE && Math.abs(jy - nt.y) < NOTCH_TOLERANCE) {
+                    notchHits[ni]++;
+                }
+            }
+        }
+        // Player is notched if at least 2 different notch targets were hit enough times
+        const hitNotches = notchHits.filter(h => h >= NOTCH_MIN_HITS).length;
+        notchedPlayers[pidx] = hitNotches >= 2;
+    });
 }
 
 // ===== STOCK TIMELINE =====
