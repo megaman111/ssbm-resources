@@ -63,7 +63,7 @@
         /* ===== REPLAY MODAL ===== */
         .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; }
         .replay-modal-overlay.open { display: block; }
-        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 60vw; max-width: 1200px; height: 70vh; overflow: hidden; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); resize: both; min-width: 500px; min-height: 350px; display: flex; flex-direction: column; }
+        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 60vw; max-width: 1200px; height: 70vh; overflow: hidden; color: white; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); resize: both; min-width: 500px; min-height: 350px; display: flex; flex-direction: column; z-index: 10000; }
         .replay-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; cursor: grab; user-select: none; flex-shrink: 0; }
         .replay-modal-header:active { cursor: grabbing; }
         .replay-modal-title { font-size: 1.2rem; font-weight: 700; color: #a78bfa; }
