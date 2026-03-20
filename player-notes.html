@@ -63,7 +63,7 @@
         /* ===== REPLAY MODAL ===== */
         .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; }
         .replay-modal-overlay.open { display: block; }
-        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 90vw; max-width: 1400px; height: 85vh; overflow: hidden; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); resize: both; min-width: 600px; min-height: 400px; display: flex; flex-direction: column; }
+        .replay-modal { background: #1a1a2e; border-radius: 16px; padding: 1.5rem; width: 80vw; max-width: 1400px; height: 80vh; overflow: hidden; color: white; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); resize: both; min-width: 600px; min-height: 400px; display: flex; flex-direction: column; }
         .replay-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; cursor: grab; user-select: none; flex-shrink: 0; }
         .replay-modal-header:active { cursor: grabbing; }
         .replay-modal-title { font-size: 1.2rem; font-weight: 700; color: #a78bfa; }
@@ -1672,22 +1672,18 @@ window.closeReplayModal = () => {
     stopPlayback();
 };
 
-// Close on overlay click
-document.getElementById('replayModalOverlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('replayModalOverlay')) closeReplayModal();
-});
-
 // Draggable modal via header
+let _modalDragged = false;
 (function() {
     const header = document.querySelector('.replay-modal-header');
     const modal = document.getElementById('replayModal');
     let dragging = false, startX, startY, startLeft, startTop;
 
     header.addEventListener('mousedown', e => {
-        if (e.target.closest('.replay-close-btn')) return; // don't drag on close button
+        if (e.target.closest('.replay-close-btn')) return;
         dragging = true;
+        _modalDragged = false;
         const rect = modal.getBoundingClientRect();
-        // Switch from transform-based centering to fixed position on first drag
         modal.style.transform = 'none';
         modal.style.left = rect.left + 'px';
         modal.style.top = rect.top + 'px';
@@ -1698,12 +1694,19 @@ document.getElementById('replayModalOverlay').addEventListener('click', e => {
 
     document.addEventListener('mousemove', e => {
         if (!dragging) return;
+        _modalDragged = true;
         modal.style.left = (startLeft + e.clientX - startX) + 'px';
         modal.style.top = (startTop + e.clientY - startY) + 'px';
     });
 
     document.addEventListener('mouseup', () => { dragging = false; });
 })();
+
+// Close on overlay click (but not after dragging)
+document.getElementById('replayModalOverlay').addEventListener('click', e => {
+    if (_modalDragged) { _modalDragged = false; return; }
+    if (e.target === document.getElementById('replayModalOverlay')) closeReplayModal();
+});
 
 // Event delegation for controller panel buttons (survives innerHTML rebuilds during playback)
 document.getElementById('controllerPanel').addEventListener('mousedown', e => {
