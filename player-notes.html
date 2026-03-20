@@ -101,7 +101,8 @@
         .controller-info .extra-info { font-size: 0.65rem; color: #667eea; margin-top: 0.1rem; }
         .savestate-btn { background: #2d2d4e; color: #ccc; border: 1px solid #555; padding: 0.2rem 0.5rem; border-radius: 6px; cursor: pointer; font-size: 0.7rem; margin-top: 0.3rem; transition: background 0.15s; }
         .savestate-btn:hover { background: #3d3d6e; color: #fff; }
-        .controller-svg-wrap { flex: 1; max-width: 180px; }
+        .controller-svg-wrap { flex: 1; max-width: 240px; transition: max-width 0.2s; }
+        .controller-svg-wrap.sm-open { max-width: 160px; }
         .replay-main-row { display: flex; gap: 1rem; }
         .replay-left { flex: 1; min-width: 0; }
         .replay-right { flex: 0 0 380px; max-height: 600px; overflow-y: auto; }
@@ -2709,7 +2710,8 @@ function updateControllerPanel(frameIdx) {
         // Enforcer button
         html += `<button class="savestate-btn" data-action="enforcer" data-pidx="${player.playerIndex}" style="background:#2a1a3e;border-color:#6a4a8e;">🔍 Enforcer</button>`;
 
-        html += `</div><div class="controller-svg-wrap">${buildControllerSVG(pre, color, i)}</div></div>`;
+        const smClass = stickMapOpenPlayers.size > 0 ? 'sm-open' : '';
+        html += `</div><div class="controller-svg-wrap ${smClass}">${buildControllerSVG(pre, color, i)}</div></div>`;
     });
     html += '</div>';
     panel.innerHTML = html;
