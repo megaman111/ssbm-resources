@@ -99,7 +99,7 @@
 - [x] Loads per-character move data from FightCore GitHub (cached)
 - [x] CC / ASDI Down percent calculator (Melee knockback formula)
 - [x] Action state → move name mapping for real-time frame data lookup
-- [ ] Integrate into matchup pages for per-matchup CC/ASDI reference tables
+- [x] Integrate into matchup pages for per-matchup CC/ASDI reference tables (`cc-table-builder.js` shared module, all 15 matchup pages)
 - [ ] Integrate into Way of Fox for character-specific frame data quick reference
 - [ ] Add kill percent calculations
 ### IKneeData Calculator Module
