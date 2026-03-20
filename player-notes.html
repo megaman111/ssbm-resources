@@ -2085,6 +2085,89 @@ function getFrameKeys() {
 // the 1000x1000 SVG path space to ~100 game units, then charScale applies.
 // For canvas we combine: charScale * 0.1 * canvasScale
 
+// Approximate hitbox placement based on FightCore move normalizedName.
+// Returns {baseX, baseY, spreadDir, spreadLen} in game units relative to character.
+// baseX/baseY: center of the hitbox cluster. spreadDir: angle hitboxes spread along.
+// spreadLen: how far apart hitboxes are spread. All values pre-facing (baseX is unsigned).
+// This uses Melee knowledge of where attacks generally hit.
+function getHitboxPlacement(fcName, charScale, facing) {
+    const cs = charScale;
+    const f = facing; // 1 or -1
+    // Default: centered on character torso
+    let bx = 0, by = 6 * cs, dir = 0, len = 4 * cs;
+
+    // Forward-reaching moves (tilts, smashes, dash attack)
+    if (fcName === 'ftilt' || fcName === 'fsmash' || fcName === 'dattack') {
+        bx = 8 * cs * f; by = 6 * cs; dir = 0; len = 6 * cs;
+    }
+    // Up tilts and up smash — above character
+    else if (fcName === 'utilt' || fcName === 'usmash') {
+        bx = 2 * cs * f; by = 13 * cs; dir = Math.PI / 2; len = 5 * cs;
+    }
+    // Down tilt, down smash — low and forward
+    else if (fcName === 'dtilt') {
+        bx = 7 * cs * f; by = 1.5 * cs; dir = 0; len = 5 * cs;
+    }
+    else if (fcName === 'dsmash') {
+        bx = 0; by = 2 * cs; dir = 0; len = 10 * cs; // hits both sides
+    }
+    // Jabs — close and forward
+    else if (fcName === 'jab1' || fcName === 'jab2' || fcName === 'jab3' || fcName === 'rapidjabs') {
+        bx = 6 * cs * f; by = 6 * cs; dir = 0; len = 3 * cs;
+    }
+    // Forward air — forward and slightly above
+    else if (fcName === 'fair') {
+        bx = 7 * cs * f; by = 6 * cs; dir = 0; len = 5 * cs;
+    }
+    // Back air — behind character
+    else if (fcName === 'bair') {
+        bx = -7 * cs * f; by = 6 * cs; dir = 0; len = 5 * cs;
+    }
+    // Neutral air — around character center
+    else if (fcName === 'nair') {
+        bx = 2 * cs * f; by = 6 * cs; dir = 0; len = 6 * cs;
+    }
+    // Up air — above
+    else if (fcName === 'uair') {
+        bx = 1 * cs * f; by = 13 * cs; dir = Math.PI / 2; len = 4 * cs;
+    }
+    // Down air — below
+    else if (fcName === 'dair') {
+        bx = 1 * cs * f; by = -1 * cs; dir = -Math.PI / 2; len = 5 * cs;
+    }
+    // Grabs — forward, close
+    else if (fcName === 'grab' || fcName === 'dashgrab') {
+        bx = 7 * cs * f; by = 6 * cs; dir = 0; len = 3 * cs;
+    }
+    // Specials — generally centered or forward
+    else if (fcName === 'neutralb') {
+        bx = 5 * cs * f; by = 7 * cs; dir = 0; len = 4 * cs;
+    }
+    else if (fcName === 'sideb') {
+        bx = 8 * cs * f; by = 6 * cs; dir = 0; len = 5 * cs;
+    }
+    else if (fcName === 'upb') {
+        bx = 1 * cs * f; by = 11 * cs; dir = Math.PI / 2; len = 5 * cs;
+    }
+    else if (fcName === 'downb') {
+        bx = 0; by = 3 * cs; dir = 0; len = 5 * cs;
+    }
+    // Throws — at grab position
+    else if (fcName.includes('throw')) {
+        bx = 4 * cs * f; by = 7 * cs; dir = 0; len = 3 * cs;
+    }
+    // Ledge/getup attacks — forward from ledge
+    else if (fcName.includes('ledge') || fcName.includes('getup')) {
+        bx = 6 * cs * f; by = 2 * cs; dir = 0; len = 6 * cs;
+    }
+    // Dancing blade (Marth/Roy) — forward
+    else if (fcName.startsWith('sideb')) {
+        bx = 9 * cs * f; by = 6 * cs; dir = 0; len = 5 * cs;
+    }
+
+    return { baseX: bx, baseY: by, spreadDir: dir, spreadLen: len };
+}
+
 function renderFrame(frameIdx) {
     if (!replayFrames || !replaySettings) return;
     const keys = getFrameKeys();
@@ -2544,46 +2627,85 @@ function renderFrame(frameIdx) {
             ctx.restore();
         }
 
-        // Hitbox data overlay per player (from FightCore) — colored circles like FightCore
-        // Colors per hitbox ID: id0=red, id1=green, id2=blue, id3=purple (FightCore convention)
-        if (hitboxDataMode && resolvedAnimName) {
-            const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
-            if (moveData && moveData.hits) {
-                const moveFrame = Math.floor(actionStateCounter);
-                // FightCore hitbox colors: id0=red, id1=green, id2=blue, id3=purple
-                const hbColors = [
-                    {fill:'rgba(255,60,60,0.22)', stroke:'rgba(255,80,80,0.7)'},
-                    {fill:'rgba(60,220,60,0.22)', stroke:'rgba(80,220,80,0.7)'},
-                    {fill:'rgba(60,100,255,0.22)', stroke:'rgba(80,120,255,0.7)'},
-                    {fill:'rgba(180,60,255,0.22)', stroke:'rgba(200,80,255,0.7)'},
-                ];
-                for (const hit of moveData.hits) {
-                    const hStart = hit.start || 0;
-                    const hEnd = hit.end || 0;
-                    if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
-                        const numHb = hit.hitboxes ? hit.hitboxes.length : 0;
-                        for (let hi = 0; hi < numHb; hi++) {
-                            const hb = hit.hitboxes[hi];
-                            if (!hb || hb.damage <= 0) continue;
-                            // Small radius: 2-5 game units, scaled subtly by damage
-                            const gameR = 2 + Math.min(hb.damage * 0.12, 3);
-                            const r = gameR * scale;
-                            // Spread hitboxes around character center so they don't stack
-                            const spreadAngle = numHb > 1 ? (hi / numHb) * Math.PI * 2 - Math.PI/2 : 0;
-                            const spreadDist = numHb > 1 ? 2.5 * scale : 0;
-                            const hx = px + Math.cos(spreadAngle) * spreadDist * renderFacing;
-                            const hy = py - 5 * scale + Math.sin(spreadAngle) * spreadDist;
-                            const col = hbColors[hi % hbColors.length];
+        // Hitbox & hurtbox overlay (FightCore-style colored circles)
+        // Hurtbox: always shown when hitbox mode is on (yellow = vulnerable, blue = invincible/intangible)
+        // Hitbox: colored per ID (red/green/blue/purple) during active frames, positioned by move type
+        if (hitboxDataMode) {
+            const cs = (CHAR_SCALE_MAP[charId] || 1.0);
+            // --- HURTBOX: approximate character's vulnerable area as 3 overlapping circles (body) ---
+            const hurtColor = hurtboxState === 0
+                ? {fill:'rgba(255,220,50,0.10)', stroke:'rgba(255,220,50,0.35)'}  // vulnerable = yellow
+                : {fill:'rgba(50,140,255,0.12)', stroke:'rgba(80,160,255,0.45)'}; // invincible/intangible = blue
+            const bodyH = 12 * cs; // approximate body height in game units
+            const bodyW = 3.5 * cs;
+            // Three circles: lower body, torso, head
+            const hurtParts = [
+                {ox: 0, oy: bodyH * 0.15, r: bodyW * 1.0},  // lower body / hips
+                {ox: 0, oy: bodyH * 0.50, r: bodyW * 0.9},  // torso
+                {ox: 0, oy: bodyH * 0.82, r: bodyW * 0.7},  // head
+            ];
+            ctx.save();
+            for (const hp of hurtParts) {
+                const hpx = toCanvasX(gameX + hp.ox);
+                const hpy = toCanvasY(gameY + hp.oy);
+                const hpr = hp.r * scale;
+                ctx.beginPath();
+                ctx.arc(hpx, hpy, hpr, 0, Math.PI * 2);
+                ctx.fillStyle = hurtColor.fill;
+                ctx.fill();
+                ctx.strokeStyle = hurtColor.stroke;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            ctx.restore();
 
-                            ctx.save();
-                            ctx.beginPath();
-                            ctx.arc(hx, hy, r, 0, Math.PI * 2);
-                            ctx.fillStyle = col.fill;
-                            ctx.fill();
-                            ctx.strokeStyle = col.stroke;
-                            ctx.lineWidth = 1.5;
-                            ctx.stroke();
-                            ctx.restore();
+            // --- HITBOXES: position based on move type during active frames ---
+            if (resolvedAnimName) {
+                const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
+                if (moveData && moveData.hits) {
+                    const moveFrame = Math.floor(actionStateCounter);
+                    const fcName = moveData.normalizedName || '';
+                    // FightCore hitbox colors: id0=red, id1=green, id2=blue, id3=purple
+                    const hbColors = [
+                        {fill:'rgba(255,50,50,0.25)', stroke:'rgba(255,80,80,0.8)'},
+                        {fill:'rgba(50,220,50,0.25)', stroke:'rgba(80,255,80,0.8)'},
+                        {fill:'rgba(50,100,255,0.25)', stroke:'rgba(80,130,255,0.8)'},
+                        {fill:'rgba(180,50,255,0.25)', stroke:'rgba(200,80,255,0.8)'},
+                    ];
+                    // Determine hitbox placement region based on move type
+                    // Returns {baseX, baseY, spreadDir} in game units relative to character pos
+                    // spreadDir: angle in radians that hitboxes spread along (e.g. forward for ftilt)
+                    const placement = getHitboxPlacement(fcName, cs, renderFacing);
+
+                    for (const hit of moveData.hits) {
+                        const hStart = hit.start || 0;
+                        const hEnd = hit.end || 0;
+                        if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
+                            const numHb = hit.hitboxes ? hit.hitboxes.length : 0;
+                            for (let hi = 0; hi < numHb; hi++) {
+                                const hb = hit.hitboxes[hi];
+                                if (!hb || hb.damage <= 0) continue;
+                                // Radius: Melee hitboxes are typically 2.5-6 game units
+                                const gameR = 1.8 + Math.min(hb.damage * 0.1, 2.5);
+                                const r = gameR * scale;
+                                // Position: base placement + spread each hitbox along the move direction
+                                const spreadT = numHb > 1 ? hi / (numHb - 1) : 0.5;
+                                const hbGameX = gameX + placement.baseX + Math.cos(placement.spreadDir) * placement.spreadLen * spreadT * renderFacing;
+                                const hbGameY = gameY + placement.baseY + Math.sin(placement.spreadDir) * placement.spreadLen * spreadT;
+                                const hx = toCanvasX(hbGameX);
+                                const hy = toCanvasY(hbGameY);
+                                const col = hbColors[hi % hbColors.length];
+
+                                ctx.save();
+                                ctx.beginPath();
+                                ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                                ctx.fillStyle = col.fill;
+                                ctx.fill();
+                                ctx.strokeStyle = col.stroke;
+                                ctx.lineWidth = 1.5;
+                                ctx.stroke();
+                                ctx.restore();
+                            }
                         }
                     }
                 }
