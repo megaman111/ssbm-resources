@@ -2007,6 +2007,7 @@ async function buildCCAsdiPanel() {
     if (!html) {
         panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">No CC/ASDI data available</div>';
     } else {
+        html += `<div style="padding:0.4rem 0.6rem;font-size:0.65rem;color:#555;text-align:center;">Calculated from <a href="https://github.com/FightCore/frame-data" target="_blank" style="color:#667eea;">FightCore</a> hitbox data using Melee KB formula · CC mult=⅔ · ASDI↓ mult=1.0 · knockdown threshold=80</div>`;
         panel.innerHTML = html;
     }
 }

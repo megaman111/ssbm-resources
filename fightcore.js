@@ -1,4 +1,4 @@
-﻿/**
+/**
  * FightCore - Reusable Melee frame data module
  * Data sources:
  *   - FightCore: https://github.com/FightCore/frame-data
@@ -36,8 +36,8 @@ const CHAR_WEIGHTS = {
 // ===== Action state -> FightCore normalized name mapping =====
 const ACTION_TO_FC_MOVE = {
     "Attack11": "jab1", "Attack12": "jab2", "Attack13": "jab3",
-    "Attack100Start": "rapidjabs", "Attack100Loop": "rapidjabs",
-    "Attack100End": "rapidjabs", "AttackDash": "dattack",
+    "Attack100Start": "rjab", "Attack100Loop": "rjab",
+    "Attack100End": "rjab", "AttackDash": "dattack",
     "AttackS3Hi": "ftilt", "AttackS3HiS": "ftilt", "AttackS3S": "ftilt",
     "AttackS3LwS": "ftilt", "AttackS3Lw": "ftilt",
     "AttackHi3": "utilt", "AttackLw3": "dtilt",
