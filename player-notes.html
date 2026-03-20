@@ -2972,30 +2972,26 @@ function updateControllerPanel(frameIdx) {
 
 // ===== NOTCH DETECTION =====
 // Detect if players are using firefox/wavedash notched controllers
-// by checking if their stick coordinates repeatedly land on known notch positions
-// that are NOT on the stock octagonal gate.
+// by checking if their stick coordinates repeatedly land at angles consistent
+// with notch positions that are NOT on the stock octagonal gate.
 let notchedPlayers = {}; // playerIndex -> true/false
 
-// Known hybrid notch gate points (firefox + wavedash) in stick coordinate space.
-// Stock octagon has 8 points: cardinals (±1,0),(0,±1) and diagonals (±0.7,±0.7).
-// Firefox notches add points near each cardinal at ~22.9° off-cardinal.
-// Wavedash notches add points below horizontal cardinals at ~17° below horizontal.
-// These are the GATE positions (physical notch locations), not the in-game coordinate values.
-// Typical notch target coordinates (what modders aim for):
-const NOTCH_TARGETS = [
-    // Firefox notches near N cardinal (shallow up-B left/right of straight up)
-    { x:  0.3875, y:  0.9125 }, { x: -0.3875, y:  0.9125 },
-    // Firefox notches near E cardinal
-    { x:  0.9125, y:  0.3875 }, { x:  0.9125, y: -0.3875 },
-    // Firefox notches near W cardinal
-    { x: -0.9125, y:  0.3875 }, { x: -0.9125, y: -0.3875 },
-    // Firefox notches near S cardinal
-    { x:  0.3875, y: -0.9125 }, { x: -0.3875, y: -0.9125 },
-    // Wavedash notches (below horizontal, max wavedash angle ~17°)
-    // These overlap with the E/W firefox lower notches above
-];
-const NOTCH_TOLERANCE = 0.035; // tighter — how close a coordinate must be to a notch target
-const NOTCH_MIN_HITS = 8;     // need more consistent hits to count
+// Stock octagon angles (degrees from +X axis, counterclockwise):
+// Right=0, UpRight=45, Up=90, UpLeft=135, Left=180, DownLeft=225, Down=270, DownRight=315
+// Firefox/WD notch angles are ~23° off each cardinal:
+// Near Up: 67°, 113°; Near Right: 337°, 23°; Near Left: 157°, 203°; Near Down: 247°, 293°
+const NOTCH_ANGLES_DEG = [23, 67, 113, 157, 203, 247, 293, 337];
+const STOCK_ANGLES_DEG = [0, 45, 90, 135, 180, 225, 270, 315];
+const ANGLE_TOLERANCE = 8; // degrees — how close to a notch angle to count as a hit
+const STOCK_ANGLE_EXCLUSION = 12; // degrees — exclude hits too close to stock angles
+const NOTCH_MIN_HITS = 4;  // minimum hits per notch angle to count
+const NOTCH_MIN_DISTINCT = 2; // need at least this many distinct notch angles hit
+const NOTCH_MAG_THRESHOLD = 0.8; // only check high-magnitude positions
+
+function angleDiffDeg(a, b) {
+    let d = Math.abs(a - b) % 360;
+    return d > 180 ? 360 - d : d;
+}
 
 function detectNotchedPlayers() {
     notchedPlayers = {};
@@ -3005,11 +3001,8 @@ function detectNotchedPlayers() {
 
     players.forEach((player) => {
         const pidx = player.playerIndex;
-        // Count hits near each notch target
-        const notchHits = NOTCH_TARGETS.map(() => 0);
-        // Also count hits on stock diagonal notches to compare
-        let stockDiagHits = 0;
-        // Sample every 3rd frame for performance
+        const notchHits = NOTCH_ANGLES_DEG.map(() => 0);
+
         for (let fi = 0; fi < keys.length; fi += 3) {
             const frame = replayFrames[keys[fi]];
             const pre = frame?.players?.[pidx]?.pre;
@@ -3017,24 +3010,32 @@ function detectNotchedPlayers() {
             const jx = pre.joystickX ?? 0;
             const jy = pre.joystickY ?? 0;
             const mag = Math.sqrt(jx*jx + jy*jy);
-            if (mag < 0.88) continue; // only check positions very near the gate rim
-            // Check stock diagonal positions (0.7, 0.7) — these don't count as notched
-            const ax = Math.abs(jx), ay = Math.abs(jy);
-            if (Math.abs(ax - 0.7) < 0.05 && Math.abs(ay - 0.7) < 0.05) {
-                stockDiagHits++;
-                continue; // skip — this is a stock notch hit
+            if (mag < NOTCH_MAG_THRESHOLD) continue;
+
+            // Get angle in degrees (0-360, 0 = right, 90 = up)
+            let angleDeg = Math.atan2(jy, jx) * 180 / Math.PI;
+            if (angleDeg < 0) angleDeg += 360;
+
+            // Skip if too close to any stock octagon angle
+            let nearStock = false;
+            for (const sa of STOCK_ANGLES_DEG) {
+                if (angleDiffDeg(angleDeg, sa) < STOCK_ANGLE_EXCLUSION) {
+                    nearStock = true;
+                    break;
+                }
             }
-            // Check against each notch target
-            for (let ni = 0; ni < NOTCH_TARGETS.length; ni++) {
-                const nt = NOTCH_TARGETS[ni];
-                if (Math.abs(jx - nt.x) < NOTCH_TOLERANCE && Math.abs(jy - nt.y) < NOTCH_TOLERANCE) {
+            if (nearStock) continue;
+
+            // Check against each notch angle
+            for (let ni = 0; ni < NOTCH_ANGLES_DEG.length; ni++) {
+                if (angleDiffDeg(angleDeg, NOTCH_ANGLES_DEG[ni]) < ANGLE_TOLERANCE) {
                     notchHits[ni]++;
                 }
             }
         }
-        // Player is notched if at least 3 different notch targets were hit enough times
+
         const hitNotches = notchHits.filter(h => h >= NOTCH_MIN_HITS).length;
-        notchedPlayers[pidx] = hitNotches >= 3;
+        notchedPlayers[pidx] = hitNotches >= NOTCH_MIN_DISTINCT;
     });
 }
 
