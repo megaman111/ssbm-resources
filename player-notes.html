@@ -2087,13 +2087,19 @@ window.toggleCamera = () => {
         // Reset to default view when switching back to fixed
         viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
     } else {
-        // Initialize smoothed camera from current player positions
-        camSmoothedX = 0; camSmoothedY = 0; camSmoothedZoom = 1.0;
+        // Seed smoothed camera from current view so there's no snap
+        const stageId = replaySettings?.stageId;
+        const stage = STAGE_DATA[stageId] || { x:[-230,230], y:[-150,200] };
+        const stageCenterX = (stage.x[0] + stage.x[1]) / 2;
+        const stageCenterY = (stage.y[0] + stage.y[1]) / 2;
+        camSmoothedX = stageCenterX + viewPanX;
+        camSmoothedY = stageCenterY + viewPanY;
+        camSmoothedZoom = viewZoom;
     }
     renderFrame(currentFrame);
 };
 
-// Dynamic camera: compute target pan/zoom to frame all alive players with padding
+// Dynamic camera: smooth follow camera that tracks players (based on slippilab Camera.tsx approach)
 function updateDynamicCamera(frameIdx) {
     if (cameraMode !== 'follow' || !replayFrames || !replaySettings) return;
     const keys = Object.keys(replayFrames).map(Number).sort((a,b) => a - b);
@@ -2106,60 +2112,51 @@ function updateDynamicCamera(frameIdx) {
     const [bx0, bx1] = stage.x;
     const [by0, by1] = stage.y;
     const stageW = bx1 - bx0, stageH = by1 - by0;
+    const stageCenterX = (bx0 + bx1) / 2;
+    const stageCenterY = (by0 + by1) / 2;
 
-    // Gather alive player positions
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    let aliveCount = 0;
+    // Gather all player positions (include all, like slippilab)
+    const positions = [];
     players.forEach(player => {
         const pf = frame.players?.[player.playerIndex];
         if (!pf) return;
-        const post = pf.post;
-        if (!post) return;
-        const x = post.positionX, y = post.positionY;
+        const data = pf.post || pf.pre;
+        if (!data) return;
+        const x = data.positionX, y = data.positionY;
         if (x == null || y == null) return;
-        // Skip dead players (off-screen / in respawn)
-        const asId = post.actionStateId ?? 0;
-        if (asId <= 10) return; // DeadDown through DeadUpFallIce
-        aliveCount++;
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x);
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y);
+        positions.push({ x, y });
     });
 
-    if (aliveCount === 0) return;
+    if (positions.length === 0) return;
 
-    // Add padding around players (game units)
-    const padX = 40, padY = 35;
-    minX -= padX; maxX += padX;
-    minY -= padY; maxY += padY;
+    // Bounding box with padding
+    const padding = 25;
+    const minimumRange = 100; // don't zoom in too close
+    const xs = positions.map(p => p.x);
+    const ys = positions.map(p => p.y);
+    const xMin = Math.min(...xs) - padding;
+    const xMax = Math.max(...xs) + padding;
+    const yMin = Math.min(...ys) - padding;
+    const yMax = Math.max(...ys) + padding;
 
-    // Clamp to at least show the stage area
-    minX = Math.min(minX, bx0);
-    maxX = Math.max(maxX, bx1);
-    minY = Math.min(minY, by0);
-    maxY = Math.max(maxY, by1);
+    // Target center
+    const targetCenterX = (xMin + xMax) / 2;
+    const targetCenterY = (yMin + yMax) / 2;
 
-    // Target center (game coords)
-    const targetX = (minX + maxX) / 2;
-    const targetY = (minY + maxY) / 2;
+    // Target zoom: scale so the bounding box fits, with minimum range
+    const xRange = Math.max(xMax - xMin, minimumRange);
+    const yRange = Math.max(yMax - yMin, minimumRange);
+    // How much to zoom relative to the base "fit stage" scale
+    const targetZoom = Math.min(stageW / xRange, stageH / yRange);
 
-    // Target zoom: how much to zoom so the bounding box fits
-    const viewW = maxX - minX;
-    const viewH = maxY - minY;
-    const zoomX = stageW / viewW;
-    const zoomY = stageH / viewH;
-    const targetZoom = Math.max(0.5, Math.min(2.5, Math.min(zoomX, zoomY)));
-
-    // Smooth interpolation (lerp)
-    const smoothing = 0.08;
-    camSmoothedX += (targetX - camSmoothedX) * smoothing;
-    camSmoothedY += (targetY - camSmoothedY) * smoothing;
-    camSmoothedZoom += (targetZoom - camSmoothedZoom) * smoothing;
+    // Smooth interpolation (lerp) — slippilab uses 0.04
+    // Use faster smoothing when paused/stepping so camera isn't sluggish
+    const speed = isPlaying ? 0.04 : 0.3;
+    camSmoothedX += (targetCenterX - camSmoothedX) * speed;
+    camSmoothedY += (targetCenterY - camSmoothedY) * speed;
+    camSmoothedZoom += (targetZoom - camSmoothedZoom) * speed;
 
     // Apply to view state
-    const stageCenterX = (bx0 + bx1) / 2;
-    const stageCenterY = (by0 + by1) / 2;
     viewZoom = camSmoothedZoom;
     viewPanX = camSmoothedX - stageCenterX;
     viewPanY = camSmoothedY - stageCenterY;
