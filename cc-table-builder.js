@@ -74,14 +74,21 @@ export async function buildCCTables(containerId, foxId, opponentId, opponentName
         await Promise.all([fc.getMoves(foxId), fc.getMoves(opponentId)]);
 
         let html = '';
+        const isDitto = foxId === opponentId;
 
-        // Fox attacking → Opponent defending (what can opponent CC/ASDI against Fox?)
-        const foxAtk = await renderPairTable(foxId, opponentId, foxName, oppName);
-        // Opponent attacking → Fox defending (what can Fox CC/ASDI against opponent?)
-        const oppAtk = await renderPairTable(opponentId, foxId, oppName, foxName);
+        if (isDitto) {
+            // Ditto: same attacker/defender, only need one table
+            const dittoTable = await renderPairTable(foxId, opponentId, foxName + ' (ditto)', foxName);
+            if (dittoTable) html += `<div class="cc-pair-block">${dittoTable}</div>`;
+        } else {
+            // Fox attacking → Opponent defending (what can opponent CC/ASDI against Fox?)
+            const foxAtk = await renderPairTable(foxId, opponentId, foxName, oppName);
+            // Opponent attacking → Fox defending (what can Fox CC/ASDI against opponent?)
+            const oppAtk = await renderPairTable(opponentId, foxId, oppName, foxName);
 
-        if (foxAtk) html += `<div class="cc-pair-block">${foxAtk}</div>`;
-        if (oppAtk) html += `<div class="cc-pair-block">${oppAtk}</div>`;
+            if (foxAtk) html += `<div class="cc-pair-block">${foxAtk}</div>`;
+            if (oppAtk) html += `<div class="cc-pair-block">${oppAtk}</div>`;
+        }
 
         if (!html) {
             container.innerHTML = '<p style="color:#888;text-align:center;padding:1rem;">No CC/ASDI data available for this matchup.</p>';

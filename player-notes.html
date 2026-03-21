@@ -2118,11 +2118,17 @@ async function buildCCAsdiPanel() {
 
     let html = '';
     // For each pair of attacker → defender, show CC/ASDI percents
+    // Track rendered pairs to avoid duplicate tables in dittos
+    const renderedPairs = new Set();
     for (let a = 0; a < players.length; a++) {
         for (let d = 0; d < players.length; d++) {
             if (a === d) continue;
             const atkId = players[a].characterId;
             const defId = players[d].characterId;
+            // Skip if we already rendered this character pair (ditto dedup)
+            const pairKey = atkId + '→' + defId;
+            if (renderedPairs.has(pairKey)) continue;
+            renderedPairs.add(pairKey);
             const atkName = CHAR_NAMES[atkId] || `P${players[a].port+1}`;
             const defName = CHAR_NAMES[defId] || `P${players[d].port+1}`;
             const atkColor = PLAYER_COLORS[a % PLAYER_COLORS.length];
@@ -2140,9 +2146,13 @@ async function buildCCAsdiPanel() {
 
             html += `<div style="border:1px solid #2a2a4a;border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">`;
             html += `<div style="padding:0.4rem 0.6rem;background:#1a1a3e;font-size:0.85rem;">`;
-            html += `<span style="color:${atkColor};font-weight:700;">${atkName}</span>`;
-            html += ` <span style="color:#666;">→</span> `;
-            html += `<span style="color:${defColor};font-weight:700;">${defName}</span>`;
+            if (atkId === defId) {
+                html += `<span style="color:${atkColor};font-weight:700;">${atkName} (ditto)</span>`;
+            } else {
+                html += `<span style="color:${atkColor};font-weight:700;">${atkName}</span>`;
+                html += ` <span style="color:#666;">→</span> `;
+                html += `<span style="color:${defColor};font-weight:700;">${defName}</span>`;
+            }
             html += `</div>`;
             html += `<table style="width:100%;border-collapse:collapse;font-size:0.75rem;">`;
             html += `<thead><tr style="color:#888;border-bottom:1px solid #2a2a4a;">`;
