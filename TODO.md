@@ -38,8 +38,8 @@
 - [x] Shy Guy / Fly Guy on Yoshi's Story (circle)
 
 ### Camera
-- [ ] **Dynamic camera** — smooth follow camera that tracks players, auto-zoom based on player distance (slippilab Camera.tsx)
-- [ ] Toggle between fixed view and dynamic camera
+- [x] **Dynamic camera** — smooth follow camera that tracks players, auto-zoom based on player distance (slippilab Camera.tsx)
+- [x] Toggle between fixed view and dynamic camera
 
 ### Stage Features
 - [ ] **Fountain of Dreams moving platforms** — use `stageEvents` from frame data (fodLeftPlatformHeight/fodRightPlatformHeight, replay format >= 3.18.0.0)

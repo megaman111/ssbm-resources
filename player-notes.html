@@ -170,6 +170,7 @@
             .replay-controls .ctrl-btn[onclick*="toggleDebug"],
             .replay-controls .ctrl-btn[onclick*="toggleGrid"],
             .replay-controls .ctrl-btn[onclick*="toggleHitboxData"],
+            .replay-controls .ctrl-btn[onclick*="toggleCamera"],
             .replay-controls .ctrl-btn[onclick*="toggleShortcuts"],
             .replay-controls span[style*="color:#555"] { display: none; }
 
@@ -215,38 +216,17 @@
             .load-slp-btn { padding: 0.6rem 1rem; font-size: 0.9rem; }
         }
 
-        /* ===== LANDSCAPE PHONE: canvas center, controllers flanking ===== */
+        /* ===== LANDSCAPE PHONE: maximize canvas, hide controllers ===== */
         @media (max-height: 500px) and (orientation: landscape) {
-            /* 3-column grid: left-controllers | canvas+controls | right-controllers */
-            .replay-main-row { flex-direction: row; display: grid; grid-template-columns: minmax(120px, 1fr) minmax(0, 2.5fr) minmax(120px, 1fr); gap: 0.25rem; align-items: start; }
-            .replay-left { overflow-y: auto; grid-column: 2; }
-            .replay-right { display: none; width: 0; }
-            .replay-right.mobile-open { display: none; }
+            .replay-main-row { flex-direction: column; }
+            .replay-left { overflow-y: auto; }
 
-            /* Show flanking controller panels */
-            .landscape-ctrl-flank { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; max-height: calc(100dvh - 70px); padding: 0.2rem; }
-            #landscapeCtrlLeft { grid-column: 1; }
-            #landscapeCtrlRight { grid-column: 3; }
-
-            /* Landscape controller cards: vertical, compact */
-            .landscape-ctrl-flank .controller-card { background: #16213e; border-radius: 8px; padding: 0.3rem; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
-            .landscape-ctrl-flank .controller-info { text-align: center; min-width: 0; width: 100%; }
-            .landscape-ctrl-flank .controller-info .char-name { font-size: 0.7rem; }
-            .landscape-ctrl-flank .controller-info .anim-name { font-size: 0.58rem; }
-            .landscape-ctrl-flank .controller-info .frame-num { font-size: 0.58rem; }
-            .landscape-ctrl-flank .controller-info .extra-info { font-size: 0.55rem; }
-            .landscape-ctrl-flank .controller-info .port-badge { width: 18px; height: 18px; line-height: 18px; font-size: 0.6rem; }
-            .landscape-ctrl-flank .controller-svg-wrap { width: 100%; max-width: 140px; }
-            .landscape-ctrl-flank .controller-svg-wrap svg { max-height: 65px; width: 100%; }
-            .landscape-ctrl-flank .savestate-btn { display: none; }
-            .landscape-ctrl-flank .stickmap-toggle { display: none; }
-
-            /* Hide the mobile toggle button and replay-right in landscape — controllers are in flanks */
+            /* Hide controllers entirely in landscape */
             .mobile-controllers-toggle { display: none; }
             .replay-right { display: none !important; }
 
-            /* Canvas should fill available height */
-            #replayCanvas { aspect-ratio: 4/3; max-height: calc(100dvh - 120px); width: auto; margin: 0 auto; }
+            /* Canvas: maximize height */
+            #replayCanvas { aspect-ratio: 4/3; max-height: calc(100dvh - 110px); width: auto; margin: 0 auto; }
             .replay-canvas-wrap { display: flex; justify-content: center; background: #0d0d1a; }
 
             /* HUD: single compact line */
@@ -268,6 +248,9 @@
             .replay-modal-header { padding: 0.2rem 0.5rem; }
             .replay-modal-title { font-size: 0.75rem; }
             .replay-close-btn { font-size: 1.1rem; padding: 0.15rem 0.4rem; }
+
+            /* Hide clips/CC panels in landscape to save space */
+            .clips-panel-wrap { display: none; }
         }
         /* Clips panel */
         .clips-panel-wrap { margin-top: 0.5rem; flex-shrink: 0; }
@@ -298,8 +281,7 @@
         .stickmap-overlay .stickmap-close:hover { color: #fff; }
         /* Mobile controller toggle — hidden by default, shown on phone */
         .mobile-controllers-toggle { display: none; }
-        /* Landscape flanking controllers — hidden by default */
-        .landscape-ctrl-flank { display: none; }
+
     </style>
 </head>
 <body>
@@ -326,7 +308,6 @@
             <div id="replayViewerArea" style="display:none;">
                 <div class="replay-hud" id="replayHud"></div>
                 <div class="replay-main-row">
-                    <div class="landscape-ctrl-flank" id="landscapeCtrlLeft"></div>
                     <div class="replay-left">
                         <div class="replay-canvas-wrap" id="replayCanvasWrap">
                             <canvas id="replayCanvas" width="800" height="600"></canvas>
@@ -353,6 +334,7 @@
                             <button class="ctrl-btn" id="debugBtn" onclick="toggleDebug()" title="Debug mode (D key)">🐛</button>
                             <button class="ctrl-btn" id="gridBtn" onclick="toggleGrid()" title="Toggle grid (G key)">⊞</button>
                             <button class="ctrl-btn" id="hitboxDataBtn" onclick="toggleHitboxData()" title="Toggle hitbox data (H key)">🎯</button>
+                            <button class="ctrl-btn" id="cameraBtn" onclick="toggleCamera()" title="Toggle dynamic camera (C key)">📷</button>
                         </div>
                         <div class="replay-timeline-wrap">
                             <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
@@ -363,7 +345,6 @@
                             <button class="ctrl-btn" onclick="toggleShortcuts()" title="Keyboard shortcuts (?)" style="font-size:0.8rem;">⌨ Shortcuts</button>
                         </div>
                     </div>
-                    <div class="landscape-ctrl-flank" id="landscapeCtrlRight"></div>
                     <button class="mobile-controllers-toggle" id="mobileControllersToggle" onclick="var r=document.querySelector('.replay-right');r.classList.toggle('mobile-open');this.classList.toggle('open');this.textContent=r.classList.contains('mobile-open')?'🎮 Controllers ▾':'🎮 Controllers ▸'">🎮 Controllers ▸</button>
                     <div class="replay-right">
                         <div id="controllerScaleBar" style="display:none;padding:0 0.2rem 0.3rem;">
@@ -1809,6 +1790,8 @@ let dragStartPanX = 0, dragStartPanY = 0;
 let debugMode = false; // Toggle with 'd' key — shows action state, anim name, position
 let gridMode = false;    // Toggle grid overlay (like Slippi Lab)
 let hitboxDataMode = false; // Toggle hitbox frame data overlay
+let cameraMode = 'fixed';   // 'fixed' = manual zoom/pan, 'follow' = dynamic camera tracking players
+let camSmoothedX = 0, camSmoothedY = 0, camSmoothedZoom = 1.0; // smoothed camera state
 const fightCore = new FightCore(); // Reusable FightCore module instance
 
 window.openReplayModal = async idx => {
@@ -1818,6 +1801,10 @@ window.openReplayModal = async idx => {
     document.getElementById('replayViewerArea').style.display = 'none';
     // Reset zoom/pan when opening new replay
     viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
+    cameraMode = 'fixed';
+    camSmoothedX = 0; camSmoothedY = 0; camSmoothedZoom = 1.0;
+    const camBtn = document.getElementById('cameraBtn');
+    if (camBtn) camBtn.classList.remove('active');
     // Reset modal position to center
     const modal = document.getElementById('replayModal');
     modal.style.top = '50%'; modal.style.left = '50%';
@@ -1979,6 +1966,12 @@ const replayCanvas = document.getElementById('replayCanvas');
 // Mouse wheel zoom
 replayCanvas.addEventListener('wheel', e => {
     e.preventDefault();
+    // Manual zoom switches to fixed camera
+    if (cameraMode === 'follow') {
+        cameraMode = 'fixed';
+        const btn = document.getElementById('cameraBtn');
+        if (btn) btn.classList.remove('active');
+    }
     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
     const newZoom = Math.max(0.5, Math.min(5, viewZoom * zoomFactor));
     
@@ -2020,6 +2013,12 @@ replayCanvas.addEventListener('wheel', e => {
 // Pan with mouse drag
 replayCanvas.addEventListener('mousedown', e => {
     if (e.button !== 0) return; // left click only
+    // Manual pan switches to fixed camera
+    if (cameraMode === 'follow') {
+        cameraMode = 'fixed';
+        const btn = document.getElementById('cameraBtn');
+        if (btn) btn.classList.remove('active');
+    }
     isDragging = true;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
@@ -2079,6 +2078,92 @@ window.resetView = () => {
     viewPanY = 0;
     renderFrame(currentFrame);
 };
+
+window.toggleCamera = () => {
+    cameraMode = cameraMode === 'fixed' ? 'follow' : 'fixed';
+    const btn = document.getElementById('cameraBtn');
+    if (btn) btn.classList.toggle('active', cameraMode === 'follow');
+    if (cameraMode === 'fixed') {
+        // Reset to default view when switching back to fixed
+        viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
+    } else {
+        // Initialize smoothed camera from current player positions
+        camSmoothedX = 0; camSmoothedY = 0; camSmoothedZoom = 1.0;
+    }
+    renderFrame(currentFrame);
+};
+
+// Dynamic camera: compute target pan/zoom to frame all alive players with padding
+function updateDynamicCamera(frameIdx) {
+    if (cameraMode !== 'follow' || !replayFrames || !replaySettings) return;
+    const keys = Object.keys(replayFrames).map(Number).sort((a,b) => a - b);
+    const frame = replayFrames[keys[frameIdx]];
+    if (!frame) return;
+
+    const players = replaySettings.players;
+    const stageId = replaySettings.stageId;
+    const stage = STAGE_DATA[stageId] || { x:[-230,230], y:[-150,200] };
+    const [bx0, bx1] = stage.x;
+    const [by0, by1] = stage.y;
+    const stageW = bx1 - bx0, stageH = by1 - by0;
+
+    // Gather alive player positions
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let aliveCount = 0;
+    players.forEach(player => {
+        const pf = frame.players?.[player.playerIndex];
+        if (!pf) return;
+        const post = pf.post;
+        if (!post) return;
+        const x = post.positionX, y = post.positionY;
+        if (x == null || y == null) return;
+        // Skip dead players (off-screen / in respawn)
+        const asId = post.actionStateId ?? 0;
+        if (asId <= 10) return; // DeadDown through DeadUpFallIce
+        aliveCount++;
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+    });
+
+    if (aliveCount === 0) return;
+
+    // Add padding around players (game units)
+    const padX = 40, padY = 35;
+    minX -= padX; maxX += padX;
+    minY -= padY; maxY += padY;
+
+    // Clamp to at least show the stage area
+    minX = Math.min(minX, bx0);
+    maxX = Math.max(maxX, bx1);
+    minY = Math.min(minY, by0);
+    maxY = Math.max(maxY, by1);
+
+    // Target center (game coords)
+    const targetX = (minX + maxX) / 2;
+    const targetY = (minY + maxY) / 2;
+
+    // Target zoom: how much to zoom so the bounding box fits
+    const viewW = maxX - minX;
+    const viewH = maxY - minY;
+    const zoomX = stageW / viewW;
+    const zoomY = stageH / viewH;
+    const targetZoom = Math.max(0.5, Math.min(2.5, Math.min(zoomX, zoomY)));
+
+    // Smooth interpolation (lerp)
+    const smoothing = 0.08;
+    camSmoothedX += (targetX - camSmoothedX) * smoothing;
+    camSmoothedY += (targetY - camSmoothedY) * smoothing;
+    camSmoothedZoom += (targetZoom - camSmoothedZoom) * smoothing;
+
+    // Apply to view state
+    const stageCenterX = (bx0 + bx1) / 2;
+    const stageCenterY = (by0 + by1) / 2;
+    viewZoom = camSmoothedZoom;
+    viewPanX = camSmoothedX - stageCenterX;
+    viewPanY = camSmoothedY - stageCenterY;
+}
 
 window.toggleDebug = () => {
     debugMode = !debugMode;
@@ -2585,7 +2670,7 @@ function renderFrame(frameIdx) {
     ctx.fillStyle = 'rgba(180,180,180,0.5)';
     ctx.font = '11px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(`Frame ${frameNum}  (${Math.floor(Math.max(0,frameNum)/60)}s)  ${viewZoom.toFixed(1)}x`, W - 10, 18);
+    ctx.fillText(`Frame ${frameNum}  (${Math.floor(Math.max(0,frameNum)/60)}s)  ${viewZoom.toFixed(1)}x${cameraMode === 'follow' ? ' 📷' : ''}`, W - 10, 18);
     ctx.textAlign = 'left';
 
     const players = replaySettings.players;
@@ -3042,6 +3127,7 @@ function playLoop(ts) {
             currentFrame = 0; // loop
         }
     }
+    updateDynamicCamera(currentFrame);
     renderFrame(currentFrame);
     animFrameId = requestAnimationFrame(playLoop);
 }
@@ -3059,11 +3145,13 @@ window.stepFrame = delta => {
     document.getElementById('playPauseBtn').textContent = '▶ Play';
     document.getElementById('playPauseBtn').classList.remove('active');
     currentFrame = Math.max(0, Math.min(totalFrames - 1, currentFrame + delta));
+    updateDynamicCamera(currentFrame);
     renderFrame(currentFrame);
 };
 
 window.seekToFrame = idx => {
     currentFrame = Math.max(0, Math.min(totalFrames - 1, idx));
+    updateDynamicCamera(currentFrame);
     renderFrame(currentFrame);
 };
 
@@ -3108,6 +3196,7 @@ document.addEventListener('keydown', e => {
     }
     else if (e.key === '=' || e.key === '+') zoomIn();
     else if (e.key === '-' || e.key === '_') zoomOut();
+    else if (e.key === 'c' || e.key === 'C') toggleCamera();
     else if (e.key === '?') toggleShortcuts();
     // Number keys: jump to percentage of replay
     else if (e.key >= '0' && e.key <= '9') {
@@ -3140,6 +3229,7 @@ const SHORTCUT_LIST = [
     ['D', 'Toggle debug overlay'],
     ['G', 'Toggle grid overlay'],
     ['H', 'Toggle hitbox data overlay'],
+    ['C', 'Toggle dynamic camera'],
     ['?', 'Show this shortcuts panel'],
     ['Esc', 'Close shortcuts / Close viewer'],
 ];
@@ -3543,41 +3633,6 @@ function updateControllerPanel(frameIdx) {
     panel.style.display = 'block';
     document.getElementById('controllerScaleBar').style.display = 'block';
     updateStickMapContainer();
-    distributeLandscapeControllers();
-}
-
-// ===== LANDSCAPE PHONE: distribute controllers to flanking panels =====
-function distributeLandscapeControllers() {
-    const leftFlank = document.getElementById('landscapeCtrlLeft');
-    const rightFlank = document.getElementById('landscapeCtrlRight');
-    if (!leftFlank || !rightFlank) return;
-
-    // Check if landscape phone mode is active (flanks are display:flex)
-    const isLandscape = window.getComputedStyle(leftFlank).display !== 'none';
-    if (!isLandscape) {
-        // Clear flanks when not in landscape
-        leftFlank.innerHTML = '';
-        rightFlank.innerHTML = '';
-        return;
-    }
-
-    // Get all controller cards from the main panel
-    const panel = document.getElementById('controllerPanel');
-    if (!panel) return;
-    const cards = panel.querySelectorAll('.controller-card');
-    if (!cards.length) return;
-
-    // Split: first half to left, second half to right
-    // For 2 players: P1 left, P2 right
-    // For 4 players: P1+P2 left, P3+P4 right
-    const mid = Math.ceil(cards.length / 2);
-    leftFlank.innerHTML = '';
-    rightFlank.innerHTML = '';
-    cards.forEach((card, i) => {
-        const clone = card.cloneNode(true);
-        if (i < mid) leftFlank.appendChild(clone);
-        else rightFlank.appendChild(clone);
-    });
 }
 
 // ===== NOTCH DETECTION =====
