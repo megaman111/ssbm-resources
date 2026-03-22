@@ -2691,7 +2691,7 @@ function renderFrame(frameIdx) {
     ctx.fillText(`Frame ${frameNum}  (${Math.floor(Math.max(0,frameNum)/60)}s)  ${viewZoom.toFixed(1)}x${cameraMode === 'follow' ? ' 📷' : ''}`, W - 10, 18);
     ctx.textAlign = 'left';
 
-    // Melee timer (top center)
+    // Melee timer (top center) + READY/GO overlay
     const timerStr = getMeleeTimer(frameNum);
     if (timerStr) {
         ctx.save();
@@ -2699,6 +2699,29 @@ function renderFrame(frameIdx) {
         ctx.textAlign = 'center';
         ctx.fillStyle = 'rgba(255,255,255,0.7)';
         ctx.fillText(timerStr, W / 2, 20);
+        ctx.restore();
+    }
+    // READY / GO! during pre-game countdown (frames -123 to 0)
+    if (frameNum < 0) {
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const progress = (frameNum + 123) / 123; // 0 at start, 1 at frame 0
+        if (frameNum < -10) {
+            // READY
+            const alpha = Math.min(1, (frameNum + 123) / 20); // fade in over first 20 frames
+            ctx.font = `bold ${Math.round(48 * scale / 4)}px sans-serif`;
+            ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.9).toFixed(2)})`;
+            ctx.fillText('READY', W / 2, H * 0.4);
+        } else {
+            // GO!
+            const age = frameNum + 10; // 0..10
+            const alpha = 1 - age / 10; // fade out
+            const size = Math.round((56 + age * 3) * scale / 4);
+            ctx.font = `bold ${size}px sans-serif`;
+            ctx.fillStyle = `rgba(255,220,50,${(alpha * 0.95).toFixed(2)})`;
+            ctx.fillText('GO!', W / 2, H * 0.4);
+        }
         ctx.restore();
     }
 
