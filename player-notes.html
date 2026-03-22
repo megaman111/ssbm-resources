@@ -2341,6 +2341,27 @@ function getFrameKeys() {
     return Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
 }
 
+// Melee timer: converts frame number to MM:SS:cc display
+// Uses slippilab's hundredths lookup table for accurate Melee timer display
+const MELEE_HUNDREDTHS = [
+    '00','02','04','06','07','09','11','12','14','16',
+    '17','19','21','22','24','26','27','29','31','32',
+    '34','36','37','39','41','42','44','46','47','49',
+    '51','53','54','56','58','59','61','63','64','66',
+    '68','69','71','73','74','76','78','79','81','83',
+    '84','86','88','89','91','93','94','96','98','99',
+];
+function getMeleeTimer(frameNum) {
+    const timerStart = replaySettings?.startingTimerSeconds ?? 480;
+    if (timerStart === 0) return null; // no timer (infinite time)
+    const frames = timerStart * 60 - frameNum + 123;
+    if (frames < 0) return '00:00:00';
+    const minutes = Math.floor(frames / 3600).toString().padStart(2, '0');
+    const seconds = Math.floor((frames % 3600) / 60).toString().padStart(2, '0');
+    const hundredths = MELEE_HUNDREDTHS[frames % 60] ?? '00';
+    return `${minutes}:${seconds}:${hundredths}`;
+}
+
 // Melee character scale in canvas units
 // slippilab transform: translate(-500,-500) then scale(0.1, -0.1) converts
 // the 1000x1000 SVG path space to ~100 game units, then charScale applies.
@@ -2669,6 +2690,17 @@ function renderFrame(frameIdx) {
     ctx.textAlign = 'right';
     ctx.fillText(`Frame ${frameNum}  (${Math.floor(Math.max(0,frameNum)/60)}s)  ${viewZoom.toFixed(1)}x${cameraMode === 'follow' ? ' 📷' : ''}`, W - 10, 18);
     ctx.textAlign = 'left';
+
+    // Melee timer (top center)
+    const timerStr = getMeleeTimer(frameNum);
+    if (timerStr) {
+        ctx.save();
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.7)';
+        ctx.fillText(timerStr, W / 2, 20);
+        ctx.restore();
+    }
 
     const players = replaySettings.players;
     const hudParts = [];
@@ -3090,7 +3122,7 @@ function renderFrame(frameIdx) {
             <div class="stock-icons">${Array.from({length:Math.max(0,p.stocks||0)},()=>`<div class="stock-dot" style="background:${p.color}"></div>`).join('')}</div>
             <span style="color:#fff;font-weight:700">${p.percent}%</span>
         </div>
-    `).join('<div style="color:#555;padding:0 0.5rem">vs</div>');
+    `).join(`<div style="color:#667eea;font-family:monospace;font-weight:700;font-size:0.95em;padding:0 0.4rem">${getMeleeTimer(keys[frameIdx]) ?? ''}</div>`);
 
     document.getElementById('replayTimeline').value = frameIdx;
     document.getElementById('frameCounter').textContent = `${frameIdx} / ${totalFrames - 1}`;

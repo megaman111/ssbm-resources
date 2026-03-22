@@ -62,8 +62,10 @@
 - [x] **Keyboard shortcuts** — j/k/l for seek, number keys for percentage jump
 - [x] **Toggleable grid overlay** — Slippi Lab style coordinate grid with adaptive spacing, origin axes, and labels (toggle with 'g' key)
 - [x] **Toggleable hitbox data overlay** — shows FightCore frame data (move name, active frames, damage, angle, KBG/BKB) per player during attacks (toggle with 'h' key)
-- [ ] **Timer display** — Melee-accurate timer with hundredths conversion
-- [ ] **Highlight navigation** — jump between notable moments (kills, combos, etc.)
+- [x] **Timer display** — Melee-accurate timer with hundredths conversion (slippilab lookup table), shown on canvas and in HUD
+- [ ] **Highlight navigation** — jump between notable moments (kills, combos, etc.) with prev/next hotkeys using clips panel data
+- [ ] **Kill zone overlay** — colored regions on canvas showing where a move at current % would kill, based on blast zone distances
+- [ ] **Practice plan generator** — auto-summarize habits from clips data (missed L-cancels, shield options, ledge habits) into a "here's what to work on" report
 
 ### FightCore Integration
 - [x] **FightCore module** (`fightcore.js`) — reusable ES module that loads/caches character move data from FightCore GitHub repo, calculates CC and ASDI Down max percents using Melee knockback formula
@@ -71,28 +73,12 @@
 
 ### Clips Panel
 - [x] **Clips panel** — collapsible sections for Kill Combos, Grabs, Edgeguards, Crouch Cancels, Missed L-Cancels, Shield Options, Ledge Options
-### FightCore Integration
-- [x] **FightCore module** (`fightcore.js`) — reusable ES module for frame data, CC/ASDI calculations
-- [x] **CC/ASDI Down collapsible panel** — per-matchup table showing max CC% and ASDI Down% for every move
-- [x] **Toggleable grid overlay** — adaptive coordinate grid with minor/major lines, origin axes, labels (G key)
-- [x] **Toggleable hitbox data overlay** — FightCore move data circles on canvas + frame data in controller panel (H key)
-- [x] **Frame data in controller panel** — move name, active frames, total/IASA, best hitbox stats when hitbox mode on
 
 ### Modularity
 - [ ] Extract replay viewer into standalone reusable module (embeddable on any page)
 - [ ] Concept-to-replay linking — click a concept and it opens the replay viewer at a specific moment
-- [ ] Doubles support (4 players)nvas+controls on left, controllers on right, clips panel below
+- [ ] Doubles support (4 players)
 - [x] **Stick map overlay** — persistent container outside controller panel, updates with frame data
-
-### Modularity
-- [ ] Extract replay viewer into standalone reusable module (embeddable on any page)
-- [ ] Concept-to-replay linking — click a concept and it opens the replay viewer at a specific moment
-### IKneeData Calculator Module
-- [ ] Melee frame data calculator (like IKneeData)
-- [ ] Knockback calculator
-- [ ] Combo/DI calculator
-- [ ] Hitbox visualization
-- [ ] Embeddable as a module on any page
 
 ### FightCore Data Module (Reusable)
 - [x] `fightcore.js` — standalone ES module, importable from any page
@@ -101,24 +87,33 @@
 - [x] Action state → move name mapping for real-time frame data lookup
 - [x] Integrate into matchup pages for per-matchup CC/ASDI reference tables (`cc-table-builder.js` shared module, all 15 matchup pages)
 - [ ] Integrate into Way of Fox for character-specific frame data quick reference
-- [ ] Add kill percent calculations
+- [ ] Add kill percent calculations — per move, per stage, based on blast zone distances
+
 ### IKneeData Calculator Module
 - [ ] Melee frame data calculator (like IKneeData)
 - [ ] Knockback calculator
 - [ ] Combo/DI calculator
 - [ ] Hitbox visualization
 - [ ] Embeddable as a module on any page
-- [ ] Once functional make a button that takes the frame you are paused on and inputs it into the ikneedata recreation for you to tinker with that ikneedata calculation 
+- [ ] Replay viewer integration — pause on a frame and auto-populate the calculator with that frame's data
 
 ### VOD Linking Module
 - [ ] Link VODs (YouTube/Twitch timestamps) to notes
 - [ ] Embedded VOD player with timestamp jumping
 - [ ] Cross-reference VODs with .slp replays
+- [ ] Side-by-side VOD + replay viewer — sync stream footage with input data
 
 ### Concept-to-Replay Linking
 - [ ] Tag concepts/lessons with specific replay moments
 - [ ] Click a concept → opens replay viewer at the relevant frame
 - [ ] Annotate replays with concept tags
+
+---
+
+## Matchup Pages
+- [ ] **Matchup-specific replay filters** — on each matchup page, pull all player notes/replays tagged with that character and browse them inline
+- [ ] **Kill percent tables** — per-move kill percents by stage using fightcore.js knockback formula + blast zone data
+- [ ] **Stage-specific data overlays** — platform movement patterns, kill zone visualization per stage
 
 ---
 
