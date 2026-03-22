@@ -2354,7 +2354,7 @@ const MELEE_HUNDREDTHS = [
 function getMeleeTimer(frameNum) {
     const timerStart = replaySettings?.startingTimerSeconds || 480;
     if (timerStart <= 0) return null; // no timer (infinite time)
-    const frames = timerStart * 60 - frameNum + 123;
+    const frames = timerStart * 60 - frameNum;
     if (frames < 0) return '00:00:00';
     const minutes = Math.floor(frames / 3600).toString().padStart(2, '0');
     const seconds = Math.floor((frames % 3600) / 60).toString().padStart(2, '0');
