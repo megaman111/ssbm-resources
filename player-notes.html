@@ -82,6 +82,11 @@
         #replayCanvas { display: block; width: 100%; aspect-ratio: 4/3; }
         .canvas-resize-handle { height: 6px; background: linear-gradient(180deg, transparent, #333); cursor: ns-resize; border-radius: 0 0 8px 8px; user-select: none; transition: background 0.15s; margin-bottom: 0.5rem; }
         .canvas-resize-handle:hover { background: linear-gradient(180deg, transparent, #667eea); }
+        .canvas-fs-btn { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.5); color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; padding: 0.2rem 0.45rem; font-size: 1.1rem; cursor: pointer; z-index: 5; transition: background 0.15s, color 0.15s; line-height: 1; }
+        .canvas-fs-btn:hover { background: rgba(0,0,0,0.8); color: #fff; border-color: rgba(255,255,255,0.4); }
+        .replay-canvas-wrap:fullscreen { background: #000; display: flex; align-items: center; justify-content: center; }
+        .replay-canvas-wrap:fullscreen #replayCanvas { width: 100%; height: 100%; aspect-ratio: auto; object-fit: contain; }
+        .replay-canvas-wrap:fullscreen .canvas-fs-btn { bottom: 16px; left: 16px; font-size: 1.3rem; padding: 0.3rem 0.6rem; }
         .replay-hud { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #16213e; border-radius: 8px; margin-bottom: 0.75rem; font-size: 0.9rem; flex-shrink: 0; }
         .player-hud { display: flex; align-items: center; gap: 0.5rem; }
         .stock-icons { display: flex; gap: 3px; }
@@ -314,6 +319,7 @@
                     <div class="replay-left">
                         <div class="replay-canvas-wrap" id="replayCanvasWrap">
                             <canvas id="replayCanvas" width="800" height="600"></canvas>
+                            <button class="canvas-fs-btn" id="canvasFsBtn" onclick="toggleCanvasFullscreen()" title="Fullscreen visualizer">⛶</button>
                         </div>
                         <div class="canvas-resize-handle" id="canvasResizeHandle" title="Drag to resize viewer"></div>
                         <div class="replay-controls">
@@ -2080,6 +2086,15 @@ window.resetView = () => {
     viewPanX = 0;
     viewPanY = 0;
     renderFrame(currentFrame);
+};
+
+window.toggleCanvasFullscreen = () => {
+    const wrap = document.getElementById('replayCanvasWrap');
+    if (document.fullscreenElement === wrap) {
+        document.exitFullscreen();
+    } else {
+        wrap.requestFullscreen?.();
+    }
 };
 
 window.toggleCamera = () => {
