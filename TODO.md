@@ -65,7 +65,7 @@
 - [x] **Timer display** — Melee-accurate timer with hundredths conversion (slippilab lookup table), shown on canvas and in HUD
 - [ ] **Highlight navigation** — jump between notable moments (kills, combos, etc.) with prev/next hotkeys using clips panel data
 - [ ] **Kill zone overlay** — colored regions on canvas showing where a move at current % would kill, based on blast zone distances
-- [ ] **Practice plan generator** — auto-summarize habits from clips data (missed L-cancels, shield options, ledge habits) into a "here's what to work on" report
+- [ ] **Practice plan generator** — auto-summarize habits from clips data (missed L-cancels, shield options, ledge habits) into a "here's what to work on" report -- maybe generate a way to check for missed edgeguards too? At least in terms of spacie recoveries i/e high low middle side b shorten fastall etc?
 
 ### FightCore Integration
 - [x] **FightCore module** (`fightcore.js`) — reusable ES module that loads/caches character move data from FightCore GitHub repo, calculates CC and ASDI Down max percents using Melee knockback formula

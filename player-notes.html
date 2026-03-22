@@ -3166,6 +3166,57 @@ function renderFrame(frameIdx) {
         </div>
     `).join(`<div style="color:#667eea;font-family:monospace;font-weight:700;font-size:0.95em;padding:0 0.4rem">${getMeleeTimer(keys[frameIdx]) ?? ''}</div>`);
 
+    // On-canvas HUD for canvas-fullscreen mode (percents, stocks, tags)
+    if (document.fullscreenElement === document.getElementById('replayCanvasWrap') && hudParts.length > 0) {
+        ctx.save();
+        const n = hudParts.length;
+        const slotW = W / n;
+        const hudY = H - 28; // baseline for percent text
+        const meleeFontStack = '"EB Garamond", "Palatino Linotype", "Book Antiqua", Palatino, serif';
+
+        // Semi-transparent bar at bottom
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fillRect(0, H - 60, W, 60);
+
+        hudParts.forEach((p, i) => {
+            const cx = slotW * i + slotW / 2;
+
+            // Percent (large, colored, Melee font)
+            const pctSize = Math.max(18, Math.min(32, H / 18));
+            ctx.font = `800 ${pctSize}px ${meleeFontStack}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = 1;
+            ctx.fillText(`${p.percent}%`, cx, hudY);
+
+            // Tag (smaller, above percent)
+            const tagSize = Math.max(10, Math.min(16, H / 36));
+            ctx.font = `700 ${tagSize}px sans-serif`;
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = 0.9;
+            ctx.fillText(p.tag, cx, hudY - pctSize - 4);
+
+            // Stock dots (row above tag)
+            const stockCount = Math.max(0, p.stocks || 0);
+            const dotR = Math.max(3, Math.min(5, H / 120));
+            const dotSpacing = dotR * 2.8;
+            const dotsStartX = cx - (stockCount - 1) * dotSpacing / 2;
+            const dotY = hudY - pctSize - tagSize - 8;
+            ctx.globalAlpha = 1;
+            for (let s = 0; s < stockCount; s++) {
+                ctx.beginPath();
+                ctx.arc(dotsStartX + s * dotSpacing, dotY, dotR, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        });
+        ctx.restore();
+    }
+
     document.getElementById('replayTimeline').value = frameIdx;
     document.getElementById('frameCounter').textContent = `${frameIdx} / ${totalFrames - 1}`;
     updateControllerPanel(frameIdx);
