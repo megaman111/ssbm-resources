@@ -62,8 +62,11 @@
         .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .char-filter-btn:hover, .char-filter-btn.active { background: #667eea; color: white; }
         .slp-hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
-        .replay-file-btn { background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); color: #e0e0e0; border: 1px solid #444; padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .replay-file-btn:hover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-color: #667eea; transform: translateY(-1px); }
+        .replay-file-btn { background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); color: #e0e0e0; border: none; border-bottom: 1px solid #eee; padding: 0.7rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; }
+        .replay-file-btn:last-child { border-bottom: none; }
+        .replay-file-btn:hover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .replay-file-list { max-height: 280px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; text-align: left; }
+        .replay-file-list:empty { display: none; }
         .replay-del-btn { display: inline-block; margin-left: 0.4rem; color: #f66; font-weight: 700; font-size: 1rem; line-height: 1; vertical-align: middle; }
         .replay-del-btn:hover { color: #f00; }
 
@@ -433,7 +436,7 @@
         <div class="export-section" id="replayBrowser">
             <h3>📁 Saved Replays</h3>
             <p style="color: #666; margin-bottom: 1rem;">Click a replay to load it into the visualizer</p>
-            <div id="replayFileList" style="display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;"></div>
+            <div id="replayFileList" class="replay-file-list"></div>
             <div style="margin-top:1rem;border-top:1px solid #eee;padding-top:1rem;">
                 <label for="uploadSlpInput" class="import-btn" style="display:inline-block;cursor:pointer;">📤 Upload .slp Replay</label>
                 <input type="file" id="uploadSlpInput" accept=".slp" style="display:none;">
@@ -4571,7 +4574,7 @@ async function buildReplayBrowser() {
     }
     list.innerHTML = allFiles.map(f => {
         const display = f.name.replace('.slp', '').replace(/_/g, ' ');
-        const icon = f.source === 'local' ? '💾 ' : '';
+        const icon = f.source === 'local' ? '💾 ' : '📄 ';
         const delBtn = f.source === 'local'
             ? `<span class="replay-del-btn" data-file="${f.name}" title="Remove from browser">&times;</span>`
             : '';
