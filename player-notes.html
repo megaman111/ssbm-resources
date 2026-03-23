@@ -2299,80 +2299,13 @@ window.switchSidebarTab = (tabId) => {
 
 // ===== KILL PERCENT PANEL =====
 async function buildKillPctPanel() {
-    if (!replaySettings) return;
     const panel = document.getElementById('killPctPanel');
     if (!panel) return;
-    panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Loading kill percent data...</div>';
-
-    const players = replaySettings.players;
-    const stageId = replaySettings.stageId;
-    const stage = STAGE_DATA[stageId];
-    if (!stage) {
-        panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Unknown stage — no blast zone data</div>';
-        return;
-    }
-
-    await Promise.all(players.map(p => fightCore.getMoves(p.characterId)));
-
-    let html = '';
-    const renderedPairs = new Set();
-    for (let a = 0; a < players.length; a++) {
-        for (let d = 0; d < players.length; d++) {
-            if (a === d) continue;
-            const atkId = players[a].characterId;
-            const defId = players[d].characterId;
-            const pairKey = atkId + '→' + defId;
-            if (renderedPairs.has(pairKey)) continue;
-            renderedPairs.add(pairKey);
-            const atkName = CHAR_NAMES[atkId] || `P${players[a].port+1}`;
-            const defName = CHAR_NAMES[defId] || `P${players[d].port+1}`;
-            const atkColor = PLAYER_COLORS[a % PLAYER_COLORS.length];
-            const defColor = PLAYER_COLORS[d % PLAYER_COLORS.length];
-
-            const killData = await fightCore.getKillPercents(atkId, defId, stage);
-            if (!killData || !killData.length) continue;
-
-            // Filter to reasonable kill percents (0-300%)
-            const useful = killData.filter(m => m.killPercent >= 0 && m.killPercent <= 300);
-            if (!useful.length) continue;
-
-            html += `<div style="border:1px solid #2a2a4a;border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">`;
-            html += `<div style="padding:0.4rem 0.6rem;background:#1a1a3e;font-size:0.85rem;">`;
-            if (atkId === defId) {
-                html += `<span style="color:${atkColor};font-weight:700;">${atkName} (ditto)</span>`;
-            } else {
-                html += `<span style="color:${atkColor};font-weight:700;">${atkName}</span>`;
-                html += ` <span style="color:#666;">→</span> `;
-                html += `<span style="color:${defColor};font-weight:700;">${defName}</span>`;
-            }
-            html += ` <span style="color:#555;font-size:0.7rem;">on ${stage.name}</span>`;
-            html += `</div>`;
-            html += `<table style="width:100%;border-collapse:collapse;font-size:0.75rem;">`;
-            html += `<thead><tr style="color:#888;border-bottom:1px solid #2a2a4a;">`;
-            html += `<th style="text-align:left;padding:0.25rem 0.4rem;">Move</th>`;
-            html += `<th style="text-align:center;padding:0.25rem;">Dmg</th>`;
-            html += `<th style="text-align:center;padding:0.25rem;color:#f66;">Kill%</th>`;
-            html += `</tr></thead><tbody>`;
-
-            for (const m of useful.slice(0, 40)) {
-                const killColor = m.killPercent <= 50 ? '#f44' : m.killPercent <= 100 ? '#fa4' : m.killPercent <= 150 ? '#ff4' : '#ccc';
-                const hitLabel = m.hitName ? ` (${m.hitName})` : '';
-                html += `<tr style="border-bottom:1px solid #1a1a3e;">`;
-                html += `<td style="padding:0.2rem 0.4rem;color:#ddd;">${m.moveName}${hitLabel}</td>`;
-                html += `<td style="text-align:center;padding:0.2rem;color:#faa;">${m.damage}%</td>`;
-                html += `<td style="text-align:center;padding:0.2rem;color:${killColor};font-weight:600;">${m.killPercent}%</td>`;
-                html += `</tr>`;
-            }
-            html += `</tbody></table></div>`;
-        }
-    }
-
-    if (!html) {
-        panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">No kill percent data available</div>';
-    } else {
-        html += `<div style="padding:0.4rem 0.6rem;font-size:0.65rem;color:#555;text-align:center;">Kill percents from center stage · <a href="https://github.com/FightCore/frame-data" target="_blank" style="color:#667eea;">FightCore</a> data · ${stage.name} blast zones · No DI</div>`;
-        panel.innerHTML = html;
-    }
+    panel.innerHTML = `<div style="color:#888;padding:1.5rem 1rem;text-align:center;">
+        <div style="font-size:1.5rem;margin-bottom:0.5rem;">💀</div>
+        <div style="font-size:0.9rem;color:#a78bfa;font-weight:700;margin-bottom:0.4rem;">Kill Percents</div>
+        <div style="font-size:0.8rem;color:#666;">Coming soon — requires IKneeData calculator module for accurate knockback, DI, and stage position calculations.</div>
+    </div>`;
 }
 
 window.loadSlpFile = async event => {
@@ -2424,8 +2357,8 @@ async function initReplayFromBuffer(uint8, filename) {
     // Detect clips (kills, grabs, edgeguards, etc.) for the clips panel
     setTimeout(() => { detectClips(); buildStockTimeline(); detectNotchedPlayers(); }, 100);
 
-    // Load FightCore data for characters in this replay and build CC/ASDI + kill percent panels
-    setTimeout(() => { buildCCAsdiPanel(); buildKillPctPanel(); }, 200);
+    // Load FightCore data for characters in this replay and build CC/ASDI panel
+    setTimeout(() => { buildCCAsdiPanel(); }, 200);
 
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
