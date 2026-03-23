@@ -33,12 +33,16 @@
 
     <script>
         window.onerror = function(msg, src, line, col, err) {
-            var el = document.getElementById('calculator-root');
-            if (el) el.innerHTML = '<pre style="color:red;padding:1rem;white-space:pre-wrap;">ERROR: ' + msg + '\nSource: ' + src + ':' + line + ':' + col + '\n' + (err && err.stack ? err.stack : '') + '</pre>';
+            var d = document.createElement('pre');
+            d.style.cssText = 'color:red;padding:1rem;white-space:pre-wrap;background:#111;margin:0;font-size:12px';
+            d.textContent = 'ERROR: ' + msg + '\nSource: ' + src + ':' + line + ':' + col + '\n' + (err && err.stack ? err.stack : '');
+            document.body.appendChild(d);
         };
         window.addEventListener('unhandledrejection', function(e) {
-            var el = document.getElementById('calculator-root');
-            if (el) el.innerHTML = '<pre style="color:red;padding:1rem;white-space:pre-wrap;">UNHANDLED REJECTION: ' + (e.reason && e.reason.stack ? e.reason.stack : e.reason) + '</pre>';
+            var d = document.createElement('pre');
+            d.style.cssText = 'color:orange;padding:1rem;white-space:pre-wrap;background:#111;margin:0;font-size:12px';
+            d.textContent = 'UNHANDLED REJECTION: ' + (e.reason && e.reason.stack ? e.reason.stack : e.reason);
+            document.body.appendChild(d);
         });
     </script>
     <script type="module">

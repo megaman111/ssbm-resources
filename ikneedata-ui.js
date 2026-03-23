@@ -132,9 +132,9 @@ export class IKneeDataUI {
         this._d('stage').value = this._stageKey;
 
         // Events
-        this._d('atk').onchange = () => this._onAtkChange();
-        this._d('move').onchange = () => this._onMoveChange();
-        this._d('hitbox').onchange = () => this._onHitboxChange();
+        this._d('atk').onchange = () => { try { this._onAtkChange(); } catch(e) { console.error(e); } };
+        this._d('move').onchange = () => { try { this._onMoveChange(); } catch(e) { console.error(e); } };
+        this._d('hitbox').onchange = () => { try { this._onHitboxChange(); } catch(e) { console.error(e); } };
         this._d('def').onchange = () => { this._defChar = +this._d('def').value; this._recalc(); };
         this._d('stage').onchange = () => { this._stageKey = this._d('stage').value; this._recalc(); };
         for (const id of ['pct','di','cc','vcancel','charge-int','metal','ice','reverse']) {
