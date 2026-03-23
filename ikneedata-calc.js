@@ -501,12 +501,12 @@ export function findKillPercent({
         if (!doesKill(999, di)) return null;
         if (doesKill(0, di)) return 0;
         let lo = 0, hi = 999;
-        while (lo < hi) {
-            const mid = Math.ceil((lo + hi) / 2);
+        while (hi - lo > 1) {
+            const mid = Math.floor((lo + hi) / 2);
             if (doesKill(mid, di)) hi = mid;
-            else lo = mid + 1;
+            else lo = mid;
         }
-        return doesKill(lo, di) ? lo : null;
+        return doesKill(hi, di) ? hi : null;
     };
 
     if (diAngle != null) {
