@@ -70,6 +70,20 @@
         .replay-del-btn { display: inline-block; margin-left: 0.4rem; color: #f66; font-weight: 700; font-size: 1rem; line-height: 1; vertical-align: middle; }
         .replay-del-btn:hover { color: #f00; }
 
+        /* ===== REPLAY HOVER TOOLTIPS ===== */
+        .replay-file-row { position: relative; }
+        .replay-file-row .replay-file-btn { width: 100%; }
+        .replay-tooltip { position: absolute; left: 0; right: 0; top: 100%; z-index: 100; padding-top: 4px; pointer-events: none; }
+        .replay-tooltip-inner { background: #1a1a2e; border: 1px solid #334; border-radius: 10px; padding: 0.65rem 0.8rem; box-shadow: 0 8px 28px rgba(0,0,0,0.55); font-size: 0.8rem; color: #ddd; line-height: 1.45; }
+        .tt-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 700; color: #a78bfa; margin-bottom: 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a2a4a; }
+        .tt-player { padding: 0.35rem 0; border-bottom: 1px solid #1e1e3a; }
+        .tt-player:last-child { border-bottom: none; }
+        .tt-port { display: inline-block; width: 26px; height: 18px; border-radius: 4px; text-align: center; line-height: 18px; font-size: 0.65rem; font-weight: 700; color: #fff; margin-right: 0.4rem; vertical-align: middle; }
+        .tt-tag { font-weight: 600; color: #e0e0e0; margin-right: 0.4rem; }
+        .tt-char { color: #a78bfa; font-size: 0.78rem; }
+        .tt-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; margin-top: 0.3rem; font-size: 0.72rem; color: #999; }
+        .tt-stats span { white-space: nowrap; }
+
         /* ===== VIEWER-ONLY MODE (?viewer=1) ===== */
         body.viewer-mode .notes-only { display: none !important; }
         body.viewer-mode .notes-title { display: none !important; }
@@ -4584,6 +4598,93 @@ async function deleteUploadedReplay(name) {
     });
 }
 
+// ===== Replay stats cache for hover tooltips =====
+const _replayStatsCache = new Map();
+
+async function fetchReplayStats(filename, source) {
+    if (_replayStatsCache.has(filename)) return _replayStatsCache.get(filename);
+    try {
+        let buffer;
+        if (source === 'local') {
+            buffer = await loadUploadedReplay(filename);
+            if (!buffer) return null;
+        } else {
+            const resp = await fetch('replays/' + encodeURIComponent(filename));
+            if (!resp.ok) return null;
+            buffer = await resp.arrayBuffer();
+        }
+        const game = new SlippiGame(new Uint8Array(buffer));
+        const settings = game.getSettings();
+        const metadata = game.getMetadata();
+        const stats = game.getStats();
+        const result = { settings, metadata, stats };
+        _replayStatsCache.set(filename, result);
+        return result;
+    } catch (e) {
+        console.warn('Failed to parse replay stats for', filename, e);
+        return null;
+    }
+}
+
+function formatReplayTooltip(data) {
+    if (!data) return '<div class="replay-tooltip-inner">Failed to load stats</div>';
+    const { settings, metadata, stats } = data;
+    const players = settings.players || [];
+    const stageId = settings.stageId;
+    const stage = STAGE_DATA[stageId];
+    const stageName = stage ? stage.name : `Stage ${stageId}`;
+
+    // Duration
+    let duration = '?';
+    if (metadata?.lastFrame != null) {
+        const totalSec = Math.round((metadata.lastFrame + 123) / 60);
+        const m = Math.floor(totalSec / 60);
+        const s = (totalSec % 60).toString().padStart(2, '0');
+        duration = `${m}:${s}`;
+    }
+
+    // Player info rows
+    const pRows = players.map((p, i) => {
+        const charName = CHAR_NAMES[p.characterId] || `Char ${p.characterId}`;
+        const tag = p.displayName || p.nametag || `P${p.port + 1}`;
+        const color = (settings.isTeams && p.teamId != null)
+            ? (TEAM_COLORS[p.teamId] || PLAYER_COLORS[i])
+            : PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const o = stats?.overall?.[i];
+        let statLine = '';
+        if (o) {
+            const opk = o.openingsPerKill?.ratio != null ? o.openingsPerKill.ratio.toFixed(1) : '—';
+            const dpo = o.damagePerOpening?.ratio != null ? o.damagePerOpening.ratio.toFixed(1) : '—';
+            const nw = o.neutralWinRatio?.ratio != null ? (o.neutralWinRatio.ratio * 100).toFixed(0) + '%' : '—';
+            const ch = o.counterHitRatio?.ratio != null ? (o.counterHitRatio.ratio * 100).toFixed(0) + '%' : '—';
+            const ipm = o.inputsPerMinute?.ratio != null ? o.inputsPerMinute.ratio.toFixed(0) : '—';
+            const dmg = o.totalDamage != null ? o.totalDamage.toFixed(0) : '—';
+            const kills = o.killCount ?? '—';
+            statLine = `
+                <div class="tt-stats">
+                    <span>Kills: ${kills}</span>
+                    <span>Dmg: ${dmg}</span>
+                    <span>Open/Kill: ${opk}</span>
+                    <span>Dmg/Open: ${dpo}</span>
+                    <span>Neutral: ${nw}</span>
+                    <span>Counter: ${ch}</span>
+                    <span>IPM: ${ipm}</span>
+                </div>`;
+        }
+        return `<div class="tt-player">
+            <span class="tt-port" style="background:${color}">P${p.port + 1}</span>
+            <span class="tt-tag">${tag}</span>
+            <span class="tt-char">${charName}</span>
+            ${statLine}
+        </div>`;
+    }).join('');
+
+    return `<div class="replay-tooltip-inner">
+        <div class="tt-header"><span>🗺 ${stageName}</span><span>⏱ ${duration}</span></div>
+        ${pRows}
+    </div>`;
+}
+
 async function buildReplayBrowser() {
     const list = document.getElementById('replayFileList');
     if (!list) return;
@@ -4602,17 +4703,44 @@ async function buildReplayBrowser() {
         const delBtn = f.source === 'local'
             ? `<span class="replay-del-btn" data-file="${f.name}" title="Remove from browser">&times;</span>`
             : '';
-        return `<button class="replay-file-btn" data-file="${f.name}" data-source="${f.source}" title="${f.name}">${icon}${display}${delBtn}</button>`;
+        return `<div class="replay-file-row" data-file="${f.name}" data-source="${f.source}">
+            <button class="replay-file-btn" title="${f.name}">${icon}${display}${delBtn}</button>
+            <div class="replay-tooltip" style="display:none;"></div>
+        </div>`;
     }).join('');
-    list.querySelectorAll('.replay-file-btn').forEach(btn => {
+
+    // Click handlers
+    list.querySelectorAll('.replay-file-row').forEach(row => {
+        const btn = row.querySelector('.replay-file-btn');
+        const tooltip = row.querySelector('.replay-tooltip');
+        const file = row.dataset.file;
+        const source = row.dataset.source;
+
         btn.addEventListener('click', e => {
             if (e.target.classList.contains('replay-del-btn')) return;
-            const source = btn.dataset.source;
-            const file = btn.dataset.file;
             if (source === 'local') loadReplayFromLocal(file);
             else loadReplayFromServer(file);
         });
+
+        // Hover: fetch stats and show tooltip
+        let hoverTimer = null;
+        row.addEventListener('mouseenter', () => {
+            hoverTimer = setTimeout(async () => {
+                tooltip.innerHTML = '<div class="replay-tooltip-inner"><span style="color:#888;">Loading stats...</span></div>';
+                tooltip.style.display = 'block';
+                const data = await fetchReplayStats(file, source);
+                if (row.matches(':hover')) {
+                    tooltip.innerHTML = formatReplayTooltip(data);
+                }
+            }, 300);
+        });
+        row.addEventListener('mouseleave', () => {
+            clearTimeout(hoverTimer);
+            tooltip.style.display = 'none';
+        });
     });
+
+    // Delete handlers
     list.querySelectorAll('.replay-del-btn').forEach(btn => {
         btn.addEventListener('click', async e => {
             e.stopPropagation();
