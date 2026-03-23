@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Melee Calculator - Melee Resources Hub</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #f5f5f7; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+        .back-link:hover { background: #667eea; color: white; }
+        .calc-wrapper { display: flex; justify-content: center; margin-top: 2rem; }
+    </style>
+</head>
+<body>
+    <video id="video-background" autoplay loop muted playsinline>
+        <source src="MainMenuLoop720p24fps.webm" type="video/webm">
+    </video>
+    <div id="video-overlay"></div>
+
+    <header>
+        <div class="container">
+            <h1>⚔️ Melee Calculator</h1>
+            <p>Knockback, hitstun, kill percents, shield safety — all in one place</p>
+            <a href="index.html" class="back-link">← Back to Hub</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="calc-wrapper">
+            <div id="calculator-root"></div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { embedCalculator } from './ikneedata-ui.js';
+        embedCalculator('calculator-root');
+    </script>
+</body>
+</html>
