@@ -594,10 +594,15 @@ export class IKneeDataUI {
                 ctx.lineTo(px, py);
             }
             ctx.closePath();
-            ctx.fillStyle = 'rgba(60,80,60,0.35)';
+            // Solid fill for the stage body
+            const bodyGrad = ctx.createLinearGradient(0, this._stageToCanvas(0, 0, stage, canvas)[1], 0, this._stageToCanvas(0, -80, stage, canvas)[1]);
+            bodyGrad.addColorStop(0, 'rgba(50,70,50,0.7)');
+            bodyGrad.addColorStop(1, 'rgba(25,35,25,0.5)');
+            ctx.fillStyle = bodyGrad;
             ctx.fill();
-            ctx.strokeStyle = STAGE_COLORS.ground;
-            ctx.lineWidth = 2;
+            // Outline
+            ctx.strokeStyle = 'rgba(100,160,100,0.6)';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
         }
 
