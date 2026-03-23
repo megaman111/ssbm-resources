@@ -9,9 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@800&display=swap" rel="stylesheet">
     <style>
-        .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #f5f5f7; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+        .back-link { display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600; background: #ededf0; padding: 0.75rem 1.5rem; border-radius: 8px; border: 2px solid #667eea; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
         .back-link:hover { background: #667eea; color: white; }
-        .add-note-form { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .add-note-form { background: #ededf0; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
         .form-group { margin-bottom: 1.5rem; }
         .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #333; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; font-family: inherit; box-sizing: border-box; }
@@ -19,17 +19,17 @@
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #667eea; }
         .submit-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
         .submit-btn:hover { transform: translateY(-2px); }
-        .export-section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; text-align: center; }
+        .export-section { background: #ededf0; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; text-align: center; }
         .export-btn { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; margin-right: 1rem; }
         .export-btn:hover { transform: translateY(-2px); }
         .import-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: transform 0.2s; }
         .import-btn:hover { transform: translateY(-2px); }
         #fileInput { display: none; }
         .notes-container { display: grid; gap: 1.5rem; }
-        .note-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); position: relative; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
+        .note-card { background: #ededf0; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); position: relative; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
         .note-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.15); transform: translateY(-1px); }
         .note-card.has-replay { border-left: 4px solid #667eea; }
-        .note-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #f5f5f7; }
+        .note-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #e0e0e3; }
         .note-header img { width: 40px; height: 40px; }
         .note-player { font-size: 1.25rem; font-weight: 700; color: #667eea; }
         .note-content { color: #333; line-height: 1.6; white-space: pre-wrap; }
@@ -56,10 +56,10 @@
         .edit-form { display: none; }
         .edit-form input, .edit-form select, .edit-form textarea { width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; font-family: inherit; margin-bottom: 1rem; box-sizing: border-box; }
         .edit-form textarea { min-height: 150px; resize: vertical; }
-        .filter-section { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .filter-section { background: #ededf0; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
         .filter-section select { padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-right: 1rem; }
         .character-icons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-        .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: #ededf0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .char-filter-btn:hover, .char-filter-btn.active { background: #667eea; color: white; }
         .slp-hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
         .replay-file-btn { background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); color: #e0e0e0; border: none; border-bottom: 1px solid #eee; padding: 0.7rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; }
