@@ -62,6 +62,10 @@
         .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
         .char-filter-btn:hover, .char-filter-btn.active { background: #667eea; color: white; }
         .slp-hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
+        .replay-file-btn { background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); color: #e0e0e0; border: 1px solid #444; padding: 0.6rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .replay-file-btn:hover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-color: #667eea; transform: translateY(-1px); }
+        .replay-del-btn { display: inline-block; margin-left: 0.4rem; color: #f66; font-weight: 700; font-size: 1rem; line-height: 1; vertical-align: middle; }
+        .replay-del-btn:hover { color: #f00; }
 
         /* ===== REPLAY MODAL ===== */
         .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; overflow: visible; }
@@ -425,6 +429,16 @@
             <a href="https://onedrive.live.com/?redeem=aHR0cHM6Ly8xZHJ2Lm1zL2YvYy9jZTc1OWUzZGRhZjcxZTFmL0VoOGU5OW85bm5VZ2dNNDctQUFBQUFBQnRrcTNubVRCX3dhVUVvSVJFcWRPakE&id=CE759E3DDAF71E1F%2163547&cid=CE759E3DDAF71E1F" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                 🎯 View Major Tournament Replays
             </a>
+        </div>
+        <div class="export-section" id="replayBrowser">
+            <h3>📁 Saved Replays</h3>
+            <p style="color: #666; margin-bottom: 1rem;">Click a replay to load it into the visualizer</p>
+            <div id="replayFileList" style="display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;"></div>
+            <div style="margin-top:1rem;border-top:1px solid #eee;padding-top:1rem;">
+                <label for="uploadSlpInput" class="import-btn" style="display:inline-block;cursor:pointer;">📤 Upload .slp Replay</label>
+                <input type="file" id="uploadSlpInput" accept=".slp" style="display:none;">
+                <span style="color:#999;font-size:0.75rem;display:block;margin-top:0.4rem;">Saved in your browser — persists across sessions</span>
+            </div>
         </div>
         <div class="export-section">
             <h3>💾 Save Your Notes</h3>
@@ -4434,6 +4448,198 @@ window.downloadSavestate = async (playerIndex) => {
         alert('Failed to generate savestate: ' + e.message);
     }
 };
+
+// ===== Replay File Browser with IndexedDB upload storage =====
+const SAVED_REPLAYS = [
+    '1_-_Muscoman__Fox___Megaman__Fox__-_Battlefield.slp',
+    '3 - moky (Fox), Guru (Falcon) - Battlefield.slp',
+    'Aerius.slp',
+    'AP Reaction Point.slp',
+    'darkwizard vs ycz yoshis.slp',
+    'Rainy Vs Preem.slp',
+];
+
+// IndexedDB for user-uploaded replays
+const REPLAY_DB_NAME = 'MeleeReplayStore';
+const REPLAY_DB_VERSION = 1;
+const REPLAY_STORE = 'replays';
+
+function openReplayDB() {
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open(REPLAY_DB_NAME, REPLAY_DB_VERSION);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(REPLAY_STORE)) {
+                db.createObjectStore(REPLAY_STORE, { keyPath: 'name' });
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function getUploadedReplays() {
+    try {
+        const db = await openReplayDB();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(REPLAY_STORE, 'readonly');
+            const store = tx.objectStore(REPLAY_STORE);
+            const req = store.getAllKeys();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error);
+        });
+    } catch { return []; }
+}
+
+async function saveUploadedReplay(name, buffer) {
+    const db = await openReplayDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(REPLAY_STORE, 'readwrite');
+        const store = tx.objectStore(REPLAY_STORE);
+        store.put({ name, buffer });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+async function loadUploadedReplay(name) {
+    const db = await openReplayDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(REPLAY_STORE, 'readonly');
+        const store = tx.objectStore(REPLAY_STORE);
+        const req = store.get(name);
+        req.onsuccess = () => resolve(req.result?.buffer || null);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+async function deleteUploadedReplay(name) {
+    const db = await openReplayDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(REPLAY_STORE, 'readwrite');
+        const store = tx.objectStore(REPLAY_STORE);
+        store.delete(name);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+async function buildReplayBrowser() {
+    const list = document.getElementById('replayFileList');
+    if (!list) return;
+    const uploaded = await getUploadedReplays();
+    const allFiles = [
+        ...SAVED_REPLAYS.map(f => ({ name: f, source: 'server' })),
+        ...uploaded.map(f => ({ name: f, source: 'local' })),
+    ];
+    if (!allFiles.length) {
+        list.innerHTML = '<p style="color:#999;font-size:0.85rem;">No replays yet — upload one below</p>';
+        return;
+    }
+    list.innerHTML = allFiles.map(f => {
+        const display = f.name.replace('.slp', '').replace(/_/g, ' ');
+        const icon = f.source === 'local' ? '💾 ' : '';
+        const delBtn = f.source === 'local'
+            ? `<span class="replay-del-btn" data-file="${f.name}" title="Remove from browser">&times;</span>`
+            : '';
+        return `<button class="replay-file-btn" data-file="${f.name}" data-source="${f.source}" title="${f.name}">${icon}${display}${delBtn}</button>`;
+    }).join('');
+    list.querySelectorAll('.replay-file-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            if (e.target.classList.contains('replay-del-btn')) return;
+            const source = btn.dataset.source;
+            const file = btn.dataset.file;
+            if (source === 'local') loadReplayFromLocal(file);
+            else loadReplayFromServer(file);
+        });
+    });
+    list.querySelectorAll('.replay-del-btn').forEach(btn => {
+        btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            const name = btn.dataset.file;
+            if (confirm('Remove "' + name + '" from browser storage?')) {
+                await deleteUploadedReplay(name);
+                buildReplayBrowser();
+            }
+        });
+    });
+}
+
+function openReplayInModal(filename) {
+    activeNoteIdx = null;
+    document.getElementById('replayModalTitle').textContent = '🎮 ' + filename.replace('.slp', '');
+    document.getElementById('replayViewerArea').style.display = 'none';
+    document.getElementById('replayLoadArea').style.display = 'none';
+    viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
+    cameraMode = 'fixed';
+    const camBtn = document.getElementById('cameraBtn');
+    if (camBtn) camBtn.classList.remove('active');
+    const modal = document.getElementById('replayModal');
+    modal.style.top = '50%'; modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    document.getElementById('replayModalOverlay').classList.add('open');
+    stopPlayback();
+    replayGame = null; replayFrames = null;
+}
+
+async function loadReplayFromServer(filename) {
+    openReplayInModal(filename);
+    const status = document.getElementById('replayStatus');
+    status.style.display = 'block';
+    status.textContent = '⏳ Fetching replay...';
+    try {
+        const resp = await fetch('replays/' + encodeURIComponent(filename));
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const buffer = await resp.arrayBuffer();
+        await initReplayFromBuffer(new Uint8Array(buffer), filename);
+    } catch (err) {
+        status.textContent = '❌ Error: ' + err.message;
+        document.getElementById('replayLoadArea').style.display = 'block';
+    }
+}
+
+async function loadReplayFromLocal(filename) {
+    openReplayInModal(filename);
+    const status = document.getElementById('replayStatus');
+    status.style.display = 'block';
+    status.textContent = '⏳ Loading replay...';
+    try {
+        const buffer = await loadUploadedReplay(filename);
+        if (!buffer) throw new Error('Replay not found in browser storage');
+        await initReplayFromBuffer(new Uint8Array(buffer), filename);
+    } catch (err) {
+        status.textContent = '❌ Error: ' + err.message;
+        document.getElementById('replayLoadArea').style.display = 'block';
+    }
+}
+
+window.loadReplayFromServer = loadReplayFromServer;
+window.loadReplayFromLocal = loadReplayFromLocal;
+
+// Upload handler
+document.getElementById('uploadSlpInput')?.addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+        const buffer = await file.arrayBuffer();
+        await saveUploadedReplay(file.name, buffer);
+        await buildReplayBrowser();
+        // Auto-load the uploaded replay
+        loadReplayFromLocal(file.name);
+    } catch (err) {
+        alert('Upload failed: ' + err.message);
+    }
+    e.target.value = '';
+});
+
+// Check URL params for auto-load
+const _urlParams = new URLSearchParams(window.location.search);
+const _autoReplay = _urlParams.get('replay');
+if (_autoReplay) {
+    setTimeout(() => loadReplayFromServer(_autoReplay), 500);
+}
+
+buildReplayBrowser();
 
 initSlpKeyCache().then(() => loadNotesFromFile());
     </script>

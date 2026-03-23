@@ -34,6 +34,14 @@ function cellClass(val) {
     return 'cc-free';                    // always CC this — free punish
 }
 
+// Moves that should NEVER be CC'd/ASDI'd despite what the numbers say.
+// Multi-hit dsmashes will lock you into repeated hits if you hold down.
+const DANGER_MOVES = {
+    '7|dsmash':  'Multi-hit — CC/ASDI holds you into repeated hits',
+    '12|dsmash': 'Multi-hit — CC/ASDI holds you into repeated hits',
+    '16|dsmash': 'Multi-hit — CC/ASDI holds you into repeated hits',
+};
+
 async function renderPairTable(atkId, defId, atkLabel, defLabel) {
     await fc.getMoves(atkId);
     const ccData = await fc.getCCPercents(atkId, defId);
@@ -42,21 +50,14 @@ async function renderPairTable(atkId, defId, atkLabel, defLabel) {
     // Show ALL hits — sort by ASDI max % descending (most useful first),
     // with "Never" (999) at top, then by percent desc, then N/A (-1) at bottom
     const sorted = ccData.slice().sort((a, b) => {
-        // Primary: sort by ASDI max percent for practical usefulness
-        // "Never breaks" (999) = best for defender, show first
-        // "N/A" (-1) = can't ASDI, show last
         const aVal = a.asdiMaxPercent;
         const bVal = b.asdiMaxPercent;
-        // Both "never" — sort by move name
         if (aVal >= 999 && bVal >= 999) return a.moveName.localeCompare(b.moveName);
-        // "Never" goes first
         if (aVal >= 999) return -1;
         if (bVal >= 999) return 1;
-        // "N/A" goes last
         if (aVal < 0 && bVal < 0) return a.moveName.localeCompare(b.moveName);
         if (aVal < 0) return 1;
         if (bVal < 0) return -1;
-        // Higher ASDI % = more useful for defender, show first
         if (bVal !== aVal) return bVal - aVal;
         return a.moveName.localeCompare(b.moveName);
     });
@@ -73,10 +74,15 @@ async function renderPairTable(atkId, defId, atkLabel, defLabel) {
 
     for (const m of sorted) {
         const hitLabel = m.hitName && m.hitName !== 'unknown' ? ` (${m.hitName})` : '';
+        const dangerKey = atkId + '|' + m.normalizedName;
+        const danger = DANGER_MOVES[dangerKey];
         const ccCls = cellClass(m.ccMaxPercent);
         const asdiCls = cellClass(m.asdiMaxPercent);
-        html += `<tr>`;
-        html += `<td class="move-name">${m.moveName}${hitLabel}</td>`;
+        const rowCls = danger ? ' class="cc-danger-row"' : '';
+        html += `<tr${rowCls}>`;
+        html += `<td class="move-name">${m.moveName}${hitLabel}`;
+        if (danger) html += ` <span class="cc-danger-badge" title="${danger}">⚠ DON'T CC</span>`;
+        html += `</td>`;
         html += `<td class="dmg-cell">${m.damage}%</td>`;
         html += `<td class="cc-cell ${ccCls}">${fmtPct(m.ccMaxPercent)}</td>`;
         html += `<td class="asdi-cell ${asdiCls}">${fmtPct(m.asdiMaxPercent)}</td>`;
