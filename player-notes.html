@@ -70,6 +70,12 @@
         .replay-del-btn { display: inline-block; margin-left: 0.4rem; color: #f66; font-weight: 700; font-size: 1rem; line-height: 1; vertical-align: middle; }
         .replay-del-btn:hover { color: #f00; }
 
+        /* ===== VIEWER-ONLY MODE (?viewer=1) ===== */
+        body.viewer-mode .notes-only { display: none !important; }
+        body.viewer-mode .notes-title { display: none !important; }
+        body.viewer-mode .viewer-title { display: inline !important; }
+        .viewer-title { display: none; }
+
         /* ===== REPLAY MODAL ===== */
         .replay-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; overflow: visible; }
         .replay-modal-overlay.open { display: block; }
@@ -412,21 +418,23 @@
 
     <header>
         <div class="container">
-            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Player Notes - Megaman's Archive</h1>
-            <p>Personal notes and gameplans against specific players</p>
-            <a href="way-of-fox.html" class="back-link">← Back to The Way of Fox</a>
+            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"><span class="notes-title"> Player Notes - Megaman's Archive</span><span class="viewer-title"> Replay Visualizer</span></h1>
+            <p class="notes-title">Personal notes and gameplans against specific players</p>
+            <p class="viewer-title">Watch and analyze .slp replays with hitbox data, controller display, and frame-by-frame controls</p>
+            <a href="way-of-fox.html" class="back-link notes-only">← Back to The Way of Fox</a>
+            <a href="index.html" class="back-link viewer-title">← Back to Resources Hub</a>
         </div>
     </header>
 
     <main class="container">
-        <div class="export-section">
+        <div class="export-section notes-only">
             <h3>🎮 South Bay Melee Slippi VOD Archives</h3>
             <p style="color: #666; margin-bottom: 1rem;">Watch and review replays from South Bay Melee sessions</p>
             <a href="https://replays.p0ke.dev/South-Bay-Melee/" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
                 📺 View Slippi Replay Archive
             </a>
         </div>
-        <div class="export-section">
+        <div class="export-section notes-only">
             <h3>🏆 Major Tournament Slippi Replay Archives</h3>
             <p style="color: #666; margin-bottom: 1rem;">Archive of all majors that have run Slippi replay hotloaders - search for replays from any player at major tournaments</p>
             <a href="https://onedrive.live.com/?redeem=aHR0cHM6Ly8xZHJ2Lm1zL2YvYy9jZTc1OWUzZGRhZjcxZTFmL0VoOGU5OW85bm5VZ2dNNDctQUFBQUFBQnRrcTNubVRCX3dhVUVvSVJFcWRPakE&id=CE759E3DDAF71E1F%2163547&cid=CE759E3DDAF71E1F" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; padding: 1rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
@@ -443,7 +451,7 @@
                 <span style="color:#999;font-size:0.75rem;display:block;margin-top:0.4rem;">Saved in your browser — persists across sessions</span>
             </div>
         </div>
-        <div class="export-section">
+        <div class="export-section notes-only">
             <h3>💾 Save Your Notes</h3>
             <p style="color: #666; margin-bottom: 1rem;">After adding or editing notes, export the JSON file and replace player-notes.json in your repo, then push to GitHub.</p>
             <button class="export-btn" onclick="exportNotes()">📥 Export Notes (Download JSON)</button>
@@ -451,7 +459,7 @@
             <input type="file" id="fileInput" accept=".json" onchange="importNotes(event)">
         </div>
 
-        <div class="add-note-form">
+        <div class="add-note-form notes-only">
             <h2>Add New Player Note</h2>
             <form id="noteForm">
                 <div class="form-group">
@@ -487,7 +495,7 @@
             </form>
         </div>
 
-        <div class="filter-section">
+        <div class="filter-section notes-only">
             <h3>Filter by Type</h3>
             <div class="character-icons" style="margin-bottom: 1rem;">
                 <button class="char-filter-btn active" data-type="all">All</button>
@@ -509,7 +517,7 @@
             </div>
         </div>
 
-        <div class="notes-container" id="notesContainer"></div>
+        <div class="notes-container notes-only" id="notesContainer"></div>
     </main>
 
     <footer>
@@ -689,6 +697,16 @@ const CHAR_NAMES = {
 
 // Player colors for canvas rendering
 const PLAYER_COLORS = ['#e74c3c','#3498db','#2ecc71','#f39c12'];
+const TEAM_COLORS = { 0: '#e74c3c', 1: '#3498db', 2: '#2ecc71' }; // red, blue, green
+
+// Returns the display color for a player index, using team color in teams mode
+function getPlayerColor(playerIdx) {
+    if (replaySettings?.isTeams) {
+        const player = replaySettings.players[playerIdx];
+        if (player && player.teamId != null) return TEAM_COLORS[player.teamId] || PLAYER_COLORS[playerIdx % PLAYER_COLORS.length];
+    }
+    return PLAYER_COLORS[playerIdx % PLAYER_COLORS.length];
+}
 
 // Stage data from schmooblidon/slippi-visualiser (authoritative geometry)
 // polygon: array of [x,y] points for the stage solid shape
@@ -2263,8 +2281,8 @@ async function buildCCAsdiPanel() {
             renderedPairs.add(pairKey);
             const atkName = CHAR_NAMES[atkId] || `P${players[a].port+1}`;
             const defName = CHAR_NAMES[defId] || `P${players[d].port+1}`;
-            const atkColor = PLAYER_COLORS[a % PLAYER_COLORS.length];
-            const defColor = PLAYER_COLORS[d % PLAYER_COLORS.length];
+            const atkColor = getPlayerColor(a);
+            const defColor = getPlayerColor(d);
 
             const ccData = await fightCore.getCCPercents(atkId, defId);
             if (!ccData || !ccData.length) continue;
@@ -2831,7 +2849,7 @@ function renderFrame(frameIdx) {
         if (gameX == null || gameY == null) return;
         const px = toCanvasX(gameX);
         const py = toCanvasY(gameY);
-        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const color = getPlayerColor(i);
         const charId = player.characterId;
         const charName = CHAR_NAMES[charId] || `P${player.port+1}`;
         const tag = player.displayName || player.nametag || `P${player.port+1}`;
@@ -3722,7 +3740,7 @@ function updateStickMapContainer() {
         const pre = pFrame?.pre;
         const jx = pre?.joystickX ?? 0;
         const jy = pre?.joystickY ?? 0;
-        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const color = getPlayerColor(i);
         html += `<div style="background:#111827;border-radius:10px;padding:0.5rem;margin-top:0.5rem;flex:1;min-width:200px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
                 <span style="color:#a78bfa;font-size:0.85rem;font-weight:700;">🎯 Stick Map — P${player.port+1}</span>
@@ -3757,7 +3775,7 @@ function updateControllerPanel(frameIdx) {
         if (!pFrame) return;
         const post = pFrame.post;
         const pre = pFrame.pre;
-        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const color = getPlayerColor(i);
         const charId = player.characterId;
         const charName = CHAR_NAMES[charId] || `Char ${charId}`;
         const tag = player.displayName || player.nametag || `P${player.port+1}`;
@@ -3907,7 +3925,7 @@ function buildStockTimeline() {
     const data = { players: [], totalFrames: keys.length };
 
     players.forEach((p, i) => {
-        const color = PLAYER_COLORS[i % PLAYER_COLORS.length];
+        const color = getPlayerColor(i);
         const deaths = [];
         let prevStocks = 4;
         for (let fi = 0; fi < keys.length; fi++) {
@@ -4305,7 +4323,10 @@ function buildClipsPanel() {
     const clips = detectedClips;
     const players = replaySettings.players;
 
-    const portColor = (port) => PLAYER_COLORS[(players.findIndex(p => p.port === port)) % PLAYER_COLORS.length] || '#888';
+    const portColor = (port) => {
+        const idx = players.findIndex(p => p.port === port);
+        return idx >= 0 ? getPlayerColor(idx) : '#888';
+    };
 
     function buildSection(id, title, items, renderRow) {
         const count = items.length;
@@ -4422,7 +4443,10 @@ window.showActionClips = (actionName) => {
     }
     const ranges = detectedClips.actionRanges[actionName];
     const players = replaySettings.players;
-    const portColor = (port) => PLAYER_COLORS[(players.findIndex(p => p.port === port)) % PLAYER_COLORS.length] || '#888';
+    const portColor = (port) => {
+        const idx = players.findIndex(p => p.port === port);
+        return idx >= 0 ? getPlayerColor(idx) : '#888';
+    };
     const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${t})"`; };
 
     let html = `<div style="max-height:200px;overflow-y:auto;margin-bottom:0.4rem;">`;
@@ -4675,18 +4699,10 @@ if (_autoReplay) {
     setTimeout(() => loadReplayFromServer(_autoReplay), 500);
 }
 
-// If ?viewer=1, auto-open the replay modal for standalone use
+// If ?viewer=1, switch to standalone viewer mode (hide notes UI)
 if (_urlParams.get('viewer') === '1') {
-    setTimeout(() => {
-        activeNoteIdx = null;
-        document.getElementById('replayModalTitle').textContent = '🎮 Replay Visualizer';
-        document.getElementById('replayViewerArea').style.display = 'none';
-        document.getElementById('replayLoadArea').style.display = 'block';
-        const modal = document.getElementById('replayModal');
-        modal.style.top = '50%'; modal.style.left = '50%';
-        modal.style.transform = 'translate(-50%, -50%)';
-        document.getElementById('replayModalOverlay').classList.add('open');
-    }, 300);
+    document.body.classList.add('viewer-mode');
+    document.title = 'Replay Visualizer - Melee Resources';
 }
 
 buildReplayBrowser();
