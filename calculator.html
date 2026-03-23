@@ -31,9 +31,24 @@
         </div>
     </main>
 
+    <script>
+        window.onerror = function(msg, src, line, col, err) {
+            var el = document.getElementById('calculator-root');
+            if (el) el.innerHTML = '<pre style="color:red;padding:1rem;white-space:pre-wrap;">ERROR: ' + msg + '\nSource: ' + src + ':' + line + ':' + col + '\n' + (err && err.stack ? err.stack : '') + '</pre>';
+        };
+        window.addEventListener('unhandledrejection', function(e) {
+            var el = document.getElementById('calculator-root');
+            if (el) el.innerHTML = '<pre style="color:red;padding:1rem;white-space:pre-wrap;">UNHANDLED REJECTION: ' + (e.reason && e.reason.stack ? e.reason.stack : e.reason) + '</pre>';
+        });
+    </script>
     <script type="module">
         import { embedCalculator } from './ikneedata-ui.js';
-        embedCalculator('calculator-root');
+        try {
+            embedCalculator('calculator-root');
+        } catch(e) {
+            var el = document.getElementById('calculator-root');
+            if (el) el.innerHTML = '<pre style="color:red;padding:1rem;white-space:pre-wrap;">INIT ERROR: ' + e.message + '\n' + e.stack + '</pre>';
+        }
     </script>
 </body>
 </html>

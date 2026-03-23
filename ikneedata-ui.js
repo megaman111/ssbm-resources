@@ -94,6 +94,7 @@ export class IKneeDataUI {
 <div class="ikd-header">
   <div class="ikd-field"><label>Attacker</label><select data-id="atk">${chars}</select></div>
   <div class="ikd-field"><label>Move</label><select data-id="move"><option value="">Loading...</option></select></div>
+  <div class="ikd-field"><label>Hitbox</label><select data-id="hitbox"><option value="">--</option></select></div>
   <div class="ikd-field"><label>Defender</label><select data-id="def">${chars}</select></div>
   <div class="ikd-field"><label>Percent</label><input type="number" data-id="pct" value="0" min="0" max="999"></div>
   <div class="ikd-field"><label>Stage</label><select data-id="stage">${stages}</select></div>
@@ -133,6 +134,7 @@ export class IKneeDataUI {
         // Events
         this._d('atk').onchange = () => this._onAtkChange();
         this._d('move').onchange = () => this._onMoveChange();
+        this._d('hitbox').onchange = () => this._onHitboxChange();
         this._d('def').onchange = () => { this._defChar = +this._d('def').value; this._recalc(); };
         this._d('stage').onchange = () => { this._stageKey = this._d('stage').value; this._recalc(); };
         for (const id of ['pct','di','cc','vcancel','charge-int','metal','ice','reverse']) {
@@ -333,7 +335,9 @@ export class IKneeDataUI {
 
     async _loadMoves(charId) {
         const sel = this._d('move');
+        const hbSel = this._d('hitbox');
         sel.innerHTML = '<option value="">Loading...</option>';
+        hbSel.innerHTML = '<option value="">--</option>';
         try {
             this._moves = await fc.getMoves(charId);
             sel.innerHTML = '<option value="">-- Select Move --</option>';
@@ -357,22 +361,94 @@ export class IKneeDataUI {
 
     _onMoveChange() {
         const v = this._d('move').value;
-        if (!v) { this._selectedMove = null; this._recalc(); return; }
+        const hbSel = this._d('hitbox');
+        if (!v) {
+            this._selectedMove = null;
+            hbSel.innerHTML = '<option value="">--</option>';
+            this._recalc();
+            return;
+        }
         const m = this._moves.find(x => x.normalizedName === v);
         this._selectedMove = m || null;
-        if (m?.hits?.[0]?.hitboxes) {
-            let best = null;
-            for (const hb of m.hits[0].hitboxes)
-                if (hb.damage > 0 && (!best || hb.damage > best.damage)) best = hb;
-            if (best) {
-                this._d('m-dmg').value = best.damage;
-                this._d('m-angle').value = best.angle;
-                this._d('m-kbg').value = best.knockbackGrowth;
-                this._d('m-bkb').value = best.baseKnockback;
-                this._d('m-setkb').value = best.setKnockback || 0;
+
+        // Populate hitbox dropdown: group by hit window (Clean/Late/etc), list each hitbox ID
+        // Uses hit index + hitbox index as the value key (e.g. "0:1") since hb.name can be missing
+        hbSel.innerHTML = '';
+        if (m?.hits?.length) {
+            const multiHit = m.hits.length > 1;
+            for (let hi = 0; hi < m.hits.length; hi++) {
+                const hit = m.hits[hi];
+                if (!hit?.hitboxes?.length) continue;
+
+                // Build a label for this hit window
+                let hitLabel;
+                if (hit.name && hit.name !== 'unknown') {
+                    hitLabel = hit.name.charAt(0).toUpperCase() + hit.name.slice(1);
+                } else if (multiHit) {
+                    if (m.hits.length === 2) {
+                        hitLabel = hi === 0 ? 'Clean' : 'Late';
+                    } else {
+                        const fs = hit.start ?? '?';
+                        const fe = hit.end ?? '?';
+                        hitLabel = `Hit ${hi + 1} (f${fs}-${fe})`;
+                    }
+                } else {
+                    hitLabel = null;
+                }
+
+                const makeOption = (hb, hbi) => {
+                    const o = document.createElement('option');
+                    o.value = `${hi}:${hbi}`;
+                    const label = hb.name || `id${hbi}`;
+                    o.textContent = `${label} (${hb.damage ?? 0}% ${hb.angle ?? 0}°)`;
+                    return o;
+                };
+
+                if (hitLabel && multiHit) {
+                    const group = document.createElement('optgroup');
+                    group.label = hitLabel;
+                    for (let hbi = 0; hbi < hit.hitboxes.length; hbi++) {
+                        group.appendChild(makeOption(hit.hitboxes[hbi], hbi));
+                    }
+                    hbSel.appendChild(group);
+                } else {
+                    for (let hbi = 0; hbi < hit.hitboxes.length; hbi++) {
+                        hbSel.appendChild(makeOption(hit.hitboxes[hbi], hbi));
+                    }
+                }
             }
         }
+
+        if (!hbSel.options.length) {
+            hbSel.innerHTML = '<option value="">No hitboxes</option>';
+        }
+
+        this._onHitboxChange();
+    }
+
+    _onHitboxChange() {
+        const hb = this._getSelectedHitbox();
+        if (hb) {
+            this._d('m-dmg').value = hb.damage ?? 0;
+            this._d('m-angle').value = hb.angle ?? 0;
+            this._d('m-kbg').value = hb.knockbackGrowth ?? 0;
+            this._d('m-bkb').value = hb.baseKnockback ?? 0;
+            this._d('m-setkb').value = hb.setKnockback ?? 0;
+        }
         this._recalc();
+    }
+
+    _getSelectedHitbox() {
+        if (!this._selectedMove?.hits?.length) return null;
+        const val = this._d('hitbox')?.value;
+        if (!val || !val.includes(':')) return null;
+        const parts = val.split(':');
+        const hitIdx = parseInt(parts[0], 10);
+        const hbIdx = parseInt(parts[1], 10);
+        if (isNaN(hitIdx) || isNaN(hbIdx)) return null;
+        const hit = this._selectedMove.hits[hitIdx];
+        if (!hit?.hitboxes?.length) return null;
+        return hit.hitboxes[hbIdx] || null;
     }
 
     _getMoveParams() {
@@ -385,14 +461,15 @@ export class IKneeDataUI {
                 setKb: +this._d('m-setkb').value || 0,
             };
         }
-        const hit = this._selectedMove?.hits?.[0];
-        if (!hit?.hitboxes) return null;
-        let best = null;
-        for (const hb of hit.hitboxes)
-            if (hb.damage > 0 && (!best || hb.damage > best.damage)) best = hb;
-        if (!best) return null;
-        return { damage: best.damage, angle: best.angle, kbg: best.knockbackGrowth,
-            bkb: best.baseKnockback, setKb: best.setKnockback || 0 };
+        const hb = this._getSelectedHitbox();
+        if (!hb) return null;
+        return {
+            damage: hb.damage ?? 0,
+            angle: hb.angle ?? 0,
+            kbg: hb.knockbackGrowth ?? 0,
+            bkb: hb.baseKnockback ?? 0,
+            setKb: hb.setKnockback ?? 0,
+        };
     }
 
     _recalc() {
@@ -478,7 +555,11 @@ export class IKneeDataUI {
         if (fd.startX != null) this._startX = fd.startX;
         if (fd.startY != null) this._startY = fd.startY;
         const m = fc.getFrameDataForAction(fd.attackerCharId, fd.actionState);
-        if (m?.normalizedName) { this._d('move').value = m.normalizedName; this._selectedMove = m; }
+        if (m?.normalizedName) {
+            this._d('move').value = m.normalizedName;
+            this._selectedMove = m;
+            this._onMoveChange();
+        }
         this._recalc();
     }
 }
