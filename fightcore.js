@@ -371,6 +371,99 @@ export class FightCore {
         return [...deduped.values()];
     }
 
+    async getKillPercents(attackerId, defenderId, stageBlastZones) {
+        const moves = await this.getMoves(attackerId);
+        if (!moves.length) return [];
+        const defWeight = CHAR_WEIGHTS[defenderId] || 100;
+        const results = [];
+        // Blast zone distances from center (approximate — character starts at center stage)
+        const blastL = Math.abs(stageBlastZones.x[0]);
+        const blastR = Math.abs(stageBlastZones.x[1]);
+        const blastTop = Math.abs(stageBlastZones.y[1]);
+        const blastBottom = Math.abs(stageBlastZones.y[0]);
+        // Use the smaller horizontal blast zone for conservative estimate
+        const horizDist = Math.min(blastL, blastR);
+
+        const NON_KILL_MOVES = new Set([
+            'grab','dashgrab','pummel',
+        ]);
+
+        for (const move of moves) {
+            if (!move.hits || !move.hits.length) continue;
+            if (move.normalizedName && NON_KILL_MOVES.has(move.normalizedName)) continue;
+            for (const hit of move.hits) {
+                if (!hit.hitboxes || !hit.hitboxes.length) continue;
+                let bestHb = null;
+                for (const hb of hit.hitboxes) {
+                    if (hb.damage > 0 && hb.knockbackGrowth > 0 && (!bestHb || hb.damage > bestHb.damage)) bestHb = hb;
+                }
+                if (!bestHb) continue;
+                // Determine kill distance based on angle
+                const angle = bestHb.angle;
+                let killDist;
+                if (angle === 0 || angle === 361) {
+                    killDist = horizDist; // Sakurai angle / horizontal
+                } else if (angle <= 70 || angle >= 290) {
+                    killDist = horizDist; // Mostly horizontal
+                } else if (angle >= 70 && angle <= 110) {
+                    killDist = blastTop; // Mostly vertical (up)
+                } else if (angle >= 250 && angle < 290) {
+                    killDist = blastBottom; // Spikes
+                } else {
+                    killDist = horizDist;
+                }
+                // KB threshold for kill: ~200 units of knockback roughly reaches blast zone
+                // Scale threshold by blast zone distance relative to a baseline of 200 units
+                const kbThreshold = killDist * 0.9;
+                const killPercent = this._calcKillPercent(bestHb, defWeight, kbThreshold);
+                if (killPercent < 0 || killPercent > 999) continue;
+                const hitLabel = hit.name && hit.name !== 'unknown' ? hit.name : '';
+                results.push({
+                    moveName: move.name,
+                    normalizedName: move.normalizedName,
+                    hitName: hitLabel,
+                    damage: bestHb.damage,
+                    angle: bestHb.angle,
+                    knockbackGrowth: bestHb.knockbackGrowth,
+                    baseKnockback: bestHb.baseKnockback,
+                    setKnockback: bestHb.setKnockback,
+                    killPercent: killPercent,
+                });
+            }
+        }
+        // Dedup: keep lowest kill percent per move+hit
+        const deduped = new Map();
+        for (const r of results) {
+            const key = r.moveName + '|' + r.hitName;
+            if (!deduped.has(key) || r.killPercent < deduped.get(key).killPercent) {
+                deduped.set(key, r);
+            }
+        }
+        return [...deduped.values()].sort((a, b) => a.killPercent - b.killPercent);
+    }
+
+    _calcKillPercent(hb, weight, kbThreshold) {
+        const { damage, knockbackGrowth, baseKnockback, setKnockback } = hb;
+        if (setKnockback > 0) {
+            const kb = this._calcKB(damage, 0, weight, knockbackGrowth, baseKnockback, 1.0);
+            // Set KB doesn't scale with percent — either always kills or never
+            return kb >= kbThreshold ? 0 : 9999;
+        }
+        if (knockbackGrowth === 0 && baseKnockback === 0) return 9999;
+        const kb0 = this._calcKB(damage, 0, weight, knockbackGrowth, baseKnockback, 1.0);
+        if (kb0 >= kbThreshold) return 0;
+        const kb999 = this._calcKB(damage, 999, weight, knockbackGrowth, baseKnockback, 1.0);
+        if (kb999 < kbThreshold) return 9999;
+        let lo = 0, hi = 999;
+        while (lo < hi) {
+            const mid = Math.ceil((lo + hi) / 2);
+            const kb = this._calcKB(damage, mid, weight, knockbackGrowth, baseKnockback, 1.0);
+            if (kb < kbThreshold) lo = mid;
+            else hi = mid - 1;
+        }
+        return lo;
+    }
+
     _calcMaxPercent(hb, weight, kbThreshold, ccMult) {
         const { damage, knockbackGrowth, baseKnockback, setKnockback } = hb;
         if (setKnockback > 0) {

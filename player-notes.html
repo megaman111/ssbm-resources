@@ -117,10 +117,21 @@
         .controller-svg-wrap svg { width: 100%; height: auto; }
         .replay-main-row { display: flex; gap: 1rem; flex: 1; min-height: 0; }
         .replay-left { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; overflow-y: auto; }
-        .replay-right { flex: 0 0 auto; width: 500px; overflow-y: auto; }
+        .replay-right { flex: 0 0 auto; width: 500px; overflow-y: hidden; display: flex; flex-direction: row; }
+        .sidebar-tabs { display: flex; flex-direction: column; gap: 2px; padding: 4px 2px 4px 0; flex-shrink: 0; }
+        .sidebar-tab { background: #1a1a3e; border: 1px solid #2a2a4a; border-right: none; border-radius: 8px 0 0 8px; padding: 8px 6px; cursor: pointer; font-size: 1.1rem; color: #888; transition: background 0.15s, color 0.15s; line-height: 1; }
+        .sidebar-tab:hover { background: #222250; color: #ccc; }
+        .sidebar-tab.active { background: #111827; color: #a78bfa; border-color: #667eea; }
+        .sidebar-content { flex: 1; min-width: 0; overflow-y: auto; background: #111827; border-radius: 0 8px 8px 0; }
+        .sidebar-panel { display: none; height: 100%; overflow-y: auto; }
+        .sidebar-panel.active { display: block; }
+        .clips-panel-inner { padding: 0.5rem; overflow-y: auto; }
         @media (max-width: 900px) {
             .replay-main-row { flex-direction: column; }
-            .replay-right { flex: none; width: 100%; }
+            .replay-right { flex: none; width: 100%; flex-direction: column; }
+            .sidebar-tabs { flex-direction: row; justify-content: center; padding: 2px 0 4px; }
+            .sidebar-tab { border-radius: 8px 8px 0 0; border: 1px solid #2a2a4a; border-bottom: none; border-right: 1px solid #2a2a4a; }
+            .sidebar-content { border-radius: 0 0 8px 8px; max-height: 35vh; }
             .replay-modal { width: 96vw; height: 96vh; min-width: 0; padding: 0.75rem; border-radius: 10px; resize: none; }
             .replay-modal-content-wrap { overflow-y: auto; overflow-x: hidden; }
             .replay-left { overflow-y: visible; }
@@ -135,7 +146,6 @@
             .controller-card { flex-direction: column; align-items: stretch; padding: 0.5rem; }
             .controller-info { min-width: 0; display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
             .controller-svg-wrap svg { max-height: 120px; }
-            .clips-panel { max-height: 25vh; }
             .replay-canvas-wrap { border-radius: 8px 8px 0 0; }
             .canvas-resize-handle { display: none; }
             .stickmap-overlay { width: 200px; }
@@ -195,8 +205,11 @@
             .mobile-controllers-toggle { display: block; width: 100%; background: #1a1a3e; color: #a78bfa; border: 1px solid #2a2a4a; padding: 0.5rem 0.6rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 700; text-align: left; margin-top: 0.3rem; }
             .mobile-controllers-toggle:hover { background: #222250; }
             .mobile-controllers-toggle.open { border-radius: 8px 8px 0 0; }
-            .replay-right { order: 10; display: none; background: #111827; border-radius: 0 0 8px 8px; padding: 0.4rem; }
-            .replay-right.mobile-open { display: block; }
+            .replay-right { order: 10; display: none; background: #111827; border-radius: 0 0 8px 8px; padding: 0.4rem; width: 100%; flex-direction: column; }
+            .replay-right.mobile-open { display: flex; }
+            .sidebar-tabs { flex-direction: row; padding: 2px 0 4px; gap: 2px; justify-content: center; }
+            .sidebar-tab { border-radius: 8px 8px 0 0; border: 1px solid #2a2a4a; border-bottom: none; border-right: 1px solid #2a2a4a; padding: 6px 12px; font-size: 1rem; }
+            .sidebar-content { border-radius: 0 0 8px 8px; max-height: 40vh; }
             .controller-card { padding: 0.4rem; gap: 0.3rem; flex-direction: row; align-items: center; }
             .controller-info { min-width: 0; flex: 1; display: block; }
             .controller-info .char-name { font-size: 0.8rem; }
@@ -211,11 +224,6 @@
             .savestate-btn { display: none; }
             .stickmap-toggle { display: none; }
 
-            /* Clips & CC panels */
-            .clips-panel-wrap { margin-top: 0.3rem; }
-            .clips-panel-toggle { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
-            .clips-panel { max-height: 35vh; }
-
             /* Stickmap */
             .stickmap-overlay { width: 160px; padding: 0.3rem; }
 
@@ -229,7 +237,7 @@
             .replay-main-row { flex-direction: column; }
             .replay-left { overflow-y: auto; }
 
-            /* Hide controllers entirely in landscape */
+            /* Hide sidebar entirely in landscape */
             .mobile-controllers-toggle { display: none; }
             .replay-right { display: none !important; }
 
@@ -257,18 +265,8 @@
             .replay-modal-title { font-size: 0.75rem; }
             .replay-close-btn { font-size: 1.1rem; padding: 0.15rem 0.4rem; }
 
-            /* Hide clips/CC panels in landscape to save space */
-            .clips-panel-wrap { display: none; }
         }
-        /* Clips panel */
-        .clips-panel-wrap { margin-top: 0.5rem; flex-shrink: 0; }
-        .clips-panel-toggle { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #1a1a3e; border-radius: 8px; cursor: pointer; user-select: none; font-size: 0.9rem; color: #a78bfa; font-weight: 700; }
-        .clips-panel-toggle:hover { background: #222250; }
-        .clips-panel-toggle .clips-chevron { color: #667eea; transition: transform 0.2s; font-size: 0.8rem; }
-        .clips-panel-wrap.open .clips-panel-toggle .clips-chevron { transform: rotate(180deg); }
-        .clips-panel-wrap.open .clips-panel-toggle { border-radius: 8px 8px 0 0; }
-        .clips-panel { background: #111827; border-radius: 0 0 10px 10px; padding: 0.75rem; max-height: 30vh; overflow-y: auto; display: none; }
-        .clips-panel-wrap.open .clips-panel { display: block; }
+        /* Clips panel (now inside sidebar tabs) */
         .clips-section { border: 1px solid #2a2a4a; border-radius: 8px; margin-bottom: 0.4rem; overflow: hidden; }
         .clips-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; background: #1a1a3e; cursor: pointer; user-select: none; font-size: 0.9rem; color: #ccc; }
         .clips-header:hover { background: #222250; }
@@ -354,33 +352,38 @@
                             <button class="ctrl-btn" onclick="toggleShortcuts()" title="Keyboard shortcuts (?)" style="font-size:0.8rem;">⌨ Shortcuts</button>
                         </div>
                     </div>
-                    <button class="mobile-controllers-toggle" id="mobileControllersToggle" onclick="var r=document.querySelector('.replay-right');r.classList.toggle('mobile-open');this.classList.toggle('open');this.textContent=r.classList.contains('mobile-open')?'🎮 Controllers ▾':'🎮 Controllers ▸'">🎮 Controllers ▸</button>
+                    <button class="mobile-controllers-toggle" id="mobileControllersToggle" onclick="var r=document.querySelector('.replay-right');r.classList.toggle('mobile-open');this.classList.toggle('open');this.textContent=r.classList.contains('mobile-open')?'🎮 Info ▾':'🎮 Info ▸'">🎮 Info ▸</button>
                     <div class="replay-right">
-                        <div id="controllerScaleBar" style="display:none;padding:0 0.2rem 0.3rem;">
-                            <div style="display:flex;align-items:center;gap:0.5rem;">
-                                <span style="color:#888;font-size:0.75rem;">🎮 Size</span>
-                                <input type="range" id="controllerScaleSlider" min="0.8" max="1.5" step="0.05" value="1"
-                                    style="flex:1;accent-color:#a78bfa;cursor:pointer;">
-                                <span id="controllerScaleLabel" style="color:#aaa;font-size:0.7rem;min-width:28px;text-align:right;">100%</span>
+                        <div class="sidebar-tabs">
+                            <button class="sidebar-tab active" data-tab="controllers" onclick="switchSidebarTab('controllers')" title="Controllers">🎮</button>
+                            <button class="sidebar-tab" data-tab="clips" onclick="switchSidebarTab('clips')" title="Clips">📋</button>
+                            <button class="sidebar-tab" data-tab="ccasdi" onclick="switchSidebarTab('ccasdi')" title="CC / ASDI Down">🛡️</button>
+                            <button class="sidebar-tab" data-tab="killpct" onclick="switchSidebarTab('killpct')" title="Kill Percents">💀</button>
+                        </div>
+                        <div class="sidebar-content">
+                            <div class="sidebar-panel active" id="sidebarControllers">
+                                <div id="controllerScaleBar" style="display:none;padding:0 0.2rem 0.3rem;">
+                                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                                        <span style="color:#888;font-size:0.75rem;">🎮 Size</span>
+                                        <input type="range" id="controllerScaleSlider" min="0.8" max="1.5" step="0.05" value="1"
+                                            style="flex:1;accent-color:#a78bfa;cursor:pointer;">
+                                        <span id="controllerScaleLabel" style="color:#aaa;font-size:0.7rem;min-width:28px;text-align:right;">100%</span>
+                                    </div>
+                                </div>
+                                <div id="controllerPanel" style="display:none;"></div>
+                                <div id="stickMapContainer" style="display:none;"></div>
+                            </div>
+                            <div class="sidebar-panel" id="sidebarClips">
+                                <div id="clipsPanel" class="clips-panel-inner"></div>
+                            </div>
+                            <div class="sidebar-panel" id="sidebarCcAsdi">
+                                <div id="ccAsdiPanel" class="clips-panel-inner"></div>
+                            </div>
+                            <div class="sidebar-panel" id="sidebarKillPct">
+                                <div id="killPctPanel" class="clips-panel-inner"></div>
                             </div>
                         </div>
-                        <div id="controllerPanel" style="display:none;"></div>
-                        <div id="stickMapContainer" style="display:none;"></div>
                     </div>
-                </div>
-                <div class="clips-panel-wrap" id="clipsPanelWrap" style="display:none;">
-                    <div class="clips-panel-toggle" onclick="document.getElementById('clipsPanelWrap').classList.toggle('open')">
-                        <span>📋 Clips</span>
-                        <span class="clips-chevron">▼</span>
-                    </div>
-                    <div id="clipsPanel" class="clips-panel"></div>
-                </div>
-                <div class="clips-panel-wrap" id="ccAsdiPanelWrap" style="display:none;">
-                    <div class="clips-panel-toggle" onclick="document.getElementById('ccAsdiPanelWrap').classList.toggle('open')">
-                        <span>🛡️ CC / ASDI Down Percents</span>
-                        <span class="clips-chevron">▼</span>
-                    </div>
-                    <div id="ccAsdiPanel" class="clips-panel" style="max-height:50vh;"></div>
                 </div>
                 <div id="shortcutsOverlay" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;" onclick="if(event.target===this)toggleShortcuts()">
                     <div style="background:#1a1a2e;border:1px solid #334;border-radius:12px;padding:1.5rem;max-width:480px;width:90%;max-height:80vh;overflow-y:auto;color:#ccc;font-family:monospace;">
@@ -2203,10 +2206,8 @@ window.toggleHitboxData = () => {
 
 async function buildCCAsdiPanel() {
     if (!replaySettings) return;
-    const wrap = document.getElementById('ccAsdiPanelWrap');
     const panel = document.getElementById('ccAsdiPanel');
-    if (!wrap || !panel) return;
-    wrap.style.display = 'block';
+    if (!panel) return;
     panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Loading FightCore data...</div>';
 
     const players = replaySettings.players;
@@ -2287,6 +2288,93 @@ async function buildCCAsdiPanel() {
     }
 }
 
+// ===== SIDEBAR TAB SWITCHING =====
+window.switchSidebarTab = (tabId) => {
+    document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
+    document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+    const panelMap = { controllers: 'sidebarControllers', clips: 'sidebarClips', ccasdi: 'sidebarCcAsdi', killpct: 'sidebarKillPct' };
+    const el = document.getElementById(panelMap[tabId]);
+    if (el) el.classList.add('active');
+};
+
+// ===== KILL PERCENT PANEL =====
+async function buildKillPctPanel() {
+    if (!replaySettings) return;
+    const panel = document.getElementById('killPctPanel');
+    if (!panel) return;
+    panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Loading kill percent data...</div>';
+
+    const players = replaySettings.players;
+    const stageId = replaySettings.stageId;
+    const stage = STAGE_DATA[stageId];
+    if (!stage) {
+        panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Unknown stage — no blast zone data</div>';
+        return;
+    }
+
+    await Promise.all(players.map(p => fightCore.getMoves(p.characterId)));
+
+    let html = '';
+    const renderedPairs = new Set();
+    for (let a = 0; a < players.length; a++) {
+        for (let d = 0; d < players.length; d++) {
+            if (a === d) continue;
+            const atkId = players[a].characterId;
+            const defId = players[d].characterId;
+            const pairKey = atkId + '→' + defId;
+            if (renderedPairs.has(pairKey)) continue;
+            renderedPairs.add(pairKey);
+            const atkName = CHAR_NAMES[atkId] || `P${players[a].port+1}`;
+            const defName = CHAR_NAMES[defId] || `P${players[d].port+1}`;
+            const atkColor = PLAYER_COLORS[a % PLAYER_COLORS.length];
+            const defColor = PLAYER_COLORS[d % PLAYER_COLORS.length];
+
+            const killData = await fightCore.getKillPercents(atkId, defId, stage);
+            if (!killData || !killData.length) continue;
+
+            // Filter to reasonable kill percents (0-300%)
+            const useful = killData.filter(m => m.killPercent >= 0 && m.killPercent <= 300);
+            if (!useful.length) continue;
+
+            html += `<div style="border:1px solid #2a2a4a;border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">`;
+            html += `<div style="padding:0.4rem 0.6rem;background:#1a1a3e;font-size:0.85rem;">`;
+            if (atkId === defId) {
+                html += `<span style="color:${atkColor};font-weight:700;">${atkName} (ditto)</span>`;
+            } else {
+                html += `<span style="color:${atkColor};font-weight:700;">${atkName}</span>`;
+                html += ` <span style="color:#666;">→</span> `;
+                html += `<span style="color:${defColor};font-weight:700;">${defName}</span>`;
+            }
+            html += ` <span style="color:#555;font-size:0.7rem;">on ${stage.name}</span>`;
+            html += `</div>`;
+            html += `<table style="width:100%;border-collapse:collapse;font-size:0.75rem;">`;
+            html += `<thead><tr style="color:#888;border-bottom:1px solid #2a2a4a;">`;
+            html += `<th style="text-align:left;padding:0.25rem 0.4rem;">Move</th>`;
+            html += `<th style="text-align:center;padding:0.25rem;">Dmg</th>`;
+            html += `<th style="text-align:center;padding:0.25rem;color:#f66;">Kill%</th>`;
+            html += `</tr></thead><tbody>`;
+
+            for (const m of useful.slice(0, 40)) {
+                const killColor = m.killPercent <= 50 ? '#f44' : m.killPercent <= 100 ? '#fa4' : m.killPercent <= 150 ? '#ff4' : '#ccc';
+                const hitLabel = m.hitName ? ` (${m.hitName})` : '';
+                html += `<tr style="border-bottom:1px solid #1a1a3e;">`;
+                html += `<td style="padding:0.2rem 0.4rem;color:#ddd;">${m.moveName}${hitLabel}</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:#faa;">${m.damage}%</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:${killColor};font-weight:600;">${m.killPercent}%</td>`;
+                html += `</tr>`;
+            }
+            html += `</tbody></table></div>`;
+        }
+    }
+
+    if (!html) {
+        panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">No kill percent data available</div>';
+    } else {
+        html += `<div style="padding:0.4rem 0.6rem;font-size:0.65rem;color:#555;text-align:center;">Kill percents from center stage · <a href="https://github.com/FightCore/frame-data" target="_blank" style="color:#667eea;">FightCore</a> data · ${stage.name} blast zones · No DI</div>`;
+        panel.innerHTML = html;
+    }
+}
+
 window.loadSlpFile = async event => {
     const file = event.target.files[0];
     if (!file) return;
@@ -2336,8 +2424,8 @@ async function initReplayFromBuffer(uint8, filename) {
     // Detect clips (kills, grabs, edgeguards, etc.) for the clips panel
     setTimeout(() => { detectClips(); buildStockTimeline(); detectNotchedPlayers(); }, 100);
 
-    // Load FightCore data for characters in this replay and build CC/ASDI panel
-    setTimeout(() => buildCCAsdiPanel(), 200);
+    // Load FightCore data for characters in this replay and build CC/ASDI + kill percent panels
+    setTimeout(() => { buildCCAsdiPanel(); buildKillPctPanel(); }, 200);
 
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
@@ -4341,9 +4429,6 @@ function buildClipsPanel() {
     </div>`;
 
     panel.innerHTML = html;
-    // Show the wrapper (collapsed by default — user clicks to expand)
-    const wrap = document.getElementById('clipsPanelWrap');
-    if (wrap) wrap.style.display = 'block';
 }
 
 window.showActionClips = (actionName) => {
