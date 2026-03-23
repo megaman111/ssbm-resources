@@ -583,7 +583,25 @@ export class IKneeDataUI {
         ctx.strokeRect(bzL, bzT, bzR - bzL, bzB - bzT);
         ctx.setLineDash([]);
 
-        // Ground
+        // Stage body polygon (filled silhouette)
+        if (stage.polygon?.length) {
+            const poly = stage.polygon;
+            ctx.beginPath();
+            const [px0, py0] = this._stageToCanvas(poly[0][0], poly[0][1], stage, canvas);
+            ctx.moveTo(px0, py0);
+            for (let i = 1; i < poly.length; i++) {
+                const [px, py] = this._stageToCanvas(poly[i][0], poly[i][1], stage, canvas);
+                ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(60,80,60,0.35)';
+            ctx.fill();
+            ctx.strokeStyle = STAGE_COLORS.ground;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Ground surface (bright top edge)
         const [gL] = this._stageToCanvas(-stage.edge, 0, stage, canvas);
         const [gR, gY] = this._stageToCanvas(stage.edge, 0, stage, canvas);
         ctx.strokeStyle = STAGE_COLORS.ground;

@@ -65,6 +65,7 @@ export const CHAR_PHYSICS = {
 // ===== Stage data: blast zones, edges, and platforms from IKneeData source =====
 // Blast zones from calculatorresize.js: bz[id] = [top, right, bottom, left]
 // Surfaces from calculator.js: surfaces[id] = [[[leftX,leftY],[rightX,rightY]], ...]
+// Polygon body shapes from slippi-visualiser vs-stages (Y negated: visualiser uses -Y for below ground)
 export const STAGES = {
     battlefield: {
         name: 'Battlefield',
@@ -75,11 +76,20 @@ export const STAGES = {
             { y: 27.2, left: 20, right: 57.6 },
             { y: 54.4, left: -18.8, right: 18.8 },
         ],
+        polygon: [
+            [-68.4,0],[68.4,0],[65,-6],[36,-19],[39,-21],[33,-25],[30,-29],[29,-35],
+            [10,-40],[10,-30],[-10,-30],[-10,-40],[-29,-35],[-30,-29],[-33,-25],[-39,-21],
+            [-36,-19],[-65,-6],
+        ],
     },
     final_destination: {
         name: 'Final Destination',
         blastZones: { left: -246, right: 246, top: 188, bottom: -140 },
         edge: 85.5657, groundY: 0, platforms: [],
+        polygon: [
+            [-85.6,0],[85.6,0],[85.6,-10],[65,-20],[65,-30],[60,-47],[50,-55],[45,-56],
+            [-45,-56],[-50,-55],[-60,-47],[-65,-30],[-65,-20],[-85.6,-10],
+        ],
     },
     dreamland: {
         name: 'Dreamland',
@@ -90,6 +100,9 @@ export const STAGES = {
             { y: 30.2426, left: 31.7036, right: 63.0745 },
             { y: 51.4254, left: -19.0181, right: 19.0171 },
         ],
+        polygon: [
+            [-77.25,0],[77.25,0],[76.5,-11],[65.75,-36],[-65.75,-36],[-76.5,-11],
+        ],
     },
     fountain_of_dreams: {
         name: 'Fountain of Dreams',
@@ -97,6 +110,13 @@ export const STAGES = {
         edge: 63.34755, groundY: 0,
         platforms: [
             { y: 42.75, left: -14.25, right: 14.25 },
+        ],
+        polygon: [
+            [-63.35,0.62],[-53.5,0.62],[-51.25,0],[51.25,0],[53.5,0.62],[63.35,0.62],
+            [63.35,-4.5],[59.33,-15],[56.9,-19.5],[55,-27],[52,-32],[48,-38],[41,-42],
+            [19,-49.5],[13,-54.5],[10,-62],[8.8,-72],[8.8,-100],[-8.8,-100],
+            [-8.8,-72],[-10,-62],[-13,-54.5],[-19,-49.5],[-41,-42],[-48,-38],[-52,-32],
+            [-55,-27],[-56.9,-19.5],[-59.33,-15],[-63.35,-4.5],
         ],
     },
     yoshis_story: {
@@ -108,6 +128,12 @@ export const STAGES = {
             { y: 23.45, left: 28, right: 59.5 },
             { y: 42, left: -15.75, right: 15.75 },
         ],
+        polygon: [
+            [-56,-3.5],[-39,0],[39,0],[56,-3.5],[56,-7],[55,-8],[54,-11],[53,-12],[53,-27],
+            [54,-28],[54,-30],[53,-31],[53,-46],[54,-47],[54,-100],[-54,-100],[-54,-47],
+            [-53,-46],[-53,-31],[-54,-30],[-54,-28],[-53,-27],[-53,-12],[-54,-11],[-55,-8],
+            [-56,-7],
+        ],
     },
     pokemon_stadium: {
         name: 'Pokemon Stadium',
@@ -116,6 +142,11 @@ export const STAGES = {
         platforms: [
             { y: 25, left: -55, right: -25 },
             { y: 25, left: 25, right: 55 },
+        ],
+        polygon: [
+            [-87.75,0],[87.75,0],[87.75,-4],[73.75,-15],[73.75,-17.75],[60,-17.75],[60,-38],
+            [15,-60],[15,-112],[-15,-112],[-15,-60],[-60,-38],[-60,-17.75],[-73.75,-17.75],
+            [-73.75,-15],[-87.75,-4],
         ],
     },
 };
