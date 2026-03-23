@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Player Notes - Megaman's Archive</title>
+    <title>Personal Notes, VOD Analysis, and Replay Visualization - Megaman's Archive</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,6 +83,22 @@
         .tt-char { color: #a78bfa; font-size: 0.78rem; }
         .tt-stats { display: flex; flex-wrap: wrap; gap: 0.25rem 0.6rem; margin-top: 0.3rem; font-size: 0.72rem; color: #999; }
         .tt-stats span { white-space: nowrap; }
+
+        /* ===== STATS PANEL ===== */
+        .sp-section { padding: 0.5rem 0.6rem; border-bottom: 1px solid #1e1e3a; }
+        .sp-section:last-child { border-bottom: none; }
+        .sp-match-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: 700; color: #a78bfa; padding: 0.3rem 0; }
+        .sp-section-title { font-size: 0.85rem; font-weight: 700; color: #a78bfa; margin-bottom: 0.4rem; }
+        .sp-player-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
+        .sp-port { display: inline-block; width: 26px; height: 18px; border-radius: 4px; text-align: center; line-height: 18px; font-size: 0.65rem; font-weight: 700; color: #fff; }
+        .sp-tag { font-weight: 600; color: #e0e0e0; font-size: 0.85rem; }
+        .sp-char { color: #a78bfa; font-size: 0.8rem; }
+        .sp-action-block { display: flex; align-items: center; gap: 0.4rem; margin: 0.4rem 0 0.2rem; }
+        .sp-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        .sp-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+        .sp-table td, .sp-table th { padding: 0.2rem 0.4rem; }
+        .sp-label { color: #999; text-align: left; }
+        .sp-val { color: #e0e0e0; text-align: right; font-variant-numeric: tabular-nums; }
 
         /* ===== VIEWER-ONLY MODE (?viewer=1) ===== */
         body.viewer-mode .notes-only { display: none !important; }
@@ -386,6 +402,7 @@
                             <button class="sidebar-tab" data-tab="clips" onclick="switchSidebarTab('clips')" title="Clips">📋</button>
                             <button class="sidebar-tab" data-tab="ccasdi" onclick="switchSidebarTab('ccasdi')" title="CC / ASDI Down">🛡️</button>
                             <button class="sidebar-tab" data-tab="killpct" onclick="switchSidebarTab('killpct')" title="Kill Percents">💀</button>
+                            <button class="sidebar-tab" data-tab="stats" onclick="switchSidebarTab('stats')" title="Match Stats">📊</button>
                         </div>
                         <div class="sidebar-content">
                             <div class="sidebar-panel active" id="sidebarControllers">
@@ -408,6 +425,9 @@
                             </div>
                             <div class="sidebar-panel" id="sidebarKillPct">
                                 <div id="killPctPanel" class="clips-panel-inner"></div>
+                            </div>
+                            <div class="sidebar-panel" id="sidebarStats">
+                                <div id="statsPanel" class="clips-panel-inner"></div>
                             </div>
                         </div>
                     </div>
@@ -432,8 +452,8 @@
 
     <header>
         <div class="container">
-            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"><span class="notes-title"> Player Notes - Megaman's Archive</span><span class="viewer-title"> Replay Visualizer</span></h1>
-            <p class="notes-title">Personal notes and gameplans against specific players</p>
+            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"><span class="notes-title"> Personal Notes, VOD Analysis, and Replay Visualization</span><span class="viewer-title"> Replay Visualizer</span></h1>
+            <p class="notes-title">Personal notes, gameplans, VOD analysis, and replay visualization</p>
             <p class="viewer-title">Watch and analyze .slp replays with hitbox data, controller display, and frame-by-frame controls</p>
             <a href="way-of-fox.html" class="back-link notes-only">← Back to The Way of Fox</a>
             <a href="index.html" class="back-link viewer-title">← Back to Resources Hub</a>
@@ -536,7 +556,7 @@
 
     <footer>
         <div class="container">
-            <p>Megaman's Player Notes Archive</p>
+            <p>Megaman's Personal Notes, VOD Analysis, and Replay Visualization</p>
         </div>
     </footer>
 
@@ -2374,7 +2394,7 @@ async function buildCCAsdiPanel() {
 window.switchSidebarTab = (tabId) => {
     document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
     document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
-    const panelMap = { controllers: 'sidebarControllers', clips: 'sidebarClips', ccasdi: 'sidebarCcAsdi', killpct: 'sidebarKillPct' };
+    const panelMap = { controllers: 'sidebarControllers', clips: 'sidebarClips', ccasdi: 'sidebarCcAsdi', killpct: 'sidebarKillPct', stats: 'sidebarStats' };
     const el = document.getElementById(panelMap[tabId]);
     if (el) el.classList.add('active');
 };
@@ -2388,6 +2408,145 @@ async function buildKillPctPanel() {
         <div style="font-size:0.9rem;color:#a78bfa;font-weight:700;margin-bottom:0.4rem;">Kill Percents</div>
         <div style="font-size:0.8rem;color:#666;">Coming soon — requires IKneeData calculator module for accurate knockback, DI, and stage position calculations.</div>
     </div>`;
+}
+
+// ===== MATCH STATS PANEL (slippi-js) =====
+function buildStatsPanel() {
+    const panel = document.getElementById('statsPanel');
+    if (!panel || !replayGame) {
+        if (panel) panel.innerHTML = '<div style="color:#888;padding:1rem;text-align:center;">Load a replay to see stats</div>';
+        return;
+    }
+    let stats, metadata;
+    try {
+        stats = replayGame.getStats();
+        metadata = replayGame.getMetadata();
+    } catch (e) {
+        panel.innerHTML = '<div style="color:#f66;padding:1rem;">Failed to compute stats</div>';
+        return;
+    }
+    const players = replaySettings.players || [];
+    const stageId = replaySettings.stageId;
+    const stage = STAGE_DATA[stageId];
+    const stageName = stage ? stage.name : `Stage ${stageId}`;
+
+    // Duration
+    let duration = '—';
+    if (metadata?.lastFrame != null) {
+        const totalSec = Math.round((metadata.lastFrame + 123) / 60);
+        const m = Math.floor(totalSec / 60);
+        const s = (totalSec % 60).toString().padStart(2, '0');
+        duration = `${m}:${s}`;
+    }
+
+    // Match header
+    let html = `<div class="sp-section">
+        <div class="sp-match-header">
+            <span>🗺 ${stageName}</span><span>⏱ ${duration}</span>
+            ${replaySettings.isTeams ? '<span style="color:#a78bfa;">Teams</span>' : ''}
+        </div>
+    </div>`;
+
+    // Per-player stats
+    players.forEach((p, i) => {
+        const charName = CHAR_NAMES[p.characterId] || `Char ${p.characterId}`;
+        const tag = p.displayName || p.nametag || `P${p.port + 1}`;
+        const color = getPlayerColor(i);
+        const o = stats?.overall?.[i];
+
+        html += `<div class="sp-section">
+            <div class="sp-player-header">
+                <span class="sp-port" style="background:${color}">P${p.port + 1}</span>
+                <span class="sp-tag">${tag}</span>
+                <span class="sp-char">${charName}</span>
+            </div>`;
+
+        if (o) {
+            const rows = [
+                ['Kills', o.killCount ?? '—'],
+                ['Deaths', o.deathCount ?? '—'],
+                ['Total Damage', o.totalDamage != null ? o.totalDamage.toFixed(0) : '—'],
+                ['Openings / Kill', o.openingsPerKill?.ratio != null ? o.openingsPerKill.ratio.toFixed(2) : '—'],
+                ['Damage / Opening', o.damagePerOpening?.ratio != null ? o.damagePerOpening.ratio.toFixed(1) : '—'],
+                ['Neutral Win %', o.neutralWinRatio?.ratio != null ? (o.neutralWinRatio.ratio * 100).toFixed(1) + '%' : '—'],
+                ['Counter Hit %', o.counterHitRatio?.ratio != null ? (o.counterHitRatio.ratio * 100).toFixed(1) + '%' : '—'],
+                ['Beneficial Trades', o.beneficialTradeRatio?.ratio != null ? (o.beneficialTradeRatio.ratio * 100).toFixed(1) + '%' : '—'],
+                ['IPM', o.inputsPerMinute?.ratio != null ? o.inputsPerMinute.ratio.toFixed(0) : '—'],
+                ['Digital IPM', o.digitalInputsPerMinute?.ratio != null ? o.digitalInputsPerMinute.ratio.toFixed(0) : '—'],
+            ];
+            html += '<table class="sp-table">';
+            rows.forEach(([label, val]) => {
+                html += `<tr><td class="sp-label">${label}</td><td class="sp-val">${val}</td></tr>`;
+            });
+            html += '</table>';
+        } else {
+            html += '<div style="color:#666;font-size:0.8rem;padding:0.3rem 0;">No stats available</div>';
+        }
+        html += '</div>';
+    });
+
+    // Action counts
+    if (stats?.actionCounts?.length) {
+        html += '<div class="sp-section"><div class="sp-section-title">Action Counts</div>';
+        players.forEach((p, i) => {
+            const a = stats.actionCounts[i];
+            if (!a) return;
+            const color = getPlayerColor(i);
+            const tag = p.displayName || p.nametag || `P${p.port + 1}`;
+            html += `<div class="sp-action-block">
+                <span class="sp-port" style="background:${color}">P${p.port + 1}</span>
+                <span class="sp-tag" style="margin-bottom:0.3rem;">${tag}</span>
+            </div>`;
+            const acts = [
+                ['Wavedashes', a.wavedashCount],
+                ['Wavelands', a.wavelandCount],
+                ['Air Dodges', a.airDodgeCount],
+                ['Dash Dances', a.dashDanceCount],
+                ['Spot Dodges', a.spotDodgeCount],
+                ['Rolls', a.rollCount],
+                ['L-Cancels Hit', a.lCancelSuccessCount],
+                ['L-Cancels Missed', a.lCancelFailCount],
+                ['L-Cancel %', (a.lCancelSuccessCount + a.lCancelFailCount) > 0
+                    ? ((a.lCancelSuccessCount / (a.lCancelSuccessCount + a.lCancelFailCount)) * 100).toFixed(1) + '%'
+                    : '—'],
+                ['Grabs', a.grabCount],
+                ['Throws', a.throwCount],
+                ['Wall Techs', a.wallTechCount],
+                ['Ground Techs', a.groundTechCount],
+            ];
+            html += '<table class="sp-table">';
+            acts.forEach(([label, val]) => {
+                if (val == null) return;
+                html += `<tr><td class="sp-label">${label}</td><td class="sp-val">${val}</td></tr>`;
+            });
+            html += '</table>';
+        });
+        html += '</div>';
+    }
+
+    // Stocks
+    if (stats?.stocks?.length) {
+        html += '<div class="sp-section"><div class="sp-section-title">Stock Details</div>';
+        players.forEach((p, i) => {
+            const pStocks = stats.stocks.filter(s => s.playerIndex === i);
+            if (!pStocks.length) return;
+            const color = getPlayerColor(i);
+            const tag = p.displayName || p.nametag || `P${p.port + 1}`;
+            html += `<div class="sp-action-block">
+                <span class="sp-port" style="background:${color}">P${p.port + 1}</span>
+                <span class="sp-tag">${tag}</span>
+            </div><table class="sp-table"><tr><th class="sp-label">Stock</th><th class="sp-val">End %</th><th class="sp-val">Kill Move</th></tr>`;
+            pStocks.forEach((s, si) => {
+                const endPct = s.endPercent != null ? s.endPercent.toFixed(0) + '%' : 'alive';
+                const killMove = s.deathAnimation != null ? `Anim ${s.deathAnimation}` : '—';
+                html += `<tr><td class="sp-label">#${si + 1}</td><td class="sp-val">${endPct}</td><td class="sp-val">${killMove}</td></tr>`;
+            });
+            html += '</table>';
+        });
+        html += '</div>';
+    }
+
+    panel.innerHTML = html;
 }
 
 window.loadSlpFile = async event => {
@@ -2441,6 +2600,9 @@ async function initReplayFromBuffer(uint8, filename) {
 
     // Load FightCore data for characters in this replay and build CC/ASDI panel
     setTimeout(() => { buildCCAsdiPanel(); }, 200);
+
+    // Build match stats panel from slippi-js stats
+    setTimeout(() => { buildStatsPanel(); }, 250);
 
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
