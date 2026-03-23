@@ -2225,22 +2225,36 @@ async function buildCCAsdiPanel() {
     panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">Loading FightCore data...</div>';
 
     const players = replaySettings.players;
-    // Preload FightCore data + extractor hitbox geometry for all characters
     await Promise.all(players.map(p => Promise.all([
         fightCore.getMoves(p.characterId),
         fightCore.getExtractorData(p.characterId),
     ])));
 
+    // Color tiers matching cc-table-builder.js
+    function ccColor(val) {
+        if (val >= 999) return '#2a7';  // never breaks
+        if (val < 0)   return '#888';   // N/A
+        if (val === 0)  return '#a33';  // breaks at 0%
+        if (val <= 30)  return '#c63';  // low
+        if (val <= 80)  return '#b90';  // mid
+        if (val <= 150) return '#3a3';  // high
+        return '#2c8';                  // free punish (151%+)
+    }
+    function ccLabel(val) {
+        if (val >= 999) return 'Never';
+        if (val < 0)   return 'N/A';
+        return val + '%';
+    }
+    // Danger moves — multi-hit dsmashes that trap you if you CC
+    const DANGER = { '7|dsmash':1, '12|dsmash':1, '16|dsmash':1 };
+
     let html = '';
-    // For each pair of attacker → defender, show CC/ASDI percents
-    // Track rendered pairs to avoid duplicate tables in dittos
     const renderedPairs = new Set();
     for (let a = 0; a < players.length; a++) {
         for (let d = 0; d < players.length; d++) {
             if (a === d) continue;
             const atkId = players[a].characterId;
             const defId = players[d].characterId;
-            // Skip if we already rendered this character pair (ditto dedup)
             const pairKey = atkId + '→' + defId;
             if (renderedPairs.has(pairKey)) continue;
             renderedPairs.add(pairKey);
@@ -2252,12 +2266,20 @@ async function buildCCAsdiPanel() {
             const ccData = await fightCore.getCCPercents(atkId, defId);
             if (!ccData || !ccData.length) continue;
 
-            // Filter to common/useful moves (tilts, smashes, aerials, specials)
-            const useful = ccData.filter(m =>
-                m.ccMaxPercent > 0 && m.ccMaxPercent < 999
-            ).sort((a, b) => b.ccMaxPercent - a.ccMaxPercent);
+            // Show ALL hits, sorted by ASDI max % desc (never first, N/A last)
+            const sorted = ccData.slice().sort((a, b) => {
+                const av = a.asdiMaxPercent, bv = b.asdiMaxPercent;
+                if (av >= 999 && bv >= 999) return a.moveName.localeCompare(b.moveName);
+                if (av >= 999) return -1;
+                if (bv >= 999) return 1;
+                if (av < 0 && bv < 0) return a.moveName.localeCompare(b.moveName);
+                if (av < 0) return 1;
+                if (bv < 0) return -1;
+                if (bv !== av) return bv - av;
+                return a.moveName.localeCompare(b.moveName);
+            });
 
-            if (!useful.length) continue;
+            if (!sorted.length) continue;
 
             html += `<div style="border:1px solid #2a2a4a;border-radius:8px;margin-bottom:0.5rem;overflow:hidden;">`;
             html += `<div style="padding:0.4rem 0.6rem;background:#1a1a3e;font-size:0.85rem;">`;
@@ -2277,17 +2299,18 @@ async function buildCCAsdiPanel() {
             html += `<th style="text-align:center;padding:0.25rem;color:#4af;">ASDI↓%</th>`;
             html += `</tr></thead><tbody>`;
 
-            for (const m of useful.slice(0, 30)) {
-                const ccStr = m.ccMaxPercent >= 999 ? '∞' : m.ccMaxPercent < 0 ? '✗' : `${m.ccMaxPercent}%`;
-                const asdiStr = m.asdiMaxPercent >= 999 ? '∞' : m.asdiMaxPercent < 0 ? '✗' : `${m.asdiMaxPercent}%`;
-                const ccColor = m.ccMaxPercent >= 999 ? '#4f4' : m.ccMaxPercent < 0 ? '#f44' : '#cfc';
-                const asdiColor = m.asdiMaxPercent >= 999 ? '#4af' : m.asdiMaxPercent < 0 ? '#f44' : '#cdf';
+            for (const m of sorted) {
                 const hitLabel = m.hitName && m.hitName !== 'unknown' ? ` (${m.hitName})` : '';
-                html += `<tr style="border-bottom:1px solid #1a1a3e;">`;
-                html += `<td style="padding:0.2rem 0.4rem;color:#ddd;">${m.moveName}${hitLabel}</td>`;
+                const isDanger = DANGER[atkId + '|' + m.normalizedName];
+                const rowBg = isDanger ? 'background:rgba(200,40,40,0.15);' : '';
+                const dangerBadge = isDanger
+                    ? ' <span style="background:#d33;color:#fff;font-size:0.6rem;font-weight:700;padding:0.05rem 0.3rem;border-radius:3px;margin-left:0.2rem;" title="Multi-hit — CC/ASDI holds you into repeated hits">⚠ DON\'T CC</span>'
+                    : '';
+                html += `<tr style="border-bottom:1px solid #1a1a3e;${rowBg}">`;
+                html += `<td style="padding:0.2rem 0.4rem;color:#ddd;">${m.moveName}${hitLabel}${dangerBadge}</td>`;
                 html += `<td style="text-align:center;padding:0.2rem;color:#faa;">${m.damage}%</td>`;
-                html += `<td style="text-align:center;padding:0.2rem;color:${ccColor};font-weight:600;">${ccStr}</td>`;
-                html += `<td style="text-align:center;padding:0.2rem;color:${asdiColor};font-weight:600;">${asdiStr}</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:${ccColor(m.ccMaxPercent)};font-weight:600;">${ccLabel(m.ccMaxPercent)}</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:${ccColor(m.asdiMaxPercent)};font-weight:600;">${ccLabel(m.asdiMaxPercent)}</td>`;
                 html += `</tr>`;
             }
             html += `</tbody></table></div>`;
@@ -2297,6 +2320,16 @@ async function buildCCAsdiPanel() {
     if (!html) {
         panel.innerHTML = '<div style="color:#888;padding:0.5rem;text-align:center;">No CC/ASDI data available</div>';
     } else {
+        // Legend
+        html += `<div style="display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;padding:0.4rem;font-size:0.65rem;color:#888;">`;
+        html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#2a7;margin-right:3px;vertical-align:middle;"></span>Never</span>`;
+        html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#2c8;margin-right:3px;vertical-align:middle;"></span>Always CC</span>`;
+        html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#3a3;margin-right:3px;vertical-align:middle;"></span>81-150%</span>`;
+        html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#b90;margin-right:3px;vertical-align:middle;"></span>31-80%</span>`;
+        html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#c63;margin-right:3px;vertical-align:middle;"></span>1-30%</span>`;
+        html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#a33;margin-right:3px;vertical-align:middle;"></span>0%</span>`;
+        html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#888;margin-right:3px;vertical-align:middle;"></span>N/A</span>`;
+        html += `</div>`;
         html += `<div style="padding:0.4rem 0.6rem;font-size:0.65rem;color:#555;text-align:center;">Calculated from <a href="https://github.com/FightCore/frame-data" target="_blank" style="color:#667eea;">FightCore</a> hitbox data using Melee KB formula · CC mult=⅔ · ASDI↓ mult=1.0 · knockdown threshold=80</div>`;
         panel.innerHTML = html;
     }
