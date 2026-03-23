@@ -182,9 +182,14 @@ export class IKneeDataUI {
             this._mouseStageY = Math.round(sy * 10) / 10;
             this._d('coords').textContent = `X: ${this._mouseStageX}  Y: ${this._mouseStageY}`;
             if (!this._positionFrozen) {
-                this._startX = Math.round(sx);
-                this._startY = Math.round(sy);
-                this._recalc();
+                const newX = Math.round(sx);
+                const newY = Math.round(sy);
+                if (newX !== this._startX || newY !== this._startY) {
+                    this._startX = newX;
+                    this._startY = newY;
+                    clearTimeout(this._moveTimer);
+                    this._moveTimer = setTimeout(() => this._recalc(), 30);
+                }
             }
         });
     }
@@ -517,12 +522,26 @@ export class IKneeDataUI {
         this._lastResult = result;
         this._drawTrajectory(result);
 
-        const kill = findKillPercent({
-            ...mp, defenderCharId: this._defChar, stageKey: this._stageKey,
-            startX: this._startX, startY: this._startY,
-            crouchCancel: this._d('cc').checked,
-            reverse: this._d('reverse').checked,
-        });
+        // Debounce the expensive kill% search
+        clearTimeout(this._killTimer);
+        this._killTimer = setTimeout(() => {
+          try {
+            const kill = findKillPercent({
+                ...mp, defenderCharId: this._defChar, stageKey: this._stageKey,
+                startX: this._startX, startY: this._startY,
+                crouchCancel: this._d('cc').checked,
+                reverse: this._d('reverse').checked,
+            });
+            // Update just the kill% cards
+            let kh = '';
+            if (kill.noDI != null) kh += this._c('Kill% noDI', kill.noDI + '%', 'kill');
+            if (kill.survivalDI != null) kh += this._c('Kill% survDI', kill.survivalDI + '%', 'kill');
+            if (!kill.noDI && !kill.survivalDI && !kill.killPercent)
+                kh += this._c('Kill%', "Doesn't kill", 'safe');
+            const killEl = this._d('killResults');
+            if (killEl) killEl.innerHTML = kh;
+          } catch (e) { console.error('kill% error:', e); }
+        }, 150);
 
         let h = '';
         h += this._c('Knockback', result.knockback.toFixed(1), result.tumble ? 'tumble' : '');
@@ -539,10 +558,7 @@ export class IKneeDataUI {
             h += this._c('Kills', t.killed ? 'Yes (' + t.killZone + ')' : 'No', t.killed ? 'kill' : 'safe');
             if (t.killed) h += this._c('Kill Frame', t.killFrame + 'f', 'kill');
         }
-        if (kill.noDI != null) h += this._c('Kill% noDI', kill.noDI + '%', 'kill');
-        if (kill.survivalDI != null) h += this._c('Kill% survDI', kill.survivalDI + '%', 'kill');
-        if (!kill.noDI && !kill.survivalDI && !kill.killPercent)
-            h += this._c('Kill%', "Doesn't kill", 'safe');
+        h += '<span data-id="killResults"><span class="ikd-loading" style="grid-column:1/-1;font-size:.65rem">Calculating kill%...</span></span>';
 
         out.innerHTML = h;
       } catch (e) {
