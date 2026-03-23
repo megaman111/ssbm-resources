@@ -54,7 +54,7 @@ const CSS = `
 .ikd-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,0.05)}
 .ikd-toggle-row label{font-size:.72rem;color:#bbb;cursor:pointer;flex:1}
 .ikd-switch{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
-.ikd-switch input{opacity:0;width:0;height:0}
+.ikd-switch input{position:absolute;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;margin:0}
 .ikd-switch .slider{position:absolute;inset:0;background:#333;border-radius:10px;transition:.2s}
 .ikd-switch .slider:before{content:'';position:absolute;height:16px;width:16px;left:2px;bottom:2px;background:#888;border-radius:50%;transition:.2s}
 .ikd-switch input:checked+.slider{background:#667eea}
@@ -247,8 +247,8 @@ export class IKneeDataUI {
   <div class="ikd-panel-title">Victim</div>
 
   <div class="ikd-toggle-row">
-    <label>Combo Snapping</label>
-    <div class="ikd-switch"><input type="checkbox" data-id="comboSnap"><span class="slider"></span></div>
+    <label for="ikd-t-comboSnap">Combo Snapping</label>
+    <div class="ikd-switch"><input type="checkbox" id="ikd-t-comboSnap" data-id="comboSnap"><span class="slider"></span></div>
   </div>
 
   <div class="ikd-section-title">Hit Direction</div>
@@ -381,9 +381,10 @@ export class IKneeDataUI {
     }
 
     _renderToggle(key, label, defaultOn = false) {
+        const uid = 'ikd-t-' + key;
         return `<div class="ikd-toggle-row">
-            <label>${label}</label>
-            <div class="ikd-switch"><input type="checkbox" data-toggle="${key}"${defaultOn ? ' checked' : ''}><span class="slider"></span></div>
+            <label for="${uid}">${label}</label>
+            <div class="ikd-switch"><input type="checkbox" id="${uid}" data-toggle="${key}"${defaultOn ? ' checked' : ''}><span class="slider"></span></div>
         </div>`;
     }
 
