@@ -30,7 +30,8 @@ function cellClass(val) {
     if (val === 0) return 'cc-zero';     // breaks at 0% — basically useless
     if (val <= 30) return 'cc-low';      // low window
     if (val <= 80) return 'cc-mid';      // decent window
-    return 'cc-high';                    // great CC window
+    if (val <= 150) return 'cc-high';    // great CC window
+    return 'cc-free';                    // always CC this — free punish
 }
 
 async function renderPairTable(atkId, defId, atkLabel, defLabel) {
@@ -117,7 +118,8 @@ export async function buildCCTables(containerId, foxId, opponentId, opponentName
 
         html += `<div class="cc-legend">
             <span class="cc-legend-item"><span class="cc-swatch cc-never"></span> Never breaks</span>
-            <span class="cc-legend-item"><span class="cc-swatch cc-high"></span> 81%+</span>
+            <span class="cc-legend-item"><span class="cc-swatch cc-free"></span> Always CC (151%+)</span>
+            <span class="cc-legend-item"><span class="cc-swatch cc-high"></span> 81-150%</span>
             <span class="cc-legend-item"><span class="cc-swatch cc-mid"></span> 31-80%</span>
             <span class="cc-legend-item"><span class="cc-swatch cc-low"></span> 1-30%</span>
             <span class="cc-legend-item"><span class="cc-swatch cc-zero"></span> Breaks at 0%</span>
