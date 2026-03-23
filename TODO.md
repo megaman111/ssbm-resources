@@ -65,7 +65,7 @@
 - [x] **Timer display** — Melee-accurate timer with hundredths conversion (slippilab lookup table), shown on canvas and in HUD
 - [ ] **Highlight navigation** — jump between notable moments (kills, combos, etc.) with prev/next hotkeys using clips panel data
 - [ ] **Kill zone overlay** — colored regions on canvas showing where a move at current % would kill, based on blast zone distances
-- [ ] **Practice plan generator** — auto-summarize habits from clips data (missed L-cancels, shield options, ledge habits) into a "here's what to work on" report -- maybe generate a way to check for missed edgeguards too? At least in terms of spacie recoveries i/e high low middle side b shorten fastall etc?
+- [x] **Practice plan generator** — auto-summarize habits from clips data (missed L-cancels, shield options, ledge habits) into a "here's what to work on" report, includes edgeguard analysis and opponent recovery pattern tracking might be hard to implement
 
 ### FightCore Integration
 - [x] **FightCore module** (`fightcore.js`) — reusable ES module that loads/caches character move data from FightCore GitHub repo, calculates CC and ASDI Down max percents using Melee knockback formula
@@ -90,11 +90,11 @@
 - [ ] Add kill percent calculations — per move, per stage, based on blast zone distances
 
 ### IKneeData Calculator Module
-- [ ] Melee frame data calculator (like IKneeData)
-- [ ] Knockback calculator
-- [ ] Combo/DI calculator
+- [x] Melee frame data calculator (like IKneeData)
+- [x] Knockback calculator
+- [x] Combo/DI calculator
 - [ ] Hitbox visualization
-- [ ] Embeddable as a module on any page
+- [x] Embeddable as a module on any page
 - [ ] Replay viewer integration — pause on a frame and auto-populate the calculator with that frame's data
 
 ### VOD Linking Module
@@ -112,7 +112,7 @@
 
 ## Matchup Pages
 - [ ] **Matchup-specific replay filters** — on each matchup page, pull all player notes/replays tagged with that character and browse them inline
-- [ ] **Kill percent tables** — per-move kill percents by stage using fightcore.js knockback formula + blast zone data
+- [ ] **Kill percent tables** — per-move kill percents by stage (requires IKneeData calculator module; tab stubbed in replay viewer sidebar) (in replay viewer sidebar)
 - [ ] **Stage-specific data overlays** — platform movement patterns, kill zone visualization per stage
 
 ---

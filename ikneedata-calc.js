@@ -358,7 +358,7 @@ export function simulateTrajectory({
     const { gravity, terminalVelocity, traction, driftAcc, driftMax, airFriction } = charPhysics;
     const resolvedTrajectory = trajectory ?? angle;
 
-    // Detect ground-down hit
+    // Detect ground-down hit (IKneeData: checked inside getKnockback using original trajectory)
     let groundDownHit = false;
     let groundDownType = null;
     if ((resolvedTrajectory > 180 && resolvedTrajectory !== 361) && grounded) {
@@ -375,7 +375,7 @@ export function simulateTrajectory({
         reduceByTraction = true;
     }
 
-    // Initial velocities
+    // Initial velocities — computed from DI-modified angle
     const initSpeed = kb * 0.03;
     let horVelKB = Math.round(initSpeed * Math.cos(angle * DEG2RAD) * 100000) / 100000;
     let verVelKB = Math.round(initSpeed * Math.sin(angle * DEG2RAD) * 100000) / 100000;
@@ -383,25 +383,54 @@ export function simulateTrajectory({
     // ICG: zero out vertical KB velocity
     if (icg) verVelKB = 0;
 
-    // Ground-down adjustments
-    if (reduceByTraction) verVelKB = 0;
-    if (grounded && (resolvedTrajectory === 0 || resolvedTrajectory === 180) && kb < 80) verVelKB = 0;
-    if (groundDownHit && groundDownType === 'Fly') {
-        verVelKB = Math.abs(verVelKB) * 0.8;
-    }
-    if (groundDownHit && groundDownType === 'Stay') {
+    // Low-KB grounded: zero vertical (IKneeData: getVerticalVelocity)
+    if (grounded && (resolvedTrajectory === 0 || resolvedTrajectory === 180) && kb < 80) {
         verVelKB = 0;
     }
 
-    // Decay rates (split h/v from IKneeData)
-    const hDecay = Math.round(0.051 * Math.cos(angle * DEG2RAD) * 100000) / 100000;
-    const vDecay = Math.round(0.051 * Math.sin(angle * DEG2RAD) * 100000) / 100000;
+    // Ground-down Fly: multiply vertical by 0.8 and make absolute (IKneeData: getVerticalVelocity)
+    if (groundDownHit && groundDownType === 'Fly') {
+        verVelKB = Math.abs(verVelKB) * 0.8;
+    }
+
+    // IKneeData: angle = getNewAngle(horizontalVelocity, verticalVelocity)
+    // Recalculate angle from actual velocity components (matters for ground-bounce)
+    let effectiveAngle = angle;
+    if (Math.abs(horVelKB) > 0.00001 || Math.abs(verVelKB) > 0.00001) {
+        let a = Math.atan(Math.abs(verVelKB) / Math.abs(horVelKB)) * (180 / Math.PI);
+        if (verVelKB < 0) {
+            a = horVelKB >= 0 ? 360 - a : 180 + a;
+        } else if (horVelKB < 0) {
+            a = 180 - a;
+        }
+        effectiveAngle = a;
+    }
+
+    // Decay rates from the recalculated angle (IKneeData: getHorizontalDecay/getVerticalDecay use angle after getNewAngle)
+    let hDecay = Math.round(0.051 * Math.cos(effectiveAngle * DEG2RAD) * 100000) / 100000;
+    let vDecay = Math.round(0.051 * Math.sin(effectiveAngle * DEG2RAD) * 100000) / 100000;
+
+    // Ground-down adjustments applied in knockbackTravel setup
+    if (groundDownHit) {
+        if (groundDownType === 'Stay') {
+            verVelKB = 0;
+        } else {
+            // Fly: verVelKB already abs'd and 0.8'd above; make vDecay absolute too
+            verVelKB = Math.abs(verVelKB);
+            vDecay = Math.abs(vDecay);
+        }
+    }
 
     // Gravity frames
     const gravityFrames = Math.floor(terminalVelocity / gravity);
     const lastGravityFrame = terminalVelocity % gravity;
 
-    const hitstun = Math.floor(kb * 0.4);
+    let hitstun = Math.floor(kb * 0.4);
+
+    // Meteor cancel: limit hitstun to 8 (IKneeData: done in knockbackTravel setup)
+    if (resolvedTrajectory >= 260 && resolvedTrajectory <= 280 && meteorCancelled && !icg) {
+        hitstun = 8;
+    }
 
     // Starting position
     let x = isThrow && releasePoint ? releasePoint[0] : startX;
@@ -413,133 +442,137 @@ export function simulateTrajectory({
     let killed = false;
     let killFrame = null;
     let killZone = null;
-    let hasDoubleJumped = false;
+    let stayGrounded = false;
 
-    // Simulate through hitstun + post-hitstun decay
-    const totalFrames = Math.min(maxFrames, hitstun + 200);
+    // Helper: check blast zones
+    const checkKill = (frameNum) => {
+        if (!blastZones) return false;
+        if (x <= blastZones.left)  { killed = true; killFrame = frameNum; killZone = 'left'; return true; }
+        if (x >= blastZones.right) { killed = true; killFrame = frameNum; killZone = 'right'; return true; }
+        if (y >= blastZones.top)   { killed = true; killFrame = frameNum; killZone = 'top'; return true; }
+        if (y <= blastZones.bottom){ killed = true; killFrame = frameNum; killZone = 'bottom'; return true; }
+        return false;
+    };
 
-    for (let i = 0; i < totalFrames; i++) {
-        const inHitstun = i < hitstun;
-
-        // Meteor cancel: zero KB velocities after hitstun ends (frame 8)
-        if (meteorCancelled && i >= hitstun) {
-            horVelKB = 0;
-            verVelKB = 0;
-        }
-
-        // Decay knockback velocities
+    // ===== PHASE 1: Hitstun frames (exact IKneeData hitstun loop) =====
+    let i = 0;
+    for (i = 0; i < hitstun; i++) {
+        // Decay KB velocities
         if (reduceByTraction) {
-            if (horVelKB > 0) {
-                horVelKB -= traction;
-                if (horVelKB < 0) horVelKB = 0;
-            } else if (horVelKB < 0) {
-                horVelKB += traction;
-                if (horVelKB > 0) horVelKB = 0;
-            }
+            if (horVelKB > 0) { horVelKB -= traction; if (horVelKB < 0) horVelKB = 0; }
+            else if (horVelKB < 0) { horVelKB += traction; if (horVelKB > 0) horVelKB = 0; }
         } else {
-            if (horVelKB > 0) {
-                horVelKB -= hDecay;
-                if (horVelKB < 0) horVelKB = 0;
-            } else if (horVelKB < 0) {
-                horVelKB -= hDecay;
-                if (horVelKB > 0) horVelKB = 0;
-            }
+            if (horVelKB > 0) { horVelKB -= hDecay; if (horVelKB < 0) horVelKB = 0; }
+            else if (horVelKB < 0) { horVelKB -= hDecay; if (horVelKB > 0) horVelKB = 0; }
 
-            if (verVelKB > 0) {
-                verVelKB -= vDecay;
-                if (verVelKB < 0) verVelKB = 0;
-            } else if (verVelKB < 0) {
-                verVelKB -= vDecay;
-                if (verVelKB > 0) verVelKB = 0;
-            }
+            if (verVelKB > 0) { verVelKB -= vDecay; if (verVelKB < 0) verVelKB = 0; }
+            else if (verVelKB < 0) { verVelKB -= vDecay; if (verVelKB > 0) verVelKB = 0; }
 
-            // Gravity accumulation (only for non-traction hits)
-            if (inHitstun) {
-                if (i < gravityFrames) {
-                    verVelChar -= gravity;
-                } else if (i === gravityFrames) {
-                    verVelChar -= lastGravityFrame;
-                }
-            }
+            // Gravity (only for non-traction, during hitstun)
+            if (i < gravityFrames) verVelChar -= gravity;
+            else if (i === gravityFrames) verVelChar -= lastGravityFrame;
         }
 
-        // Post-hitstun behavior
-        if (!inHitstun) {
-            // Double jump after hitstun
-            if (doubleJump && !hasDoubleJumped) {
-                // Use character's double jump initial Y velocity (approximate)
-                // Most characters: ~2.1 units, varies by char
-                const djInitY = charPhysics.terminalVelocity * 1.2; // approximation
-                verVelChar = djInitY;
-                if (fadeIn) {
-                    // Drift toward center
-                    if (x > 0) horVelChar = -(driftMax || 0);
-                    else if (x < 0) horVelChar = (driftMax || 0);
-                }
-                hasDoubleJumped = true;
-            }
-
-            // Double jump gravity after jumping
-            if (hasDoubleJumped) {
-                verVelChar -= gravity;
-                if (verVelChar < -terminalVelocity) verVelChar = -terminalVelocity;
-            } else {
-                // Normal gravity post-hitstun
-                verVelChar -= gravity;
-                if (verVelChar < -terminalVelocity) verVelChar = -terminalVelocity;
-            }
-
-            // Fade in: drift toward center after hitstun
-            if (fadeIn && !hasDoubleJumped) {
-                if (x > 0) {
-                    if (horVelChar < -(driftMax || 0)) {
-                        horVelChar += (airFriction || 0);
-                        if (horVelChar > -(driftMax || 0)) horVelChar = -(driftMax || 0);
-                    } else {
-                        horVelChar -= (driftAcc || 0);
-                        if (horVelChar < -(driftMax || 0)) horVelChar = -(driftMax || 0);
-                    }
-                } else if (x < 0) {
-                    if (horVelChar > (driftMax || 0)) {
-                        horVelChar -= (airFriction || 0);
-                        if (horVelChar < (driftMax || 0)) horVelChar = (driftMax || 0);
-                    } else {
-                        horVelChar += (driftAcc || 0);
-                        if (horVelChar > (driftMax || 0)) horVelChar = (driftMax || 0);
-                    }
-                }
-            }
-        }
-
-        x += horVelKB + horVelChar;
+        // Position update
+        x += horVelChar + horVelKB;
         y += verVelChar + verVelKB;
 
-        // Apply SDI/ASDI on first frame
-        if (i === 0 && !isThrow) {
-            x += sdiVector[0] + asdiVector[0];
-            y += sdiVector[1] + asdiVector[1];
-        } else if (i === 0 && isThrow) {
-            x += asdiVector[0];
-            y += asdiVector[1];
+        // SDI/ASDI on first frame
+        if (i === 0) {
+            if (isThrow) {
+                x += asdiVector[0];
+                y += asdiVector[1];
+            } else {
+                x += sdiVector[0] + asdiVector[0];
+                y += sdiVector[1] + asdiVector[1];
+                // Check if ASDI keeps character grounded (stayGrounded)
+                if (asdiVector[1] < 0 && grounded && (verVelChar + verVelKB + asdiVector[1] + sdiVector[1] < 0)) {
+                    stayGrounded = true;
+                    break;
+                }
+            }
         }
 
-        frames.push({
-            x: Math.round(x * 100) / 100,
-            y: Math.round(y * 100) / 100,
-        });
+        frames.push({ x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 });
+        if (checkKill(i + 1)) break;
+    }
 
-        // Blast zone checks
-        if (blastZones) {
-            if (x <= blastZones.left)  { killed = true; killFrame = i + 1; killZone = 'left'; break; }
-            if (x >= blastZones.right) { killed = true; killFrame = i + 1; killZone = 'right'; break; }
-            if (y >= blastZones.top)   { killed = true; killFrame = i + 1; killZone = 'top'; break; }
-            if (y <= blastZones.bottom){ killed = true; killFrame = i + 1; killZone = 'bottom'; break; }
-        }
+    // ===== PHASE 2: Post-hitstun (IKneeData: separate while loop) =====
+    let hasDoubleJumped = false;
+    let extendedDisplay = 0;
+    if (!killed && !stayGrounded) {
+        while ((Math.abs(horVelKB) > 0.001 || Math.abs(verVelKB) > 0.001 || (meteorCancelled && extendedDisplay < 25)) && frames.length < maxFrames) {
+            // Decay KB velocities
+            if (reduceByTraction) {
+                if (horVelKB > 0) { horVelKB -= traction; if (horVelKB < 0) horVelKB = 0; }
+                else if (horVelKB < 0) { horVelKB += traction; if (horVelKB > 0) horVelKB = 0; }
+            } else {
+                if (horVelKB > 0) { horVelKB -= hDecay; if (horVelKB < 0) horVelKB = 0; }
+                else if (horVelKB < 0) { horVelKB -= hDecay; if (horVelKB > 0) horVelKB = 0; }
 
-        // Stop if KB is done and character is grounded
-        if (Math.abs(horVelKB) < 0.001 && Math.abs(verVelKB) < 0.001 && y <= 0) {
-            y = 0;
-            break;
+                if (verVelKB > 0) { verVelKB -= vDecay; if (verVelKB < 0) verVelKB = 0; }
+                else if (verVelKB < 0) { verVelKB -= vDecay; if (verVelKB > 0) verVelKB = 0; }
+
+                // Gravity continues with same i counter
+                if (i < gravityFrames) verVelChar -= gravity;
+                else if (i === gravityFrames) verVelChar -= lastGravityFrame;
+
+                // Meteor cancel: zero KB after decay
+                if (meteorCancelled) {
+                    horVelKB = 0;
+                    verVelKB = 0;
+                    extendedDisplay++;
+                }
+
+                // Double jump
+                if (doubleJump && !hasDoubleJumped) {
+                    // IKneeData uses character-specific djInitY; we approximate
+                    verVelChar = charPhysics.djInitY ?? (terminalVelocity * 1.2);
+                    if (fadeIn) {
+                        horVelChar = x > 0 ? -(charPhysics.djInitX ?? driftMax) : (charPhysics.djInitX ?? driftMax);
+                    }
+                    hasDoubleJumped = true;
+                }
+
+                if (hasDoubleJumped) {
+                    verVelChar -= gravity;
+                    if (verVelChar < -terminalVelocity) verVelChar = -terminalVelocity;
+                }
+
+                // Fade in: drift toward center
+                if (fadeIn) {
+                    if (x > 0) {
+                        if (horVelChar < -driftMax) {
+                            horVelChar += airFriction;
+                            if (horVelChar > -driftMax) horVelChar = -driftMax;
+                        } else {
+                            horVelChar -= driftAcc;
+                            if (horVelChar < -driftMax) horVelChar = -driftMax;
+                        }
+                    } else if (x < 0) {
+                        if (horVelChar > driftMax) {
+                            horVelChar -= airFriction;
+                            if (horVelChar < driftMax) horVelChar = driftMax;
+                        } else {
+                            horVelChar += driftAcc;
+                            if (horVelChar > driftMax) horVelChar = driftMax;
+                        }
+                    }
+                }
+            }
+
+            i++;
+            x += horVelChar + horVelKB;
+            y += verVelChar + verVelKB;
+
+            frames.push({ x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 });
+            if (checkKill(frames.length)) break;
+
+            // Stop if grounded and no more movement
+            if (y <= 0 && Math.abs(horVelKB) < 0.001 && Math.abs(verVelKB) < 0.001) {
+                y = 0;
+                break;
+            }
         }
     }
 
@@ -550,6 +583,7 @@ export function simulateTrajectory({
         killZone,
         finalX: Math.round(x * 100) / 100,
         finalY: Math.round(y * 100) / 100,
+        stayGrounded,
     };
 }
 
@@ -715,8 +749,12 @@ export function fullCalc(params) {
     const resolvedAngle = resolveSakuraiAngle(angle, kb, grounded, reverse);
 
     // Apply DI: prefer raw x/y stick coords, fall back to angle
+    // IKneeData: DI is deadzone'd (ignored) for low-KB grounded hits (traj 0/180, KB < 80)
     let di;
-    if (diX != null && diY != null && (Math.abs(diX) > 0.01 || Math.abs(diY) > 0.01)) {
+    const diDeadzone = kb < 80 && grounded && (resolvedAngle === 0 || resolvedAngle === 180);
+    if (diDeadzone) {
+        di = { baseAngle: resolvedAngle, diAngle: null, diModifiedAngle: resolvedAngle };
+    } else if (diX != null && diY != null && (Math.abs(diX) > 0.01 || Math.abs(diY) > 0.01)) {
         di = applyDI(resolvedAngle, diX, diY);
     } else if (diAngle != null) {
         di = applyDIFromAngle(resolvedAngle, diAngle);
