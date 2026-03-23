@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>UI Crash Test</title></head>
+<body>
+<div id="root"></div>
+<pre id="log" style="color:lime;background:#111;padding:1rem;font-size:12px;max-height:80vh;overflow:auto"></pre>
+<script type="module">
+const log = document.getElementById('log');
+function l(msg) { log.textContent += msg + '\n'; console.log(msg); }
+
+window.onerror = (msg, src, line, col, err) => {
+    l(`ERROR: ${msg}\n  at ${src}:${line}:${col}\n  ${err?.stack || ''}`);
+};
+window.addEventListener('unhandledrejection', e => {
+    l(`UNHANDLED: ${e.reason?.stack || e.reason}`);
+});
+
+try {
+    l('Importing module...');
+    const { IKneeDataUI } = await import('./ikneedata-ui.js');
+    l('Creating UI...');
+    const ui = new IKneeDataUI('root');
+    
+    // Wait for moves to load
+    await new Promise(r => setTimeout(r, 3000));
+    l(`Moves loaded: ${ui._moves.length}`);
+    
+    // Try selecting each move
+    for (const m of ui._moves) {
+        if (!m.hits || !m.hits.length) continue;
+        try {
+            // Simulate selecting the move
+            const moveSel = ui._d('move');
+            moveSel.value = m.normalizedName;
+            ui._onMoveChange();
+            l(`OK: ${m.name} (${m.normalizedName}) - hitbox options: ${ui._d('hitbox').options.length}`);
+        } catch(e) {
+            l(`CRASH on ${m.name}: ${e.message}\n  ${e.stack}`);
+        }
+    }
+    l('\nDone testing all moves!');
+} catch(e) {
+    l(`INIT CRASH: ${e.message}\n${e.stack}`);
+}
+</script>
+</body>
+</html>

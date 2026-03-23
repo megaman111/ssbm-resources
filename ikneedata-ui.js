@@ -360,6 +360,7 @@ export class IKneeDataUI {
     }
 
     _onMoveChange() {
+      try {
         const v = this._d('move').value;
         const hbSel = this._d('hitbox');
         if (!v) {
@@ -424,6 +425,11 @@ export class IKneeDataUI {
         }
 
         this._onHitboxChange();
+      } catch (e) {
+        console.error('_onMoveChange error:', e);
+        const out = this._d('output');
+        if (out) out.innerHTML = `<div style="color:red;padding:.5rem;font-size:.75rem;white-space:pre-wrap">MOVE ERROR: ${e.message}\n${e.stack}</div>`;
+      }
     }
 
     _onHitboxChange() {
@@ -473,6 +479,7 @@ export class IKneeDataUI {
     }
 
     _recalc() {
+      try {
         const out = this._d('output');
         const mp = this._getMoveParams();
 
@@ -538,6 +545,11 @@ export class IKneeDataUI {
             h += this._c('Kill%', "Doesn't kill", 'safe');
 
         out.innerHTML = h;
+      } catch (e) {
+        const out = this._d('output');
+        if (out) out.innerHTML = `<div style="color:red;padding:.5rem;font-size:.75rem;white-space:pre-wrap">CALC ERROR: ${e.message}\n${e.stack}</div>`;
+        console.error('_recalc error:', e);
+      }
     }
 
     _c(label, val, cls) {
