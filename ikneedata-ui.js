@@ -78,6 +78,13 @@ const CSS = `
 .ikd-di-pointer{position:absolute;width:10px;height:10px;border-radius:50%;background:#59e6ff;transform:translate(-50%,-50%);pointer-events:none;transition:background .2s}
 .ikd-di-pointer.frozen{background:#ff6644}
 .ikd-di-arrow{position:absolute;left:50%;top:50%;width:2px;background:#59e6ff;transform-origin:bottom center;pointer-events:none;opacity:0.7}
+.ikd-di-precise-btn{background:none;border:1px solid #555;color:#888;padding:.1rem .35rem;border-radius:4px;cursor:pointer;font-size:.6rem;margin-left:.3rem;transition:all .15s}
+.ikd-di-precise-btn:hover{border-color:#667eea;color:#ccc}
+.ikd-di-precise-btn.active{background:rgba(102,126,234,0.25);border-color:#667eea;color:#ccc}
+.ikd-di-launch-line{position:absolute;top:50%;left:0;width:100%;height:3px;margin-top:-1.5px;pointer-events:none;transform-origin:center center;display:none}
+.ikd-di-launch-line .line-half{display:inline-block;width:50%;height:100%;vertical-align:top}
+.ikd-di-launch-line .line-solid{background:#de4d4d;opacity:0.7}
+.ikd-di-perp-line{position:absolute;left:50%;top:0;width:3px;height:100%;margin-left:-1.5px;pointer-events:none;transform-origin:center center;background:#3dee49;opacity:0.7;display:none}
 .ikd-di-values{font-size:.6rem;color:#888;text-align:center;margin-top:.3rem}
 .ikd-di-values span{color:#ccc}
 
@@ -154,6 +161,7 @@ export class IKneeDataUI {
             this._diState[mode] = { x: 0, y: 0, frozen: false };
         }
         this._activeDI = 't'; // current DI mode shown
+        this._diPrecise = { t: false, s: false, z: false, a: false };
 
         // Toggles
         this._toggles = {
@@ -264,16 +272,19 @@ export class IKneeDataUI {
   <div class="ikd-di-container">
     <div class="ikd-di-header">
       <span class="ikd-di-label" data-id="diModeLabel">Trajectory DI</span>
+      <button class="ikd-di-precise-btn" data-id="diPreciseBtn">Precise</button>
       <button class="ikd-di-switch-btn" data-id="diSwitchBtn">▸</button>
     </div>
     <div class="ikd-di-stick-wrap">
       <div class="ikd-di-stick-bg" data-id="diStick">
         <div class="ikd-di-deadzone-x"></div>
         <div class="ikd-di-deadzone-y"></div>
+        <div class="ikd-di-launch-line" data-id="diLaunchLine"><span class="line-half"></span><span class="line-half line-solid"></span></div>
+        <div class="ikd-di-perp-line" data-id="diPerpLine"></div>
         <div class="ikd-di-pointer" data-id="diPointer" style="left:50%;top:50%"></div>
       </div>
     </div>
-    <div class="ikd-di-values">X: <span data-id="diX">0.000</span> Y: <span data-id="diY">0.000</span> | <span data-id="diAngleDisp">0</span>°</div>
+    <div class="ikd-di-values">X: <span data-id="diX">0.000</span> Y: <span data-id="diY">0.000</span> | <span data-id="diAngleDisp">0</span>° <span data-id="diStrength" style="color:#888"></span></div>
   </div>
 
   <button class="ikd-attempt-cc" data-id="attemptCC">Attempt Crouch Cancel</button>
@@ -353,6 +364,13 @@ export class IKneeDataUI {
         this._d('diSwitchBtn').addEventListener('click', () => {
             const idx = DI_MODES.indexOf(this._activeDI);
             this._activeDI = DI_MODES[(idx + 1) % DI_MODES.length];
+            this._updateDIDisplay();
+        });
+
+        // DI precise toggle button
+        this._d('diPreciseBtn').addEventListener('click', () => {
+            const mode = this._activeDI;
+            this._diPrecise[mode] = !this._diPrecise[mode];
             this._updateDIDisplay();
         });
 
@@ -462,8 +480,17 @@ export class IKneeDataUI {
         const xDisp = this._d('diX');
         const yDisp = this._d('diY');
         const angleDisp = this._d('diAngleDisp');
+        const preciseBtn = this._d('diPreciseBtn');
+        const launchLine = this._d('diLaunchLine');
+        const perpLine = this._d('diPerpLine');
 
         if (label) label.textContent = DI_LABELS[mode];
+
+        // Update precise button state
+        if (preciseBtn) {
+            preciseBtn.classList.toggle('active', !!this._diPrecise[mode]);
+            preciseBtn.textContent = this._diPrecise[mode] ? 'Precise' : 'Simple';
+        }
 
         // Position pointer
         if (pointer) {
@@ -484,6 +511,68 @@ export class IKneeDataUI {
             if (angle < 0) angle += 360;
         }
         if (angleDisp) angleDisp.textContent = Math.round(angle);
+
+        // DI strength display (TDI only, shows how effective the DI is)
+        const strengthDisp = this._d('diStrength');
+        if (strengthDisp) {
+            if (mode === 't' && this._lastResult?.launchAngle?.baseAngle != null) {
+                const attackAngle = this._lastResult.launchAngle.baseAngle;
+                const diAngle = angle;
+                let rAngle = attackAngle - diAngle;
+                if (rAngle > 180) rAngle -= 360;
+                if (rAngle < -180) rAngle += 360;
+                const mag = Math.sqrt(state.x * state.x + state.y * state.y);
+                const pDistance = Math.sin(rAngle * (Math.PI / 180)) * mag;
+                let angleOffset = pDistance * pDistance * 18;
+                if (angleOffset > 18) angleOffset = 18;
+                const strength = Math.round((angleOffset / 18) * 100);
+                strengthDisp.textContent = `| Str: ${strength}%`;
+                // Color: red (0%) → green (100%)
+                const green = Math.floor(strength * 2.55);
+                const red = 255 - green;
+                strengthDisp.style.color = `rgb(${red},${green},0)`;
+            } else {
+                strengthDisp.textContent = '';
+            }
+        }
+
+        // Precise mode lines (only meaningful for TDI)
+        this._updatePreciseLines();
+    }
+
+    _updatePreciseLines() {
+        const launchLine = this._d('diLaunchLine');
+        const perpLine = this._d('diPerpLine');
+        if (!launchLine || !perpLine) return;
+
+        const mode = this._activeDI;
+        const showPrecise = this._diPrecise[mode] && mode === 't';
+
+        if (!showPrecise || !this._lastResult) {
+            launchLine.style.display = 'none';
+            perpLine.style.display = 'none';
+            return;
+        }
+
+        // Get the attack angle (pre-DI launch angle)
+        const la = this._lastResult.launchAngle;
+        if (!la) {
+            launchLine.style.display = 'none';
+            perpLine.style.display = 'none';
+            return;
+        }
+
+        const attackAngle = la.baseAngle ?? 0;
+
+        // Launch angle line: rotated so the solid half points in the launch direction
+        // IKneeData rotates by -(attackAngle) degrees (CSS rotation is clockwise)
+        launchLine.style.display = 'block';
+        launchLine.style.transform = `rotate(${-attackAngle}deg)`;
+
+        // Perpendicular line: same rotation (it's a vertical line, so rotating by the
+        // attack angle makes it perpendicular to the launch direction)
+        perpLine.style.display = 'block';
+        perpLine.style.transform = `rotate(${-attackAngle}deg)`;
     }
 
     // ===== Canvas Setup =====
@@ -891,6 +980,7 @@ export class IKneeDataUI {
 
         this._lastResult = result;
         this._drawTrajectory(result);
+        this._updatePreciseLines();
 
         // Debounced kill% search
         clearTimeout(this._killTimer);

@@ -338,19 +338,26 @@ export class FightCore {
         for (const move of moves) {
             if (!move.hits || !move.hits.length) continue;
             if (move.normalizedName && NON_CC_MOVES.has(move.normalizedName)) continue;
-            for (const hit of move.hits) {
+            for (let hi = 0; hi < move.hits.length; hi++) {
+                const hit = move.hits[hi];
                 if (!hit.hitboxes || !hit.hitboxes.length) continue;
                 let bestHb = null;
                 for (const hb of hit.hitboxes) {
                     if (hb.damage > 0 && (!bestHb || hb.damage > bestHb.damage)) bestHb = hb;
                 }
                 if (!bestHb) continue;
-                const ccMax = this._calcMaxPercent(bestHb, defWeight, 80, 2 / 3);
-                const asdiMax = this._calcMaxPercent(bestHb, defWeight, 80, 1.0);
+                // CC/ASDI only works for upward-sending angles (1-179) or Sakurai (361)
+                const canCC = (bestHb.angle > 0 && bestHb.angle < 180) || bestHb.angle === 361;
+                const ccMax = canCC ? this._calcMaxPercent(bestHb, defWeight, 80, 2 / 3) : -1;
+                const asdiMax = canCC ? this._calcMaxPercent(bestHb, defWeight, 80, 1.0) : -1;
+                const hitLabel = hit.name && hit.name !== 'unknown'
+                    ? hit.name
+                    : (move.hits.length > 1 ? `Hit ${hi + 1}` : 'unknown');
                 results.push({
                     moveName: move.name,
                     normalizedName: move.normalizedName,
-                    hitName: hit.name || "unknown",
+                    hitName: hitLabel,
+                    hitIndex: hi,
                     damage: bestHb.damage,
                     angle: bestHb.angle,
                     knockbackGrowth: bestHb.knockbackGrowth,
@@ -363,7 +370,7 @@ export class FightCore {
         }
         const deduped = new Map();
         for (const r of results) {
-            const key = r.moveName + "|" + r.hitName;
+            const key = r.moveName + "|" + r.hitName + "|" + r.hitIndex;
             if (!deduped.has(key) || r.ccMaxPercent < deduped.get(key).ccMaxPercent) {
                 deduped.set(key, r);
             }

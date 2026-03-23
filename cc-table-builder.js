@@ -19,15 +19,18 @@ const CHAR_DISPLAY = {
 };
 
 function fmtPct(val) {
-    if (val >= 999) return '∞';
-    if (val < 0) return '✗';
+    if (val >= 999) return 'Never';
+    if (val < 0) return 'N/A';
     return val + '%';
 }
 
-function fmtColor(val, type) {
-    if (val >= 999) return type === 'cc' ? '#2a7' : '#47a';
-    if (val < 0) return '#a33';
-    return type === 'cc' ? '#3a3' : '#38a';
+function cellClass(val) {
+    if (val >= 999) return 'cc-never';   // never breaks — safe forever
+    if (val < 0) return 'cc-na';         // can't CC (angle or always breaks)
+    if (val === 0) return 'cc-zero';     // breaks at 0% — basically useless
+    if (val <= 30) return 'cc-low';      // low window
+    if (val <= 80) return 'cc-mid';      // decent window
+    return 'cc-high';                    // great CC window
 }
 
 async function renderPairTable(atkId, defId, atkLabel, defLabel) {
@@ -35,10 +38,29 @@ async function renderPairTable(atkId, defId, atkLabel, defLabel) {
     const ccData = await fc.getCCPercents(atkId, defId);
     if (!ccData || !ccData.length) return '';
 
-    const useful = ccData
-        .filter(m => m.ccMaxPercent > 0 && m.ccMaxPercent < 999)
-        .sort((a, b) => b.ccMaxPercent - a.ccMaxPercent);
-    if (!useful.length) return '';
+    // Show ALL hits — sort by ASDI max % descending (most useful first),
+    // with "Never" (999) at top, then by percent desc, then N/A (-1) at bottom
+    const sorted = ccData.slice().sort((a, b) => {
+        // Primary: sort by ASDI max percent for practical usefulness
+        // "Never breaks" (999) = best for defender, show first
+        // "N/A" (-1) = can't ASDI, show last
+        const aVal = a.asdiMaxPercent;
+        const bVal = b.asdiMaxPercent;
+        // Both "never" — sort by move name
+        if (aVal >= 999 && bVal >= 999) return a.moveName.localeCompare(b.moveName);
+        // "Never" goes first
+        if (aVal >= 999) return -1;
+        if (bVal >= 999) return 1;
+        // "N/A" goes last
+        if (aVal < 0 && bVal < 0) return a.moveName.localeCompare(b.moveName);
+        if (aVal < 0) return 1;
+        if (bVal < 0) return -1;
+        // Higher ASDI % = more useful for defender, show first
+        if (bVal !== aVal) return bVal - aVal;
+        return a.moveName.localeCompare(b.moveName);
+    });
+
+    if (!sorted.length) return '';
 
     let html = `<div class="cc-pair-header">${atkLabel} → ${defLabel}</div>`;
     html += `<table class="cc-table"><thead><tr>`;
@@ -48,13 +70,15 @@ async function renderPairTable(atkId, defId, atkLabel, defLabel) {
     html += `<th class="asdi-col">ASDI↓ Max %</th>`;
     html += `</tr></thead><tbody>`;
 
-    for (const m of useful) {
+    for (const m of sorted) {
         const hitLabel = m.hitName && m.hitName !== 'unknown' ? ` (${m.hitName})` : '';
+        const ccCls = cellClass(m.ccMaxPercent);
+        const asdiCls = cellClass(m.asdiMaxPercent);
         html += `<tr>`;
         html += `<td class="move-name">${m.moveName}${hitLabel}</td>`;
         html += `<td class="dmg-cell">${m.damage}%</td>`;
-        html += `<td class="cc-cell" style="color:${fmtColor(m.ccMaxPercent,'cc')}">${fmtPct(m.ccMaxPercent)}</td>`;
-        html += `<td class="asdi-cell" style="color:${fmtColor(m.asdiMaxPercent,'asdi')}">${fmtPct(m.asdiMaxPercent)}</td>`;
+        html += `<td class="cc-cell ${ccCls}">${fmtPct(m.ccMaxPercent)}</td>`;
+        html += `<td class="asdi-cell ${asdiCls}">${fmtPct(m.asdiMaxPercent)}</td>`;
         html += `</tr>`;
     }
     html += `</tbody></table>`;
@@ -77,15 +101,11 @@ export async function buildCCTables(containerId, foxId, opponentId, opponentName
         const isDitto = foxId === opponentId;
 
         if (isDitto) {
-            // Ditto: same attacker/defender, only need one table
             const dittoTable = await renderPairTable(foxId, opponentId, foxName + ' (ditto)', foxName);
             if (dittoTable) html += `<div class="cc-pair-block">${dittoTable}</div>`;
         } else {
-            // Fox attacking → Opponent defending (what can opponent CC/ASDI against Fox?)
             const foxAtk = await renderPairTable(foxId, opponentId, foxName, oppName);
-            // Opponent attacking → Fox defending (what can Fox CC/ASDI against opponent?)
             const oppAtk = await renderPairTable(opponentId, foxId, oppName, foxName);
-
             if (foxAtk) html += `<div class="cc-pair-block">${foxAtk}</div>`;
             if (oppAtk) html += `<div class="cc-pair-block">${oppAtk}</div>`;
         }
@@ -95,6 +115,14 @@ export async function buildCCTables(containerId, foxId, opponentId, opponentName
             return;
         }
 
+        html += `<div class="cc-legend">
+            <span class="cc-legend-item"><span class="cc-swatch cc-never"></span> Never breaks</span>
+            <span class="cc-legend-item"><span class="cc-swatch cc-high"></span> 81%+</span>
+            <span class="cc-legend-item"><span class="cc-swatch cc-mid"></span> 31-80%</span>
+            <span class="cc-legend-item"><span class="cc-swatch cc-low"></span> 1-30%</span>
+            <span class="cc-legend-item"><span class="cc-swatch cc-zero"></span> Breaks at 0%</span>
+            <span class="cc-legend-item"><span class="cc-swatch cc-na"></span> N/A (angle)</span>
+        </div>`;
         html += `<p class="cc-attribution">Calculated from <a href="https://github.com/FightCore/frame-data" target="_blank">FightCore</a> hitbox data using Melee KB formula · CC mult=⅔ · ASDI↓ mult=1.0 · knockdown threshold=80</p>`;
         container.innerHTML = html;
     } catch (e) {
