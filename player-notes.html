@@ -4639,6 +4639,20 @@ if (_autoReplay) {
     setTimeout(() => loadReplayFromServer(_autoReplay), 500);
 }
 
+// If ?viewer=1, auto-open the replay modal for standalone use
+if (_urlParams.get('viewer') === '1') {
+    setTimeout(() => {
+        activeNoteIdx = null;
+        document.getElementById('replayModalTitle').textContent = '🎮 Replay Visualizer';
+        document.getElementById('replayViewerArea').style.display = 'none';
+        document.getElementById('replayLoadArea').style.display = 'block';
+        const modal = document.getElementById('replayModal');
+        modal.style.top = '50%'; modal.style.left = '50%';
+        modal.style.transform = 'translate(-50%, -50%)';
+        document.getElementById('replayModalOverlay').classList.add('open');
+    }, 300);
+}
+
 buildReplayBrowser();
 
 initSlpKeyCache().then(() => loadNotesFromFile());
