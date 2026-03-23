@@ -1,208 +1,375 @@
 /**
  * IKneeData Calculator UI — Embeddable Melee frame data calculator
- * Renders into any DOM container. Uses ikneedata-calc.js for computation.
+ * Visual stage canvas with click-to-set-position and trajectory rendering.
+ * Uses ikneedata-calc.js for computation.
  */
 import {
-    CHAR_NAMES, STAGES, fc,
+    CHAR_NAMES, CHAR_PHYSICS, STAGES, fc,
+    calcKnockback, calcHitstun, calcHitlag, resolveSakuraiAngle,
+    applyDIFromAngle, simulateTrajectory,
     fullCalc, findKillPercent,
 } from './ikneedata-calc.js';
 
+// Stage SVG rendering constants
+const STAGE_COLORS = {
+    ground: '#4a7a4a', platform: '#6a6a8a', blastzone: 'rgba(255,60,60,0.15)',
+    blaststroke: 'rgba(255,60,60,0.4)', trajectory: '#ff4444', trajectoryPost: '#ff8888',
+    startDot: '#ffff00', killDot: '#ff0000', grid: 'rgba(255,255,255,0.06)',
+};
+
 const CSS = `
-.ikd-calc { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: rgba(30,30,50,0.95); border-radius: 12px; padding: 1rem; color: #e0e0e0; max-width: 560px; }
-.ikd-calc * { box-sizing: border-box; }
-.ikd-title { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.75rem; text-align: center; }
-.ikd-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
-.ikd-field { flex: 1; min-width: 80px; }
-.ikd-field label { display: block; font-size: 0.72rem; color: #aaa; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
-.ikd-field select, .ikd-field input { width: 100%; padding: 0.4rem 0.5rem; border: 1px solid #444; border-radius: 6px; background: #1a1a2e; color: #e0e0e0; font-size: 0.85rem; }
-.ikd-field select:focus, .ikd-field input:focus { border-color: #667eea; outline: none; }
-.ikd-toggles { display: flex; gap: 0.75rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
-.ikd-toggle { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; color: #bbb; cursor: pointer; }
-.ikd-toggle input { accent-color: #667eea; }
-.ikd-divider { border: none; border-top: 1px solid #333; margin: 0.6rem 0; }
-.ikd-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.4rem; }
-.ikd-result { background: rgba(102,126,234,0.1); border: 1px solid rgba(102,126,234,0.25); border-radius: 8px; padding: 0.4rem 0.6rem; text-align: center; }
-.ikd-result .ikd-val { font-size: 1.1rem; font-weight: 700; color: #fff; }
-.ikd-result .ikd-label { font-size: 0.65rem; color: #999; text-transform: uppercase; letter-spacing: 0.5px; }
-.ikd-result.ikd-kill { border-color: #e44; }
-.ikd-result.ikd-kill .ikd-val { color: #f66; }
-.ikd-result.ikd-safe { border-color: #2a7; }
-.ikd-result.ikd-safe .ikd-val { color: #3c8; }
-.ikd-result.ikd-tumble { border-color: #c80; }
-.ikd-result.ikd-tumble .ikd-val { color: #fa0; }
-.ikd-manual-section { margin-top: 0.5rem; }
-.ikd-manual-toggle { background: none; border: 1px solid #555; color: #aaa; padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.75rem; }
-.ikd-manual-toggle:hover { border-color: #667eea; color: #ccc; }
-.ikd-manual-fields { display: none; margin-top: 0.5rem; }
-.ikd-manual-fields.open { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.ikd-error { color: #f66; font-size: 0.8rem; text-align: center; padding: 0.5rem; }
-.ikd-loading { color: #888; font-size: 0.8rem; text-align: center; padding: 0.5rem; }
+.ikd-calc{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:rgba(20,20,35,0.97);border-radius:12px;color:#e0e0e0;max-width:900px;overflow:hidden}
+.ikd-calc *{box-sizing:border-box}
+.ikd-header{display:flex;gap:.5rem;padding:.75rem;flex-wrap:wrap;align-items:end;background:rgba(0,0,0,0.3)}
+.ikd-field{display:flex;flex-direction:column;gap:2px}
+.ikd-field label{font-size:.65rem;color:#888;text-transform:uppercase;letter-spacing:.5px}
+.ikd-field select,.ikd-field input{padding:.35rem .4rem;border:1px solid #444;border-radius:5px;background:#1a1a2e;color:#e0e0e0;font-size:.8rem;min-width:0}
+.ikd-field select:focus,.ikd-field input:focus{border-color:#667eea;outline:none}
+.ikd-field input[type=number]{width:65px}
+.ikd-toggles{display:flex;gap:.6rem;padding:.4rem .75rem;flex-wrap:wrap;background:rgba(0,0,0,0.2)}
+.ikd-toggle{display:flex;align-items:center;gap:3px;font-size:.7rem;color:#aaa;cursor:pointer}
+.ikd-toggle input{accent-color:#667eea;margin:0}
+.ikd-stage-wrap{position:relative;background:#111;cursor:crosshair;border-top:1px solid #333;border-bottom:1px solid #333}
+.ikd-stage-wrap canvas{display:block;width:100%;height:auto}
+.ikd-stage-info{position:absolute;top:6px;left:8px;font-size:.65rem;color:rgba(255,255,255,0.5);pointer-events:none}
+.ikd-stage-coords{position:absolute;bottom:6px;right:8px;font-size:.65rem;color:rgba(255,255,255,0.6);pointer-events:none;background:rgba(0,0,0,0.5);padding:2px 6px;border-radius:4px}
+.ikd-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.35rem;padding:.6rem .75rem}
+.ikd-result{background:rgba(102,126,234,0.08);border:1px solid rgba(102,126,234,0.2);border-radius:7px;padding:.35rem .5rem;text-align:center}
+.ikd-result .v{font-size:1rem;font-weight:700;color:#fff}
+.ikd-result .l{font-size:.6rem;color:#888;text-transform:uppercase;letter-spacing:.4px}
+.ikd-result.kill{border-color:#e44}.ikd-result.kill .v{color:#f66}
+.ikd-result.safe{border-color:#2a7}.ikd-result.safe .v{color:#3c8}
+.ikd-result.tumble{border-color:#c80}.ikd-result.tumble .v{color:#fa0}
+.ikd-manual{padding:0 .75rem .5rem}
+.ikd-manual-btn{background:none;border:1px solid #555;color:#aaa;padding:.25rem .5rem;border-radius:5px;cursor:pointer;font-size:.7rem}
+.ikd-manual-btn:hover{border-color:#667eea;color:#ccc}
+.ikd-manual-fields{display:none;margin-top:.4rem;gap:.4rem;flex-wrap:wrap}
+.ikd-manual-fields.open{display:flex}
+.ikd-manual-fields .ikd-field input{width:60px}
+.ikd-loading{color:#666;font-size:.75rem;text-align:center;padding:.5rem}
 `;
 
 export class IKneeDataUI {
     constructor(container, options = {}) {
         this.container = typeof container === 'string'
             ? document.getElementById(container) : container;
-        this.options = options;
         this._moves = [];
-        this._attackerCharId = options.attackerCharId ?? 2;
-        this._defenderCharId = options.defenderCharId ?? 2;
+        this._atkChar = options.attackerCharId ?? 2;
+        this._defChar = options.defenderCharId ?? 2;
         this._stageKey = options.stageKey ?? 'final_destination';
         this._selectedMove = null;
         this._manualMode = false;
+        this._startX = 0;
+        this._startY = 0;
+        this._mouseStageX = 0;
+        this._mouseStageY = 0;
+        this._positionFrozen = false;
+        this._lastResult = null;
         this._init();
     }
 
     async _init() {
-        if (!document.getElementById('ikd-calc-styles')) {
-            const style = document.createElement('style');
-            style.id = 'ikd-calc-styles';
-            style.textContent = CSS;
-            document.head.appendChild(style);
+        if (!document.getElementById('ikd-styles')) {
+            const s = document.createElement('style');
+            s.id = 'ikd-styles';
+            s.textContent = CSS;
+            document.head.appendChild(s);
         }
         this._render();
-        await this._loadMoves(this._attackerCharId);
+        this._setupCanvas();
+        await this._loadMoves(this._atkChar);
         this._recalc();
     }
 
-    _render() {
-        const charOpts = Object.entries(CHAR_NAMES)
-            .sort((a, b) => a[1].localeCompare(b[1]))
-            .map(([id, name]) => `<option value="${id}">${name}</option>`)
-            .join('');
-        const stageOpts = Object.entries(STAGES)
-            .map(([key, s]) => `<option value="${key}">${s.name}</option>`)
-            .join('');
+    _q(sel) { return this.container.querySelector(sel); }
 
-        this.container.innerHTML = `
-<div class="ikd-calc">
-  <div class="ikd-title">\u2694 Melee Calculator</div>
-  <div class="ikd-row">
-    <div class="ikd-field"><label>Attacker</label>
-      <select id="ikd-atk-char">${charOpts}</select></div>
-    <div class="ikd-field"><label>Move</label>
-      <select id="ikd-atk-move"><option value="">Loading...</option></select></div>
+    _render() {
+        const chars = Object.entries(CHAR_NAMES)
+            .sort((a, b) => a[1].localeCompare(b[1]))
+            .map(([id, n]) => `<option value="${id}">${n}</option>`).join('');
+        const stages = Object.entries(STAGES)
+            .map(([k, s]) => `<option value="${k}">${s.name}</option>`).join('');
+
+        this.container.innerHTML = `<div class="ikd-calc">
+<div class="ikd-header">
+  <div class="ikd-field"><label>Attacker</label><select data-id="atk">${chars}</select></div>
+  <div class="ikd-field"><label>Move</label><select data-id="move"><option value="">Loading...</option></select></div>
+  <div class="ikd-field"><label>Defender</label><select data-id="def">${chars}</select></div>
+  <div class="ikd-field"><label>Percent</label><input type="number" data-id="pct" value="0" min="0" max="999"></div>
+  <div class="ikd-field"><label>Stage</label><select data-id="stage">${stages}</select></div>
+  <div class="ikd-field"><label>DI Angle</label><input type="number" data-id="di" value="" placeholder="None" min="0" max="360"></div>
+</div>
+<div class="ikd-toggles">
+  <label class="ikd-toggle"><input type="checkbox" data-id="cc"> CC</label>
+  <label class="ikd-toggle"><input type="checkbox" data-id="vcancel"> V-Cancel</label>
+  <label class="ikd-toggle"><input type="checkbox" data-id="charge-int"> Charge Int.</label>
+  <label class="ikd-toggle"><input type="checkbox" data-id="metal"> Metal</label>
+  <label class="ikd-toggle"><input type="checkbox" data-id="ice"> Ice</label>
+  <label class="ikd-toggle"><input type="checkbox" data-id="reverse"> Reverse</label>
+</div>
+<div class="ikd-stage-wrap">
+  <canvas data-id="canvas" width="900" height="400"></canvas>
+  <div class="ikd-stage-info" data-id="stageLabel"></div>
+  <div class="ikd-stage-coords" data-id="coords">Click stage to set position</div>
+</div>
+<div class="ikd-manual">
+  <button class="ikd-manual-btn" data-id="manualBtn">Manual Entry \u25B8</button>
+  <div class="ikd-manual-fields" data-id="manualFields">
+    <div class="ikd-field"><label>Dmg</label><input type="number" data-id="m-dmg" value="0" step="0.1"></div>
+    <div class="ikd-field"><label>Angle</label><input type="number" data-id="m-angle" value="45"></div>
+    <div class="ikd-field"><label>KBG</label><input type="number" data-id="m-kbg" value="100"></div>
+    <div class="ikd-field"><label>BKB</label><input type="number" data-id="m-bkb" value="0"></div>
+    <div class="ikd-field"><label>SetKB</label><input type="number" data-id="m-setkb" value="0"></div>
   </div>
-  <div class="ikd-row">
-    <div class="ikd-field"><label>Defender</label>
-      <select id="ikd-def-char">${charOpts}</select></div>
-    <div class="ikd-field" style="max-width:90px"><label>Percent</label>
-      <input type="number" id="ikd-percent" value="0" min="0" max="999"></div>
-    <div class="ikd-field"><label>Stage</label>
-      <select id="ikd-stage">${stageOpts}</select></div>
-  </div>
-  <div class="ikd-row">
-    <div class="ikd-field" style="max-width:90px"><label>Start X</label>
-      <input type="number" id="ikd-startx" value="0" step="1"></div>
-    <div class="ikd-field" style="max-width:90px"><label>Start Y</label>
-      <input type="number" id="ikd-starty" value="0" step="1"></div>
-    <div class="ikd-field" style="max-width:90px"><label>DI Angle</label>
-      <input type="number" id="ikd-di" value="" placeholder="None" min="0" max="360"></div>
-  </div>
-  <div class="ikd-toggles">
-    <label class="ikd-toggle"><input type="checkbox" id="ikd-cc"> Crouch Cancel</label>
-    <label class="ikd-toggle"><input type="checkbox" id="ikd-vcancel"> V-Cancel</label>
-    <label class="ikd-toggle"><input type="checkbox" id="ikd-charge-int"> Charge Interrupt</label>
-    <label class="ikd-toggle"><input type="checkbox" id="ikd-metal"> Metal</label>
-    <label class="ikd-toggle"><input type="checkbox" id="ikd-ice"> Ice</label>
-    <label class="ikd-toggle"><input type="checkbox" id="ikd-reverse"> Reverse Hit</label>
-  </div>
-  <div class="ikd-manual-section">
-    <button class="ikd-manual-toggle" id="ikd-manual-btn">Manual Entry \u25B8</button>
-    <div class="ikd-manual-fields" id="ikd-manual-fields">
-      <div class="ikd-field" style="max-width:80px"><label>Damage</label>
-        <input type="number" id="ikd-m-dmg" value="0" step="0.1"></div>
-      <div class="ikd-field" style="max-width:80px"><label>Angle</label>
-        <input type="number" id="ikd-m-angle" value="45" min="0" max="361"></div>
-      <div class="ikd-field" style="max-width:80px"><label>KBG</label>
-        <input type="number" id="ikd-m-kbg" value="100"></div>
-      <div class="ikd-field" style="max-width:80px"><label>BKB</label>
-        <input type="number" id="ikd-m-bkb" value="0"></div>
-      <div class="ikd-field" style="max-width:80px"><label>Set KB</label>
-        <input type="number" id="ikd-m-setkb" value="0"></div>
-    </div>
-  </div>
-  <hr class="ikd-divider">
-  <div id="ikd-output" class="ikd-results">
-    <div class="ikd-loading">Select a move to calculate...</div>
-  </div>
+</div>
+<div class="ikd-results" data-id="output"><div class="ikd-loading">Select a move to calculate...</div></div>
 </div>`;
 
-        this._el('ikd-atk-char').value = this._attackerCharId;
-        this._el('ikd-def-char').value = this._defenderCharId;
-        this._el('ikd-stage').value = this._stageKey;
+        this._d = (id) => this.container.querySelector(`[data-id="${id}"]`);
+        this._d('atk').value = this._atkChar;
+        this._d('def').value = this._defChar;
+        this._d('stage').value = this._stageKey;
 
-        this._el('ikd-atk-char').addEventListener('change', () => this._onAttackerChange());
-        this._el('ikd-atk-move').addEventListener('change', () => this._onMoveChange());
-        this._el('ikd-def-char').addEventListener('change', () => {
-            this._defenderCharId = +this._el('ikd-def-char').value; this._recalc();
-        });
-        this._el('ikd-stage').addEventListener('change', () => {
-            this._stageKey = this._el('ikd-stage').value; this._recalc();
-        });
-
-        for (const id of ['ikd-percent','ikd-startx','ikd-starty','ikd-di',
-            'ikd-cc','ikd-vcancel','ikd-charge-int','ikd-metal','ikd-ice','ikd-reverse']) {
-            this._el(id).addEventListener('input', () => this._recalc());
+        // Events
+        this._d('atk').onchange = () => this._onAtkChange();
+        this._d('move').onchange = () => this._onMoveChange();
+        this._d('def').onchange = () => { this._defChar = +this._d('def').value; this._recalc(); };
+        this._d('stage').onchange = () => { this._stageKey = this._d('stage').value; this._recalc(); };
+        for (const id of ['pct','di','cc','vcancel','charge-int','metal','ice','reverse']) {
+            this._d(id).addEventListener('input', () => this._recalc());
         }
-
-        this._el('ikd-manual-btn').addEventListener('click', () => {
+        this._d('manualBtn').onclick = () => {
             this._manualMode = !this._manualMode;
-            this._el('ikd-manual-fields').classList.toggle('open', this._manualMode);
-            this._el('ikd-manual-btn').textContent = this._manualMode
-                ? 'Manual Entry \u25BE' : 'Manual Entry \u25B8';
-        });
-        for (const id of ['ikd-m-dmg','ikd-m-angle','ikd-m-kbg','ikd-m-bkb','ikd-m-setkb']) {
-            this._el(id).addEventListener('input', () => { if (this._manualMode) this._recalc(); });
+            this._d('manualFields').classList.toggle('open', this._manualMode);
+            this._d('manualBtn').textContent = this._manualMode ? 'Manual Entry \u25BE' : 'Manual Entry \u25B8';
+        };
+        for (const id of ['m-dmg','m-angle','m-kbg','m-bkb','m-setkb']) {
+            this._d(id).addEventListener('input', () => { if (this._manualMode) this._recalc(); });
         }
     }
 
-    _el(id) { return this.container.querySelector('#' + id); }
+    _setupCanvas() {
+        const canvas = this._d('canvas');
+        const wrap = this._q('.ikd-stage-wrap');
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const px = (e.clientX - rect.left) * scaleX;
+            const py = (e.clientY - rect.top) * scaleY;
+            const stage = STAGES[this._stageKey];
+            if (!stage) return;
+            const [sx, sy] = this._canvasToStage(px, py, stage, canvas);
+            this._startX = Math.round(sx);
+            this._startY = Math.round(sy);
+            this._positionFrozen = true;
+            this._recalc();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const px = (e.clientX - rect.left) * scaleX;
+            const py = (e.clientY - rect.top) * scaleY;
+            const stage = STAGES[this._stageKey];
+            if (!stage) return;
+            const [sx, sy] = this._canvasToStage(px, py, stage, canvas);
+            this._mouseStageX = Math.round(sx * 10) / 10;
+            this._mouseStageY = Math.round(sy * 10) / 10;
+            this._d('coords').textContent = `X: ${this._mouseStageX}  Y: ${this._mouseStageY}`;
+            if (!this._positionFrozen) {
+                this._startX = Math.round(sx);
+                this._startY = Math.round(sy);
+                this._recalc();
+            }
+        });
+    }
+
+    _canvasToStage(px, py, stage, canvas) {
+        const bz = stage.blastZones;
+        const pad = 30;
+        const w = canvas.width - pad * 2;
+        const h = canvas.height - pad * 2;
+        const stageW = bz.right - bz.left;
+        const stageH = bz.top - bz.bottom;
+        const sx = bz.left + ((px - pad) / w) * stageW;
+        const sy = bz.top - ((py - pad) / h) * stageH;
+        return [sx, sy];
+    }
+
+    _stageToCanvas(sx, sy, stage, canvas) {
+        const bz = stage.blastZones;
+        const pad = 30;
+        const w = canvas.width - pad * 2;
+        const h = canvas.height - pad * 2;
+        const stageW = bz.right - bz.left;
+        const stageH = bz.top - bz.bottom;
+        const px = pad + ((sx - bz.left) / stageW) * w;
+        const py = pad + ((bz.top - sy) / stageH) * h;
+        return [px, py];
+    }
+
+    _drawStage() {
+        const canvas = this._d('canvas');
+        const ctx = canvas.getContext('2d');
+        const stage = STAGES[this._stageKey];
+        if (!stage) return;
+        const W = canvas.width, H = canvas.height;
+        ctx.clearRect(0, 0, W, H);
+
+        // Background
+        ctx.fillStyle = '#0a0a18';
+        ctx.fillRect(0, 0, W, H);
+
+        const bz = stage.blastZones;
+
+        // Grid lines every 50 units
+        ctx.strokeStyle = STAGE_COLORS.grid;
+        ctx.lineWidth = 1;
+        for (let x = Math.ceil(bz.left / 50) * 50; x <= bz.right; x += 50) {
+            const [px] = this._stageToCanvas(x, 0, stage, canvas);
+            ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
+        }
+        for (let y = Math.ceil(bz.bottom / 50) * 50; y <= bz.top; y += 50) {
+            const [, py] = this._stageToCanvas(0, y, stage, canvas);
+            ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(W, py); ctx.stroke();
+        }
+
+        // Blast zone border
+        ctx.strokeStyle = STAGE_COLORS.blaststroke;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        const [bzL, bzT] = this._stageToCanvas(bz.left, bz.top, stage, canvas);
+        const [bzR, bzB] = this._stageToCanvas(bz.right, bz.bottom, stage, canvas);
+        ctx.strokeRect(bzL, bzT, bzR - bzL, bzB - bzT);
+        ctx.setLineDash([]);
+
+        // Ground
+        const [gL] = this._stageToCanvas(-stage.edge, 0, stage, canvas);
+        const [gR, gY] = this._stageToCanvas(stage.edge, 0, stage, canvas);
+        ctx.strokeStyle = STAGE_COLORS.ground;
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(gL, gY); ctx.lineTo(gR, gY); ctx.stroke();
+
+        // Platforms
+        ctx.strokeStyle = STAGE_COLORS.platform;
+        ctx.lineWidth = 3;
+        for (const p of stage.platforms) {
+            const [pL, pY] = this._stageToCanvas(p.left, p.y, stage, canvas);
+            const [pR] = this._stageToCanvas(p.right, p.y, stage, canvas);
+            ctx.beginPath(); ctx.moveTo(pL, pY); ctx.lineTo(pR, pY); ctx.stroke();
+        }
+
+        // Origin crosshair
+        const [ox, oy] = this._stageToCanvas(0, 0, stage, canvas);
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(W, oy); ctx.stroke();
+
+        // Start position dot
+        const [sx, sy] = this._stageToCanvas(this._startX, this._startY, stage, canvas);
+        ctx.fillStyle = STAGE_COLORS.startDot;
+        ctx.beginPath(); ctx.arc(sx, sy, 5, 0, Math.PI * 2); ctx.fill();
+
+        // Stage label
+        this._d('stageLabel').textContent = `${stage.name} | Start: (${this._startX}, ${this._startY})`;
+    }
+
+    _drawTrajectory(result) {
+        if (!result || !result.trajectory || !result.trajectory.frames) return;
+        const canvas = this._d('canvas');
+        const ctx = canvas.getContext('2d');
+        const stage = STAGES[this._stageKey];
+        if (!stage) return;
+
+        const frames = result.trajectory.frames;
+        const hitstun = result.hitstun;
+
+        // Draw trajectory line
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        for (let i = 1; i < frames.length; i++) {
+            const [x1, y1] = this._stageToCanvas(frames[i - 1].x, frames[i - 1].y, stage, canvas);
+            const [x2, y2] = this._stageToCanvas(frames[i].x, frames[i].y, stage, canvas);
+            ctx.strokeStyle = i <= hitstun ? STAGE_COLORS.trajectory : STAGE_COLORS.trajectoryPost;
+            ctx.globalAlpha = i <= hitstun ? 1 : 0.5;
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        // Hitstun end marker
+        if (hitstun > 0 && hitstun < frames.length) {
+            const f = frames[hitstun];
+            const [hx, hy] = this._stageToCanvas(f.x, f.y, stage, canvas);
+            ctx.fillStyle = '#6af';
+            ctx.beginPath(); ctx.arc(hx, hy, 4, 0, Math.PI * 2); ctx.fill();
+            ctx.font = '10px sans-serif';
+            ctx.fillStyle = '#6af';
+            ctx.fillText(`${hitstun}f`, hx + 6, hy - 4);
+        }
+
+        // Kill marker
+        if (result.trajectory.killed) {
+            const lastF = frames[frames.length - 1];
+            const [kx, ky] = this._stageToCanvas(lastF.x, lastF.y, stage, canvas);
+            ctx.fillStyle = STAGE_COLORS.killDot;
+            ctx.beginPath(); ctx.arc(kx, ky, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = '#f66';
+            ctx.fillText('\u2620', kx + 8, ky + 4);
+        }
+
+        // Frame dots every 10 frames
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        for (let i = 10; i < frames.length; i += 10) {
+            if (i === hitstun) continue;
+            const [dx, dy] = this._stageToCanvas(frames[i].x, frames[i].y, stage, canvas);
+            ctx.beginPath(); ctx.arc(dx, dy, 2, 0, Math.PI * 2); ctx.fill();
+        }
+    }
 
     async _loadMoves(charId) {
-        const sel = this._el('ikd-atk-move');
+        const sel = this._d('move');
         sel.innerHTML = '<option value="">Loading...</option>';
         try {
             this._moves = await fc.getMoves(charId);
             sel.innerHTML = '<option value="">-- Select Move --</option>';
             const seen = new Set();
             for (const m of this._moves) {
-                if (!m.hits || !m.hits.length) continue;
-                if (seen.has(m.normalizedName)) continue;
+                if (!m.hits || !m.hits.length || seen.has(m.normalizedName)) continue;
                 seen.add(m.normalizedName);
-                const opt = document.createElement('option');
-                opt.value = m.normalizedName;
-                opt.textContent = m.name;
-                sel.appendChild(opt);
+                const o = document.createElement('option');
+                o.value = m.normalizedName; o.textContent = m.name;
+                sel.appendChild(o);
             }
-        } catch (e) {
-            sel.innerHTML = '<option value="">Failed to load -- use manual entry</option>';
-        }
+        } catch { sel.innerHTML = '<option value="">Failed -- use manual</option>'; }
     }
 
-    async _onAttackerChange() {
-        this._attackerCharId = +this._el('ikd-atk-char').value;
-        await this._loadMoves(this._attackerCharId);
+    async _onAtkChange() {
+        this._atkChar = +this._d('atk').value;
+        await this._loadMoves(this._atkChar);
         this._selectedMove = null;
         this._recalc();
     }
 
     _onMoveChange() {
-        const val = this._el('ikd-atk-move').value;
-        if (!val) { this._selectedMove = null; this._recalc(); return; }
-        const move = this._moves.find(m => m.normalizedName === val);
-        this._selectedMove = move || null;
-        if (move && move.hits && move.hits[0] && move.hits[0].hitboxes) {
+        const v = this._d('move').value;
+        if (!v) { this._selectedMove = null; this._recalc(); return; }
+        const m = this._moves.find(x => x.normalizedName === v);
+        this._selectedMove = m || null;
+        if (m?.hits?.[0]?.hitboxes) {
             let best = null;
-            for (const hb of move.hits[0].hitboxes) {
+            for (const hb of m.hits[0].hitboxes)
                 if (hb.damage > 0 && (!best || hb.damage > best.damage)) best = hb;
-            }
             if (best) {
-                this._el('ikd-m-dmg').value = best.damage;
-                this._el('ikd-m-angle').value = best.angle;
-                this._el('ikd-m-kbg').value = best.knockbackGrowth;
-                this._el('ikd-m-bkb').value = best.baseKnockback;
-                this._el('ikd-m-setkb').value = best.setKnockback || 0;
+                this._d('m-dmg').value = best.damage;
+                this._d('m-angle').value = best.angle;
+                this._d('m-kbg').value = best.knockbackGrowth;
+                this._d('m-bkb').value = best.baseKnockback;
+                this._d('m-setkb').value = best.setKnockback || 0;
             }
         }
         this._recalc();
@@ -211,116 +378,107 @@ export class IKneeDataUI {
     _getMoveParams() {
         if (this._manualMode || !this._selectedMove) {
             return {
-                damage: +this._el('ikd-m-dmg').value || 0,
-                angle: +this._el('ikd-m-angle').value || 0,
-                kbg: +this._el('ikd-m-kbg').value || 0,
-                bkb: +this._el('ikd-m-bkb').value || 0,
-                setKb: +this._el('ikd-m-setkb').value || 0,
+                damage: +this._d('m-dmg').value || 0,
+                angle: +this._d('m-angle').value || 0,
+                kbg: +this._d('m-kbg').value || 0,
+                bkb: +this._d('m-bkb').value || 0,
+                setKb: +this._d('m-setkb').value || 0,
             };
         }
-        const move = this._selectedMove;
-        if (!move.hits || !move.hits[0] || !move.hits[0].hitboxes) return null;
+        const hit = this._selectedMove?.hits?.[0];
+        if (!hit?.hitboxes) return null;
         let best = null;
-        for (const hb of move.hits[0].hitboxes) {
+        for (const hb of hit.hitboxes)
             if (hb.damage > 0 && (!best || hb.damage > best.damage)) best = hb;
-        }
         if (!best) return null;
-        return {
-            damage: best.damage, angle: best.angle,
-            kbg: best.knockbackGrowth, bkb: best.baseKnockback,
-            setKb: best.setKnockback || 0,
-        };
+        return { damage: best.damage, angle: best.angle, kbg: best.knockbackGrowth,
+            bkb: best.baseKnockback, setKb: best.setKnockback || 0 };
     }
 
     _recalc() {
-        const output = this._el('ikd-output');
+        const out = this._d('output');
         const mp = this._getMoveParams();
+
+        // Always redraw stage
+        this._drawStage();
+
         if (!mp || mp.damage === 0) {
-            output.innerHTML = '<div class="ikd-loading">Select a move or enter values manually</div>';
+            out.innerHTML = '<div class="ikd-loading">Select a move or enter values manually</div>';
             return;
         }
 
-        const percent = +this._el('ikd-percent').value || 0;
-        const startX = +this._el('ikd-startx').value || 0;
-        const startY = +this._el('ikd-starty').value || 0;
-        const diVal = this._el('ikd-di').value;
+        const pct = +this._d('pct').value || 0;
+        const diVal = this._d('di').value;
         const diAngle = diVal !== '' ? +diVal : null;
 
         const result = fullCalc({
-            ...mp, percent,
-            defenderCharId: this._defenderCharId,
+            ...mp, percent: pct,
+            defenderCharId: this._defChar,
             stageKey: this._stageKey,
-            startX, startY, diAngle,
-            crouchCancel: this._el('ikd-cc').checked,
-            vcancel: this._el('ikd-vcancel').checked,
-            chargeInterrupt: this._el('ikd-charge-int').checked,
-            metal: this._el('ikd-metal').checked,
-            ice: this._el('ikd-ice').checked,
-            reverse: this._el('ikd-reverse').checked,
+            startX: this._startX, startY: this._startY,
+            diAngle,
+            crouchCancel: this._d('cc').checked,
+            vcancel: this._d('vcancel').checked,
+            chargeInterrupt: this._d('charge-int').checked,
+            metal: this._d('metal').checked,
+            ice: this._d('ice').checked,
+            reverse: this._d('reverse').checked,
         });
 
         if (!result) {
-            output.innerHTML = '<div class="ikd-error">Could not calculate -- check inputs</div>';
+            out.innerHTML = '<div class="ikd-loading">Could not calculate</div>';
             return;
         }
 
-        const killData = findKillPercent({
-            ...mp,
-            defenderCharId: this._defenderCharId,
-            stageKey: this._stageKey,
-            startX, startY,
-            crouchCancel: this._el('ikd-cc').checked,
-            reverse: this._el('ikd-reverse').checked,
+        this._lastResult = result;
+        this._drawTrajectory(result);
+
+        const kill = findKillPercent({
+            ...mp, defenderCharId: this._defChar, stageKey: this._stageKey,
+            startX: this._startX, startY: this._startY,
+            crouchCancel: this._d('cc').checked,
+            reverse: this._d('reverse').checked,
         });
 
         let h = '';
-        h += this._card('Knockback', result.knockback.toFixed(1), result.tumble ? 'ikd-tumble' : '');
-        h += this._card('Hitstun', result.hitstun + 'f', result.tumble ? 'ikd-tumble' : '');
-        h += this._card('Hitlag', result.hitlag + 'f', '');
-        h += this._card('Launch Speed', result.launchSpeed.toFixed(2), '');
-        h += this._card('Base Angle', result.launchAngle.baseAngle + '\u00B0', '');
-        if (result.launchAngle.diAngle != null) {
-            h += this._card('DI Angle', result.launchAngle.diModifiedAngle + '\u00B0', '');
-        }
-        h += this._card('Shield Stun', result.shieldStun + 'f', '');
-        h += this._card('Tumble', result.tumble ? 'Yes' : 'No', result.tumble ? 'ikd-tumble' : '');
+        h += this._c('Knockback', result.knockback.toFixed(1), result.tumble ? 'tumble' : '');
+        h += this._c('Hitstun', result.hitstun + 'f', result.tumble ? 'tumble' : '');
+        h += this._c('Hitlag', result.hitlag + 'f', '');
+        h += this._c('Launch', result.launchSpeed.toFixed(2), '');
+        h += this._c('Angle', result.launchAngle.baseAngle + '\u00B0', '');
+        if (result.launchAngle.diAngle != null)
+            h += this._c('DI\u2019d Angle', result.launchAngle.diModifiedAngle + '\u00B0', '');
+        h += this._c('Shield Stun', result.shieldStun + 'f', '');
 
         if (result.trajectory) {
             const t = result.trajectory;
-            h += this._card('Kills', t.killed ? 'Yes (' + t.killZone + ')' : 'No',
-                t.killed ? 'ikd-kill' : 'ikd-safe');
-            if (t.killed) h += this._card('Kill Frame', t.killFrame + 'f', 'ikd-kill');
+            h += this._c('Kills', t.killed ? 'Yes (' + t.killZone + ')' : 'No', t.killed ? 'kill' : 'safe');
+            if (t.killed) h += this._c('Kill Frame', t.killFrame + 'f', 'kill');
         }
+        if (kill.noDI != null) h += this._c('Kill% noDI', kill.noDI + '%', 'kill');
+        if (kill.survivalDI != null) h += this._c('Kill% survDI', kill.survivalDI + '%', 'kill');
+        if (!kill.noDI && !kill.survivalDI && !kill.killPercent)
+            h += this._c('Kill%', "Doesn't kill", 'safe');
 
-        if (killData.noDI != null) h += this._card('Kill % (no DI)', killData.noDI + '%', 'ikd-kill');
-        if (killData.survivalDI != null) h += this._card('Kill % (surv DI)', killData.survivalDI + '%', 'ikd-kill');
-        if (killData.noDI == null && killData.survivalDI == null && killData.killPercent == null) {
-            h += this._card('Kill %', "Doesn't kill", 'ikd-safe');
-        }
-
-        output.innerHTML = h;
+        out.innerHTML = h;
     }
 
-    _card(label, value, cls) {
-        return `<div class="ikd-result ${cls}"><div class="ikd-val">${value}</div><div class="ikd-label">${label}</div></div>`;
+    _c(label, val, cls) {
+        return `<div class="ikd-result ${cls}"><div class="v">${val}</div><div class="l">${label}</div></div>`;
     }
 
-    async populateFromReplay(frameData) {
-        const { attackerCharId, actionState, defenderCharId, defenderPercent, stageKey, startX, startY } = frameData;
-        this._el('ikd-atk-char').value = attackerCharId;
-        this._attackerCharId = attackerCharId;
-        await this._loadMoves(attackerCharId);
-        this._el('ikd-def-char').value = defenderCharId;
-        this._defenderCharId = defenderCharId;
-        this._el('ikd-percent').value = defenderPercent || 0;
-        if (stageKey) { this._el('ikd-stage').value = stageKey; this._stageKey = stageKey; }
-        if (startX != null) this._el('ikd-startx').value = startX;
-        if (startY != null) this._el('ikd-starty').value = startY;
-        const moveData = fc.getFrameDataForAction(attackerCharId, actionState);
-        if (moveData && moveData.normalizedName) {
-            this._el('ikd-atk-move').value = moveData.normalizedName;
-            this._selectedMove = moveData;
-        }
+    async populateFromReplay(fd) {
+        this._d('atk').value = fd.attackerCharId;
+        this._atkChar = fd.attackerCharId;
+        await this._loadMoves(fd.attackerCharId);
+        this._d('def').value = fd.defenderCharId;
+        this._defChar = fd.defenderCharId;
+        this._d('pct').value = fd.defenderPercent || 0;
+        if (fd.stageKey) { this._d('stage').value = fd.stageKey; this._stageKey = fd.stageKey; }
+        if (fd.startX != null) this._startX = fd.startX;
+        if (fd.startY != null) this._startY = fd.startY;
+        const m = fc.getFrameDataForAction(fd.attackerCharId, fd.actionState);
+        if (m?.normalizedName) { this._d('move').value = m.normalizedName; this._selectedMove = m; }
         this._recalc();
     }
 }
