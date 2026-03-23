@@ -62,60 +62,60 @@ export const CHAR_PHYSICS = {
     25: { weight: 109, gravity: 0.13,  terminalVelocity: 2.0,  traction: 0.07,  airFriction: 0.02,  driftAcc: 0.06,  driftMax: 0.78 },
 };
 
-// ===== Stage data: blast zones and edge position =====
+// ===== Stage data: blast zones, edges, and platforms from IKneeData source =====
+// Blast zones from calculatorresize.js: bz[id] = [top, right, bottom, left]
+// Surfaces from calculator.js: surfaces[id] = [[[leftX,leftY],[rightX,rightY]], ...]
 export const STAGES = {
     battlefield: {
         name: 'Battlefield',
         blastZones: { left: -224, right: 224, top: 200, bottom: -108.8 },
-        edge: 71.3, groundY: 0,
+        edge: 68.4, groundY: 0,
         platforms: [
-            { y: 27.2, left: -57.6, right: 57.6 },
-            { y: 18.4, left: -57.6, right: -20 },
-            { y: 18.4, left: 20, right: 57.6 },
+            { y: 27.2, left: -57.6, right: -20 },
+            { y: 27.2, left: 20, right: 57.6 },
+            { y: 54.4, left: -18.8, right: 18.8 },
         ],
     },
     final_destination: {
         name: 'Final Destination',
         blastZones: { left: -246, right: 246, top: 188, bottom: -140 },
-        edge: 88.47, groundY: 0, platforms: [],
+        edge: 85.5657, groundY: 0, platforms: [],
     },
     dreamland: {
         name: 'Dreamland',
         blastZones: { left: -255, right: 255, top: 250, bottom: -123 },
-        edge: 80.18, groundY: 0,
+        edge: 77.2713, groundY: 0,
         platforms: [
-            { y: 30.14, left: -61.39, right: 61.39 },
-            { y: 25.06, left: -77.27, right: -51.43 },
-            { y: 25.06, left: 51.43, right: 77.27 },
+            { y: 30.1422, left: -61.3929, right: -31.7254 },
+            { y: 30.2426, left: 31.7036, right: 63.0745 },
+            { y: 51.4254, left: -19.0181, right: 19.0171 },
         ],
     },
     fountain_of_dreams: {
         name: 'Fountain of Dreams',
         blastZones: { left: -198.75, right: 198.75, top: 202.5, bottom: -146.25 },
-        edge: 66.26, groundY: 0,
+        edge: 63.34755, groundY: 0,
         platforms: [
             { y: 42.75, left: -14.25, right: 14.25 },
-            { y: 27.38, left: -51.13, right: -31.73 },
-            { y: 27.38, left: 31.73, right: 51.13 },
         ],
     },
     yoshis_story: {
         name: "Yoshi's Story",
         blastZones: { left: -175.7, right: 173.6, top: 168, bottom: -91 },
-        edge: 58.91, groundY: 0,
+        edge: 56, groundY: 0,
         platforms: [
-            { y: 42, left: -15.75, right: 15.75 },
             { y: 23.45, left: -59.5, right: -28 },
             { y: 23.45, left: 28, right: 59.5 },
+            { y: 42, left: -15.75, right: 15.75 },
         ],
     },
     pokemon_stadium: {
         name: 'Pokemon Stadium',
         blastZones: { left: -230, right: 230, top: 180, bottom: -111 },
-        edge: 90.66, groundY: 0,
+        edge: 87.75, groundY: 0,
         platforms: [
-            { y: 25, left: -25, right: 25 },
-            { y: 25, left: -25, right: 25 },
+            { y: 25, left: -55, right: -25 },
+            { y: 25, left: 25, right: 55 },
         ],
     },
 };
@@ -144,10 +144,10 @@ export function calcKnockback({
     damage, percent, weight, kbg, bkb, setKb = 0,
     crouchCancel = false, chargeInterrupt = false, vcancel = false,
     metal = false, ice = false, nana = false, yoshiDJArmor = false,
-    stalenessQueue = [], isThrow = false,
+    stalenessQueue = [], isThrow = false, grabDamageMult = 1,
 }) {
     const damageUnstaled = damage;
-    const damageStaled = applyStaleness(damage, stalenessQueue);
+    const damageStaled = applyStaleness(damage, stalenessQueue) * grabDamageMult;
 
     // Throws use weight 100
     const w = isThrow ? 100 : weight;
@@ -319,11 +319,12 @@ export function calcSDI(x, y, type = 's', grounded = false, kb = 0, trajectory =
  */
 export function simulateTrajectory({
     kb, angle, startX, startY, charPhysics, blastZones,
-    grounded = false, trajectory = null, // original trajectory before DI (for ground-down detection)
+    grounded = false, trajectory = null,
     sdiVector = [0, 0], asdiVector = [0, 0],
     maxFrames = 600, isThrow = false, releasePoint = null,
+    icg = false, fadeIn = true, doubleJump = false, meteorCancelled = false,
 }) {
-    const { gravity, terminalVelocity, traction } = charPhysics;
+    const { gravity, terminalVelocity, traction, driftAcc, driftMax, airFriction } = charPhysics;
     const resolvedTrajectory = trajectory ?? angle;
 
     // Detect ground-down hit
@@ -347,6 +348,9 @@ export function simulateTrajectory({
     const initSpeed = kb * 0.03;
     let horVelKB = Math.round(initSpeed * Math.cos(angle * DEG2RAD) * 100000) / 100000;
     let verVelKB = Math.round(initSpeed * Math.sin(angle * DEG2RAD) * 100000) / 100000;
+
+    // ICG: zero out vertical KB velocity
+    if (icg) verVelKB = 0;
 
     // Ground-down adjustments
     if (reduceByTraction) verVelKB = 0;
@@ -372,19 +376,28 @@ export function simulateTrajectory({
     let x = isThrow && releasePoint ? releasePoint[0] : startX;
     let y = isThrow && releasePoint ? releasePoint[1] : startY;
     let verVelChar = 0;
+    let horVelChar = 0;
 
     const frames = [{ x, y }];
     let killed = false;
     let killFrame = null;
     let killZone = null;
+    let hasDoubleJumped = false;
 
     // Simulate through hitstun + post-hitstun decay
     const totalFrames = Math.min(maxFrames, hitstun + 200);
 
     for (let i = 0; i < totalFrames; i++) {
+        const inHitstun = i < hitstun;
+
+        // Meteor cancel: zero KB velocities after hitstun ends (frame 8)
+        if (meteorCancelled && i >= hitstun) {
+            horVelKB = 0;
+            verVelKB = 0;
+        }
+
         // Decay knockback velocities
         if (reduceByTraction) {
-            // Traction-based horizontal decay
             if (horVelKB > 0) {
                 horVelKB -= traction;
                 if (horVelKB < 0) horVelKB = 0;
@@ -393,12 +406,11 @@ export function simulateTrajectory({
                 if (horVelKB > 0) horVelKB = 0;
             }
         } else {
-            // Normal KB decay (toward zero)
             if (horVelKB > 0) {
                 horVelKB -= hDecay;
                 if (horVelKB < 0) horVelKB = 0;
             } else if (horVelKB < 0) {
-                horVelKB -= hDecay; // hDecay has sign from cos
+                horVelKB -= hDecay;
                 if (horVelKB > 0) horVelKB = 0;
             }
 
@@ -411,14 +423,64 @@ export function simulateTrajectory({
             }
 
             // Gravity accumulation (only for non-traction hits)
-            if (i < gravityFrames) {
-                verVelChar -= gravity;
-            } else if (i === gravityFrames) {
-                verVelChar -= lastGravityFrame;
+            if (inHitstun) {
+                if (i < gravityFrames) {
+                    verVelChar -= gravity;
+                } else if (i === gravityFrames) {
+                    verVelChar -= lastGravityFrame;
+                }
             }
         }
 
-        x += horVelKB;
+        // Post-hitstun behavior
+        if (!inHitstun) {
+            // Double jump after hitstun
+            if (doubleJump && !hasDoubleJumped) {
+                // Use character's double jump initial Y velocity (approximate)
+                // Most characters: ~2.1 units, varies by char
+                const djInitY = charPhysics.terminalVelocity * 1.2; // approximation
+                verVelChar = djInitY;
+                if (fadeIn) {
+                    // Drift toward center
+                    if (x > 0) horVelChar = -(driftMax || 0);
+                    else if (x < 0) horVelChar = (driftMax || 0);
+                }
+                hasDoubleJumped = true;
+            }
+
+            // Double jump gravity after jumping
+            if (hasDoubleJumped) {
+                verVelChar -= gravity;
+                if (verVelChar < -terminalVelocity) verVelChar = -terminalVelocity;
+            } else {
+                // Normal gravity post-hitstun
+                verVelChar -= gravity;
+                if (verVelChar < -terminalVelocity) verVelChar = -terminalVelocity;
+            }
+
+            // Fade in: drift toward center after hitstun
+            if (fadeIn && !hasDoubleJumped) {
+                if (x > 0) {
+                    if (horVelChar < -(driftMax || 0)) {
+                        horVelChar += (airFriction || 0);
+                        if (horVelChar > -(driftMax || 0)) horVelChar = -(driftMax || 0);
+                    } else {
+                        horVelChar -= (driftAcc || 0);
+                        if (horVelChar < -(driftMax || 0)) horVelChar = -(driftMax || 0);
+                    }
+                } else if (x < 0) {
+                    if (horVelChar > (driftMax || 0)) {
+                        horVelChar -= (airFriction || 0);
+                        if (horVelChar < (driftMax || 0)) horVelChar = (driftMax || 0);
+                    } else {
+                        horVelChar += (driftAcc || 0);
+                        if (horVelChar > (driftMax || 0)) horVelChar = (driftMax || 0);
+                    }
+                }
+            }
+        }
+
+        x += horVelKB + horVelChar;
         y += verVelChar + verVelKB;
 
         // Apply SDI/ASDI on first frame
@@ -466,7 +528,9 @@ export function simulateTrajectory({
 export function findKillPercent({
     damage, kbg, bkb, setKb = 0, angle, defenderCharId, stageKey,
     startX = 0, startY = 0, diAngle = null, crouchCancel = false,
-    reverse = false, stalenessQueue = [],
+    reverse = false, stalenessQueue = [], chargeFrames = 0,
+    grabInterrupt = false, vcancel = false, chargeInterrupt = false,
+    metal = false, ice = false, yoshiDJArmor = false,
 }) {
     const physics = CHAR_PHYSICS[defenderCharId];
     const stage = STAGES[stageKey];
@@ -474,10 +538,18 @@ export function findKillPercent({
 
     const grounded = startY <= 0;
 
+    // Apply smash charge to damage
+    let effectiveDamage = damage;
+    if (chargeFrames > 0) {
+        effectiveDamage = damage * (1 + (chargeFrames * (0.3671 / 60)));
+    }
+    const grabDamageMult = grabInterrupt ? 0.5 : 1;
+
     const doesKill = (percent, diDeg) => {
         const kb = calcKnockback({
-            damage, percent, weight: physics.weight, kbg, bkb, setKb,
-            crouchCancel, stalenessQueue,
+            damage: effectiveDamage, percent, weight: physics.weight, kbg, bkb, setKb,
+            crouchCancel, stalenessQueue, vcancel, chargeInterrupt, metal, ice,
+            yoshiDJArmor, grabDamageMult,
         });
         const resolvedAngle = resolveSakuraiAngle(angle, kb, grounded, reverse);
 
@@ -516,7 +588,7 @@ export function findKillPercent({
     const noDI = binarySearch(null);
 
     // Optimal survival DI: try perpendicular to launch in both directions
-    const testKb = calcKnockback({ damage, percent: 80, weight: physics.weight, kbg, bkb, setKb, crouchCancel });
+    const testKb = calcKnockback({ damage: effectiveDamage, percent: 80, weight: physics.weight, kbg, bkb, setKb, crouchCancel, grabDamageMult });
     const testAngle = resolveSakuraiAngle(angle, testKb, grounded, reverse);
     const diUp = binarySearch(testAngle + 90);
     const diDown = binarySearch(testAngle - 90);
@@ -531,10 +603,12 @@ export function findKillPercent({
 }
 
 /**
- * Calculate shield stun. Melee: floor((damage + 4.45) / 2.235)
+ * Calculate shield stun. IKneeData formula: floor(floor(staledDmg) * 0.45 + 2) * 200/201)
+ * Falls back to approximate if no staled damage provided.
  */
-export function calcShieldStun(damage) {
-    return Math.floor((damage + 4.45) / 2.235);
+export function calcShieldStun(damage, staledDamage = null) {
+    const d = staledDamage != null ? staledDamage : damage;
+    return Math.floor((Math.floor(d) * 0.45 + 2) * 200 / 201);
 }
 
 /**
@@ -563,17 +637,27 @@ export function fullCalc(params) {
         stageKey = 'final_destination',
         startX = 0, startY = 0,
         diAngle = null,
+        diX = null, diY = null, // raw stick x/y for DI (preferred over diAngle)
+        sdi1X = 0, sdi1Y = 0,
+        sdi2X = 0, sdi2Y = 0,
+        asdiX = 0, asdiY = 0,
         crouchCancel = false,
         chargeInterrupt = false,
         vcancel = false,
         metal = false,
         ice = false,
         nana = false,
+        grabInterrupt = false,
         yoshiDJArmor = false,
         stalenessQueue = [],
+        chargeFrames = 0,
         attackerEndlag = null,
         reverse = false,
         isThrow = false,
+        meteorCancel = false,
+        icg = false,
+        fadeIn = true,
+        doubleJump = false,
     } = params;
 
     const physics = CHAR_PHYSICS[defenderCharId];
@@ -581,24 +665,53 @@ export function fullCalc(params) {
 
     const grounded = startY <= 0;
 
+    // Apply smash charge damage boost: damage *= 1 + (chargeFrames * 0.3671/60)
+    let effectiveDamage = damage;
+    if (chargeFrames > 0) {
+        effectiveDamage = damage * (1 + (chargeFrames * (0.3671 / 60)));
+    }
+
+    // Apply grab interrupt: halves staled damage (applied to damage before KB calc)
+    // In IKneeData, grabInterrupt halves the staled damage, not the KB
+    let grabDamageMult = grabInterrupt ? 0.5 : 1;
+
     const kb = calcKnockback({
-        damage, percent, weight: physics.weight, kbg, bkb, setKb,
+        damage: effectiveDamage, percent, weight: physics.weight, kbg, bkb, setKb,
         crouchCancel, chargeInterrupt, vcancel, metal, ice, nana, yoshiDJArmor,
-        stalenessQueue, isThrow,
+        stalenessQueue, isThrow, grabDamageMult,
     });
 
     const resolvedAngle = resolveSakuraiAngle(angle, kb, grounded, reverse);
 
+    // Apply DI: prefer raw x/y stick coords, fall back to angle
     let di;
-    if (diAngle != null) {
+    if (diX != null && diY != null && (Math.abs(diX) > 0.01 || Math.abs(diY) > 0.01)) {
+        di = applyDI(resolvedAngle, diX, diY);
+    } else if (diAngle != null) {
         di = applyDIFromAngle(resolvedAngle, diAngle);
     } else {
         di = { baseAngle: resolvedAngle, diAngle: null, diModifiedAngle: resolvedAngle };
     }
 
-    const { hitstun, tumble } = calcHitstun(kb);
-    const hitlag = calcHitlag(damage);
-    const shieldStun = calcShieldStun(damage);
+    let { hitstun, tumble } = calcHitstun(kb);
+
+    // Meteor cancel: limit hitstun to 8 frames for angles 260-280°
+    let meteorCancelled = false;
+    if (meteorCancel && resolvedAngle >= 260 && resolvedAngle <= 280 && !icg) {
+        hitstun = 8;
+        meteorCancelled = true;
+    }
+
+    const hitlag = calcHitlag(effectiveDamage);
+    const staledDmg = applyStaleness(effectiveDamage, stalenessQueue) * grabDamageMult;
+    const shieldStun = Math.floor((Math.floor(staledDmg) * 0.45 + 2) * 200 / 201);
+
+    // Calculate SDI/ASDI vectors
+    const sdiVec1 = calcSDI(sdi1X, sdi1Y, 's', grounded, kb, resolvedAngle);
+    const sdiVec2 = calcSDI(sdi2X, sdi2Y, 's', grounded, kb, resolvedAngle);
+    const asdiVec = calcSDI(asdiX, asdiY, 'a', grounded, kb, resolvedAngle);
+    // Combined SDI = sdi1 + sdi2, ASDI separate
+    const sdiVector = [sdiVec1[0] + sdiVec2[0], sdiVec1[1] + sdiVec2[1]];
 
     const stage = STAGES[stageKey];
     let trajectory = null;
@@ -611,7 +724,13 @@ export function fullCalc(params) {
             blastZones: stage.blastZones,
             grounded,
             trajectory: resolvedAngle,
+            sdiVector,
+            asdiVector: asdiVec,
             isThrow,
+            icg,
+            fadeIn,
+            doubleJump,
+            meteorCancelled,
         });
     }
 
@@ -634,6 +753,8 @@ export function fullCalc(params) {
         combo,
         trajectory,
         defenderWeight: physics.weight,
+        staledDamage: Math.round(staledDmg * 100) / 100,
+        meteorCancelled,
     };
 }
 

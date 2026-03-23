@@ -6,7 +6,7 @@
 import {
     CHAR_NAMES, CHAR_PHYSICS, STAGES, fc,
     calcKnockback, calcHitstun, calcHitlag, resolveSakuraiAngle,
-    applyDI, applyDIFromAngle, simulateTrajectory, calcSDI,
+    applyDI, applyDIFromAngle, simulateTrajectory,
     fullCalc, findKillPercent, applyStaleness,
 } from './ikneedata-calc.js';
 
@@ -821,8 +821,12 @@ export class IKneeDataUI {
         const pct = +this._d('pct').value || 0;
         const stalePositions = this._getStalePositions();
 
-        // Calculate staled damage for display
-        const staledDmg = applyStaleness(mp.damage, stalePositions);
+        // Calculate effective damage for display (with charge boost)
+        let effectiveDmg = mp.damage;
+        if (this._chargeFrames > 0) {
+            effectiveDmg *= 1 + (this._chargeFrames * (0.3671 / 60));
+        }
+        const staledDmg = applyStaleness(effectiveDmg, stalePositions) * (this._toggles.grabInterrupt ? 0.5 : 1);
         this._updateStaleDamage(staledDmg);
 
         // Get DI from stick state
@@ -831,19 +835,15 @@ export class IKneeDataUI {
         const sdi2 = this._diState.z;
         const asdi = this._diState.a;
 
-        // Determine DI angle from trajectory DI stick
-        let diAngle = null;
-        if (Math.abs(tdi.x) > 0.01 || Math.abs(tdi.y) > 0.01) {
-            diAngle = Math.atan2(tdi.y, tdi.x) * (180 / Math.PI);
-            if (diAngle < 0) diAngle += 360;
-        }
-
         const result = fullCalc({
             ...mp, percent: pct,
             defenderCharId: this._defChar,
             stageKey: this._stageKey,
             startX: this._startX, startY: this._startY,
-            diAngle,
+            diX: tdi.x, diY: tdi.y,
+            sdi1X: sdi1.x, sdi1Y: sdi1.y,
+            sdi2X: sdi2.x, sdi2Y: sdi2.y,
+            asdiX: asdi.x, asdiY: asdi.y,
             crouchCancel: this._toggles.crouch,
             vcancel: this._toggles.vcancel,
             chargeInterrupt: this._toggles.chargeInterrupt,
@@ -851,8 +851,13 @@ export class IKneeDataUI {
             ice: this._toggles.ice,
             reverse: this._reverse,
             yoshiDJArmor: this._toggles.yoshiDJArmor,
-            nana: this._toggles.grabInterrupt,
+            grabInterrupt: this._toggles.grabInterrupt,
             stalenessQueue: stalePositions,
+            chargeFrames: this._chargeFrames,
+            meteorCancel: this._toggles.meteorCancel,
+            icg: this._toggles.icg,
+            fadeIn: this._toggles.fadeIn,
+            doubleJump: this._toggles.doubleJump,
         });
 
         if (!result) {
@@ -873,6 +878,13 @@ export class IKneeDataUI {
                 crouchCancel: this._toggles.crouch,
                 reverse: this._reverse,
                 stalenessQueue: stalePositions,
+                chargeFrames: this._chargeFrames,
+                grabInterrupt: this._toggles.grabInterrupt,
+                vcancel: this._toggles.vcancel,
+                chargeInterrupt: this._toggles.chargeInterrupt,
+                metal: this._toggles.metal,
+                ice: this._toggles.ice,
+                yoshiDJArmor: this._toggles.yoshiDJArmor,
             });
             let kh = '';
             if (kill.noDI != null) kh += this._c('Kill% noDI', kill.noDI + '%', 'kill');
