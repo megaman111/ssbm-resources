@@ -250,11 +250,11 @@ export class IKneeDataUI {
   <div class="ikd-fod-sliders" data-id="fodSliders" style="display:${this._stageKey === 'fountain_of_dreams' ? 'flex' : 'none'}">
     <div class="ikd-fod-slider">
       <label>Left Plat <span data-id="fodLeftVal">16.1</span></label>
-      <input type="range" data-id="fodLeft" min="7.5" max="27.375" step="0.125" value="16.125">
+      <input type="range" data-id="fodLeft" min="0" max="27.375" step="0.125" value="16.125">
     </div>
     <div class="ikd-fod-slider">
       <label>Right Plat <span data-id="fodRightVal">22.1</span></label>
-      <input type="range" data-id="fodRight" min="7.5" max="27.375" step="0.125" value="22.125">
+      <input type="range" data-id="fodRight" min="0" max="27.375" step="0.125" value="22.125">
     </div>
   </div>
   <div class="ikd-stage-wrap">
@@ -345,9 +345,9 @@ export class IKneeDataUI {
             this._d('fodSliders').style.display = this._stageKey === 'fountain_of_dreams' ? 'flex' : 'none';
             if (this._stageKey === 'fountain_of_dreams') {
                 this._d('fodRight').value = STAGES.fountain_of_dreams.platforms[1].y;
-                this._d('fodRightVal').textContent = STAGES.fountain_of_dreams.platforms[1].y.toFixed(1);
+                this._d('fodRightVal').textContent = STAGES.fountain_of_dreams.platforms[1].y === 0 ? 'Off' : STAGES.fountain_of_dreams.platforms[1].y.toFixed(1);
                 this._d('fodLeft').value = STAGES.fountain_of_dreams.platforms[2].y;
-                this._d('fodLeftVal').textContent = STAGES.fountain_of_dreams.platforms[2].y.toFixed(1);
+                this._d('fodLeftVal').textContent = STAGES.fountain_of_dreams.platforms[2].y === 0 ? 'Off' : STAGES.fountain_of_dreams.platforms[2].y.toFixed(1);
             }
             this._recalc();
         });
@@ -356,13 +356,13 @@ export class IKneeDataUI {
         this._d('fodRight').addEventListener('input', () => {
             const v = +this._d('fodRight').value;
             STAGES.fountain_of_dreams.platforms[1].y = v;
-            this._d('fodRightVal').textContent = v.toFixed(1);
+            this._d('fodRightVal').textContent = v === 0 ? 'Off' : v.toFixed(1);
             if (this._stageKey === 'fountain_of_dreams') this._recalc();
         });
         this._d('fodLeft').addEventListener('input', () => {
             const v = +this._d('fodLeft').value;
             STAGES.fountain_of_dreams.platforms[2].y = v;
-            this._d('fodLeftVal').textContent = v.toFixed(1);
+            this._d('fodLeftVal').textContent = v === 0 ? 'Off' : v.toFixed(1);
             if (this._stageKey === 'fountain_of_dreams') this._recalc();
         });
 
@@ -742,6 +742,7 @@ export class IKneeDataUI {
         // Platforms
         ctx.lineWidth = 3;
         for (const p of stage.platforms) {
+            if (p.movable && p.y === 0) continue;
             ctx.strokeStyle = p.movable ? '#88aaff' : STAGE_COLORS.platform;
             const [pL, pY] = this._stageToCanvas(p.left, p.y, stage, canvas);
             const [pR] = this._stageToCanvas(p.right, p.y, stage, canvas);
