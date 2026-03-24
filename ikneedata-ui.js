@@ -104,6 +104,11 @@ const CSS = `
 .ikd-stage-btn{padding:.2rem .5rem;border:1px solid #444;border-radius:4px;background:#1a1a2e;color:#888;font-size:.65rem;cursor:pointer;transition:all .15s}
 .ikd-stage-btn.active{background:#667eea;color:#fff;border-color:#667eea}
 .ikd-stage-btn:hover{border-color:#667eea}
+.ikd-fod-sliders{display:flex;gap:.75rem;padding:.25rem .5rem;background:rgba(0,0,0,0.2);border-bottom:1px solid #333;align-items:center}
+.ikd-fod-slider{display:flex;align-items:center;gap:.35rem;flex:1}
+.ikd-fod-slider label{font-size:.6rem;color:#aaa;white-space:nowrap;min-width:72px}
+.ikd-fod-slider label span{color:#e0e0e0;font-weight:600}
+.ikd-fod-slider input[type=range]{flex:1;height:4px;accent-color:#667eea;cursor:pointer}
 
 /* Results bar */
 .ikd-results{display:flex;flex-wrap:wrap;gap:.3rem;padding:.5rem;background:rgba(0,0,0,0.3);border-top:1px solid #333}
@@ -242,6 +247,16 @@ export class IKneeDataUI {
 <!-- CENTER: STAGE + RESULTS -->
 <div class="ikd-center">
   <div class="ikd-stage-select" data-id="stageBar">${stageButtons}</div>
+  <div class="ikd-fod-sliders" data-id="fodSliders" style="display:${this._stageKey === 'fountain_of_dreams' ? 'flex' : 'none'}">
+    <div class="ikd-fod-slider">
+      <label>Left Plat <span data-id="fodLeftVal">16.1</span></label>
+      <input type="range" data-id="fodLeft" min="7.5" max="27.375" step="0.125" value="16.125">
+    </div>
+    <div class="ikd-fod-slider">
+      <label>Right Plat <span data-id="fodRightVal">22.1</span></label>
+      <input type="range" data-id="fodRight" min="7.5" max="27.375" step="0.125" value="22.125">
+    </div>
+  </div>
   <div class="ikd-stage-wrap">
     <canvas data-id="canvas" width="900" height="420"></canvas>
     <div class="ikd-stage-info" data-id="stageLabel"></div>
@@ -327,7 +342,28 @@ export class IKneeDataUI {
             this._d('stageBar').querySelectorAll('.ikd-stage-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             this._stageKey = btn.dataset.stage;
+            this._d('fodSliders').style.display = this._stageKey === 'fountain_of_dreams' ? 'flex' : 'none';
+            if (this._stageKey === 'fountain_of_dreams') {
+                this._d('fodRight').value = STAGES.fountain_of_dreams.platforms[1].y;
+                this._d('fodRightVal').textContent = STAGES.fountain_of_dreams.platforms[1].y.toFixed(1);
+                this._d('fodLeft').value = STAGES.fountain_of_dreams.platforms[2].y;
+                this._d('fodLeftVal').textContent = STAGES.fountain_of_dreams.platforms[2].y.toFixed(1);
+            }
             this._recalc();
+        });
+
+        // FoD platform sliders
+        this._d('fodRight').addEventListener('input', () => {
+            const v = +this._d('fodRight').value;
+            STAGES.fountain_of_dreams.platforms[1].y = v;
+            this._d('fodRightVal').textContent = v.toFixed(1);
+            if (this._stageKey === 'fountain_of_dreams') this._recalc();
+        });
+        this._d('fodLeft').addEventListener('input', () => {
+            const v = +this._d('fodLeft').value;
+            STAGES.fountain_of_dreams.platforms[2].y = v;
+            this._d('fodLeftVal').textContent = v.toFixed(1);
+            if (this._stageKey === 'fountain_of_dreams') this._recalc();
         });
 
         // Stale queue buttons
@@ -704,9 +740,9 @@ export class IKneeDataUI {
         ctx.beginPath(); ctx.moveTo(gL, gY); ctx.lineTo(gR, gY); ctx.stroke();
 
         // Platforms
-        ctx.strokeStyle = STAGE_COLORS.platform;
         ctx.lineWidth = 3;
         for (const p of stage.platforms) {
+            ctx.strokeStyle = p.movable ? '#88aaff' : STAGE_COLORS.platform;
             const [pL, pY] = this._stageToCanvas(p.left, p.y, stage, canvas);
             const [pR] = this._stageToCanvas(p.right, p.y, stage, canvas);
             ctx.beginPath(); ctx.moveTo(pL, pY); ctx.lineTo(pR, pY); ctx.stroke();
@@ -1054,6 +1090,20 @@ export class IKneeDataUI {
         if (fd.stageKey) { this._stageKey = fd.stageKey; }
         if (fd.startX != null) this._startX = fd.startX;
         if (fd.startY != null) this._startY = fd.startY;
+        // FoD platform heights from replay viewer
+        if (fd.fodLeftY != null) {
+            STAGES.fountain_of_dreams.platforms[2].y = fd.fodLeftY;
+            this._d('fodLeft').value = fd.fodLeftY;
+            this._d('fodLeftVal').textContent = fd.fodLeftY.toFixed(1);
+        }
+        if (fd.fodRightY != null) {
+            STAGES.fountain_of_dreams.platforms[1].y = fd.fodRightY;
+            this._d('fodRight').value = fd.fodRightY;
+            this._d('fodRightVal').textContent = fd.fodRightY.toFixed(1);
+        }
+        if (fd.stageKey === 'fountain_of_dreams') {
+            this._d('fodSliders').style.display = 'flex';
+        }
         const m = fc.getFrameDataForAction(fd.attackerCharId, fd.actionState);
         if (m?.normalizedName) {
             this._d('move').value = m.normalizedName;

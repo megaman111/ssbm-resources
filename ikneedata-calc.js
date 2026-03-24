@@ -110,6 +110,8 @@ export const STAGES = {
         edge: 63.34755, groundY: 0,
         platforms: [
             { y: 42.75, left: -14.25, right: 14.25 },
+            { y: 22.125, left: 21, right: 49.5, movable: true, label: 'Right', defaultY: 22.125 },
+            { y: 16.125, left: -49.5, right: -21, movable: true, label: 'Left', defaultY: 16.125 },
         ],
         polygon: [
             [-63.35,0.62],[-53.5,0.62],[-51.25,0],[51.25,0],[53.5,0.62],[63.35,0.62],

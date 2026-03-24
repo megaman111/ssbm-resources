@@ -95,6 +95,7 @@
 - [x] Combo/DI calculator
 - [ ] Hitbox visualization
 - [x] Embeddable as a module on any page
+- [x] **FoD platform sliders** — two range sliders for Fountain of Dreams side platforms (left/right), adjustable height 7.5–27.375, updates stage rendering and trajectory calculations in real-time. `populateFromReplay()` accepts `fodLeftY`/`fodRightY` for replay viewer integration.
 - [ ] Replay viewer integration — pause on a frame and auto-populate the calculator with that frame's data
 
 ### VOD Linking Module
