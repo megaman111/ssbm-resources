@@ -2520,15 +2520,15 @@ function detectHitOnFrame(frameIdx) {
                 defenderCharId: players[i].characterId,
                 actionState: attackerAction,
                 defenderPercent: prev.percent || 0,
-                defenderX: curr.positionX,
-                defenderY: curr.positionY,
+                defenderX: prev.positionX,
+                defenderY: prev.positionY,
             };
         }
     }
     return null;
 }
 
-function updateCalcFromFrame(frameIdx) {
+async function updateCalcFromFrame(frameIdx) {
     if (!replaySettings) return;
     if (frameIdx === lastCalcHitFrame) return;
 
@@ -2576,7 +2576,7 @@ function updateCalcFromFrame(frameIdx) {
         }
     }
 
-    calcInstance.populateFromReplay(fd);
+    await calcInstance.populateFromReplay(fd);
 
     // Update hit info bar
     const infoEl = document.getElementById('calcHitInfo');

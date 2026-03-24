@@ -151,6 +151,9 @@ export class IKneeDataUI {
         this._positionFrozen = false;
         this._lastResult = null;
 
+        // Ready promise — resolves when _init() completes (DOM rendered + moves loaded)
+        this.ready = this._init();
+
         // Stale queue: array of 9 booleans (positions 1-9)
         this._staleQueue = [false,false,false,false,false,false,false,false,false];
         // Smash charge frames
@@ -182,8 +185,6 @@ export class IKneeDataUI {
             fadeIn: true,
             doubleJump: false,
         };
-
-        this._init();
     }
 
     async _init() {
@@ -1082,6 +1083,7 @@ export class IKneeDataUI {
     }
 
     async populateFromReplay(fd) {
+        await this.ready; // Ensure DOM and initial moves are loaded
         this._d('atk').value = fd.attackerCharId;
         this._atkChar = fd.attackerCharId;
         await this._loadMoves(fd.attackerCharId);
