@@ -1861,6 +1861,10 @@ let lastTimestamp = null;
 let frameAccum = 0;
 let activeNoteIdx = null;
 
+// FoD moving platform heights: Map<frameNumber, {left: y, right: y}>
+// Built once at replay load from stageEvents, then looked up per frame during render
+let fodPlatformMap = null;
+
 // Zoom/pan state for replay viewer
 let viewZoom = 1.0;       // 1.0 = fit stage to canvas, >1 = zoomed in
 let viewPanX = 0;         // pan offset in game units
@@ -2573,6 +2577,37 @@ window.loadSlpFile = async event => {
     event.target.value = '';
 };
 
+// Build FoD platform height lookup from stageEvents
+function buildFodPlatformMap() {
+    fodPlatformMap = null;
+    if (!replaySettings || replaySettings.stageId !== 2) return; // Only FoD (stageId 2)
+    if (!replayFrames) return;
+
+    const keys = Object.keys(replayFrames).map(Number).sort((a, b) => a - b);
+    if (!keys.length) return;
+
+    // Default static heights from STAGE_DATA: right=22.125, left=16.125, top=42.75
+    let rightY = 22.125;
+    let leftY = 16.125;
+    const map = new Map();
+
+    for (const k of keys) {
+        const frame = replayFrames[k];
+        const events = frame.stageEvents;
+        if (events && events.length) {
+            for (const ev of events) {
+                if (ev.height != null && ev.platform != null) {
+                    // platform 0 = Right, 1 = Left (per slippi spec)
+                    if (ev.platform === 0) rightY = ev.height;
+                    else if (ev.platform === 1) leftY = ev.height;
+                }
+            }
+        }
+        map.set(k, { left: leftY, right: rightY });
+    }
+    fodPlatformMap = map;
+}
+
 async function initReplayFromBuffer(uint8, filename) {
     const status = document.getElementById('replayStatus');
     replayRawBytes = uint8.buffer.slice(uint8.byteOffset, uint8.byteOffset + uint8.byteLength);
@@ -2582,6 +2617,7 @@ async function initReplayFromBuffer(uint8, filename) {
     const frameKeys = Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
     totalFrames = frameKeys.length;
     if (!totalFrames) throw new Error('No frames found in replay');
+    buildFodPlatformMap();
     currentFrame = 0; isPlaying = true;
     document.getElementById('replayTimeline').max = totalFrames - 1;
     document.getElementById('replayTimeline').value = 0;
@@ -2912,16 +2948,24 @@ function renderFrame(frameIdx) {
     }
     ctx.restore();
 
-    // Side platforms
+    // Side platforms (with FoD dynamic heights)
     ctx.save();
     ctx.strokeStyle = '#4a6aaa';
     ctx.lineWidth = 3;
     ctx.shadowColor = '#667eea';
     ctx.shadowBlur = 6;
-    (stage.platforms || []).forEach(([[x1,y1],[x2,y2]]) => {
+    const plats = stage.platforms || [];
+    const fodH = (fodPlatformMap && stageId === 2) ? fodPlatformMap.get(frameNum) : null;
+    plats.forEach(([[x1,y1],[x2,y2]], pi) => {
+        let py1 = y1, py2 = y2;
+        if (fodH) {
+            // FoD: platform index 1 = right (slippi 0), index 2 = left (slippi 1)
+            if (pi === 1) { py1 = fodH.right; py2 = fodH.right; }
+            else if (pi === 2) { py1 = fodH.left; py2 = fodH.left; }
+        }
         ctx.beginPath();
-        ctx.moveTo(toCanvasX(x1), toCanvasY(y1));
-        ctx.lineTo(toCanvasX(x2), toCanvasY(y2));
+        ctx.moveTo(toCanvasX(x1), toCanvasY(py1));
+        ctx.lineTo(toCanvasX(x2), toCanvasY(py2));
         ctx.stroke();
     });
     ctx.restore();

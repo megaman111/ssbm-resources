@@ -42,7 +42,7 @@
 - [x] Toggle between fixed view and dynamic camera
 
 ### Stage Features
-- [ ] **Fountain of Dreams moving platforms** — use `stageEvents` from frame data (fodLeftPlatformHeight/fodRightPlatformHeight, replay format >= 3.18.0.0)
+- [x] **Fountain of Dreams moving platforms** — use `stageEvents` from frame data (fodLeftPlatformHeight/fodRightPlatformHeight, replay format >= 3.18.0.0)
 - [ ] Whispy wind indicator (Dream Land)
 - [ ] Pokemon Stadium transformations indicator
 
