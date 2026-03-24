@@ -1088,22 +1088,25 @@ export class IKneeDataUI {
         this._d('def').value = fd.defenderCharId;
         this._defChar = fd.defenderCharId;
         this._d('pct').value = fd.defenderPercent || 0;
-        if (fd.stageKey) { this._stageKey = fd.stageKey; }
-        if (fd.startX != null) this._startX = fd.startX;
-        if (fd.startY != null) this._startY = fd.startY;
+        if (fd.stageKey) {
+            this._stageKey = fd.stageKey;
+            // Sync stage buttons
+            this._d('stageBar').querySelectorAll('.ikd-stage-btn').forEach(b => b.classList.toggle('active', b.dataset.stage === fd.stageKey));
+            this._d('fodSliders').style.display = fd.stageKey === 'fountain_of_dreams' ? 'flex' : 'none';
+        }
+        if (fd.startX != null) this._startX = Math.round(fd.startX);
+        if (fd.startY != null) this._startY = Math.round(fd.startY);
+        this._positionFrozen = true;
         // FoD platform heights from replay viewer
         if (fd.fodLeftY != null) {
             STAGES.fountain_of_dreams.platforms[2].y = fd.fodLeftY;
             this._d('fodLeft').value = fd.fodLeftY;
-            this._d('fodLeftVal').textContent = fd.fodLeftY.toFixed(1);
+            this._d('fodLeftVal').textContent = fd.fodLeftY === 0 ? 'Off' : fd.fodLeftY.toFixed(1);
         }
         if (fd.fodRightY != null) {
             STAGES.fountain_of_dreams.platforms[1].y = fd.fodRightY;
             this._d('fodRight').value = fd.fodRightY;
-            this._d('fodRightVal').textContent = fd.fodRightY.toFixed(1);
-        }
-        if (fd.stageKey === 'fountain_of_dreams') {
-            this._d('fodSliders').style.display = 'flex';
+            this._d('fodRightVal').textContent = fd.fodRightY === 0 ? 'Off' : fd.fodRightY.toFixed(1);
         }
         const m = fc.getFrameDataForAction(fd.attackerCharId, fd.actionState);
         if (m?.normalizedName) {
