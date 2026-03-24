@@ -135,7 +135,7 @@
         .calc-overlay-close { background: none; border: 1px solid #555; color: #aaa; padding: 0.15rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
         .calc-overlay-close:hover { border-color: #f66; color: #f66; }
         .calc-overlay .ikd-calc { background: transparent; max-width: none; border-radius: 0; }
-        .calc-overlay .ikd-layout { min-height: 0; grid-template-columns: 220px 1fr 240px; }
+        .calc-overlay .ikd-layout { min-height: 400px; grid-template-columns: 220px 1fr 240px; }
         .calc-overlay .ikd-panel { max-height: none; padding: 0.4rem; }
         .calc-overlay .ikd-stage-wrap canvas { height: 180px; }
         .replay-canvas-wrap:fullscreen { background: #000; display: flex; align-items: center; justify-content: center; }
@@ -378,7 +378,7 @@
                                     <div class="calc-hit-info" id="calcHitInfo">Pause on a hit to auto-populate</div>
                                     <button class="calc-overlay-close" onclick="toggleCalcOverlay(false)">✕ Close</button>
                                 </div>
-                                <div id="calcRoot"></div>
+                                <div id="calcRoot" style="min-height:200px"></div>
                             </div>
                         </div>
                         <div class="canvas-resize-handle" id="canvasResizeHandle" title="Drag to resize viewer"></div>
@@ -2458,11 +2458,16 @@ window.toggleCalcOverlay = (forceState) => {
 function initCalcPanel() {
     const root = document.getElementById('calcRoot');
     if (!root || calcInstance) return;
-    const stageKey = STAGE_ID_TO_KEY[replaySettings?.stageId] || 'final_destination';
-    const players = replaySettings?.players || [];
-    const atkChar = players[0]?.characterId ?? 2;
-    const defChar = players[1]?.characterId ?? 2;
-    calcInstance = embedCalculator('calcRoot', { attackerCharId: atkChar, defenderCharId: defChar, stageKey });
+    try {
+        const stageKey = STAGE_ID_TO_KEY[replaySettings?.stageId] || 'final_destination';
+        const players = replaySettings?.players || [];
+        const atkChar = players[0]?.characterId ?? 2;
+        const defChar = players[1]?.characterId ?? 2;
+        calcInstance = embedCalculator('calcRoot', { attackerCharId: atkChar, defenderCharId: defChar, stageKey });
+    } catch (e) {
+        console.error('initCalcPanel error:', e);
+        root.innerHTML = `<div style="color:#f66;padding:1rem;font-size:.8rem">Calculator failed to load: ${e.message}</div>`;
+    }
 }
 
 function detectHitOnFrame(frameIdx) {
@@ -2541,7 +2546,6 @@ function detectHitOnFrame(frameIdx) {
 
 async function updateCalcFromFrame(frameIdx) {
     if (!replaySettings) return;
-    if (frameIdx === lastCalcHitFrame) return;
 
     // Scan nearby frames (±5) to find the closest hit
     let hit = null;
@@ -2555,7 +2559,9 @@ async function updateCalcFromFrame(frameIdx) {
         }
     }
     if (!hit) return;
-    lastCalcHitFrame = frameIdx;
+    // Skip if we already processed this exact hit frame
+    if (hitFrame === lastCalcHitFrame) return;
+    lastCalcHitFrame = hitFrame;
 
     // Convert action state ID to action name for FightCore lookup
     const actionName = hit.actionState < ACTION_NAMES.length ? ACTION_NAMES[hit.actionState] : null;

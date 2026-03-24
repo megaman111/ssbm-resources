@@ -1,2 +1,6 @@
 # Reference repos (cloned locally for development, not deployed)
 reference/
+
+# Dependencies
+node_modules/
+package-lock.json

@@ -202,6 +202,12 @@ export class IKneeDataUI {
             this._recalc();
         } catch (e) {
             console.error('IKneeDataUI _init error:', e);
+            if (this.container) {
+                this.container.innerHTML = `<div style="color:#f66;padding:1rem;font-size:.8rem;background:rgba(0,0,0,0.5);border-radius:8px;margin:.5rem">
+                    <div style="font-weight:600;margin-bottom:.3rem">Calculator init error</div>
+                    <pre style="white-space:pre-wrap;font-size:.7rem;color:#ccc">${e.message}\n${e.stack}</pre>
+                </div>`;
+            }
         }
     }
 
