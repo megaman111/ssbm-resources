@@ -2476,42 +2476,50 @@ function detectHitOnFrame(frameIdx) {
 
     const players = replaySettings.players;
     for (let i = 0; i < players.length; i++) {
-        const prev = prevFrame.players?.[players[i].playerIndex]?.post;
-        const curr = currFrame.players?.[players[i].playerIndex]?.post;
+        const pIdx = players[i].playerIndex;
+        const prev = prevFrame.players?.[pIdx]?.post;
+        const curr = currFrame.players?.[pIdx]?.post;
         if (!prev || !curr) continue;
 
         // Hit detected: hitstun went from 0 to positive
         if ((prev.hitstunRemaining || 0) === 0 && (curr.hitstunRemaining || 0) > 0) {
-            // Find the attacker: the other player who was in an attack action
+            // Find the attacker
             let attackerIdx = -1;
             let attackerAction = -1;
+            let atkFacing = 1;
             for (let j = 0; j < players.length; j++) {
                 if (j === i) continue;
-                const atkPost = currFrame.players?.[players[j].playerIndex]?.post;
-                if (!atkPost) continue;
-                const as = atkPost.actionStateId;
-                // Attack actions: 44-69 (grounded attacks + aerials), 212+ (specials)
-                if ((as >= 44 && as <= 69) || as >= 212) {
-                    attackerIdx = j;
-                    attackerAction = as;
-                    break;
-                }
-            }
-            // Also check previous frame for attacker (they may have transitioned)
-            if (attackerIdx === -1) {
-                for (let j = 0; j < players.length; j++) {
-                    if (j === i) continue;
-                    const atkPrev = prevFrame.players?.[players[j].playerIndex]?.post;
-                    if (!atkPrev) continue;
-                    const as = atkPrev.actionStateId;
+                const ajIdx = players[j].playerIndex;
+                // Check current frame first, then previous
+                for (const fr of [currFrame, prevFrame]) {
+                    const atkPost = fr.players?.[ajIdx]?.post;
+                    if (!atkPost) continue;
+                    const as = atkPost.actionStateId;
                     if ((as >= 44 && as <= 69) || as >= 212) {
                         attackerIdx = j;
                         attackerAction = as;
+                        atkFacing = atkPost.facingDirection ?? 1;
                         break;
                     }
                 }
+                if (attackerIdx !== -1) break;
             }
             if (attackerIdx === -1) continue;
+
+            // Defender DI: joystick input on the frame they enter hitstun
+            const defPre = currFrame.players?.[pIdx]?.pre;
+            const diX = defPre?.joystickX ?? 0;
+            const diY = defPre?.joystickY ?? 0;
+
+            // Hit direction: attacker facing relative to defender position
+            // If attacker faces right (+1) and defender is to the right, hit goes right
+            // If attacker faces left (-1), hit goes left
+            const atkPost = currFrame.players?.[players[attackerIdx].playerIndex]?.post
+                         || prevFrame.players?.[players[attackerIdx].playerIndex]?.post;
+            const atkX = atkPost?.positionX ?? 0;
+            const defX = prev.positionX ?? 0;
+            // Reverse = attacker hitting to the left (facing left, or facing right but defender is behind)
+            const hitGoesLeft = atkFacing < 0;
 
             return {
                 defenderIdx: i,
@@ -2522,6 +2530,9 @@ function detectHitOnFrame(frameIdx) {
                 defenderPercent: prev.percent || 0,
                 defenderX: prev.positionX,
                 defenderY: prev.positionY,
+                hitGoesLeft,
+                diX,
+                diY,
             };
         }
     }
@@ -2561,8 +2572,11 @@ async function updateCalcFromFrame(frameIdx) {
         actionState: actionName || hit.actionState,
         defenderPercent: hit.defenderPercent,
         stageKey,
-        startX: hit.defenderX || 0,
-        startY: hit.defenderY || 0,
+        startX: hit.defenderX ?? 0,
+        startY: hit.defenderY ?? 0,
+        reverse: hit.hitGoesLeft,
+        diX: hit.diX,
+        diY: hit.diY,
     };
 
     // FoD platform heights

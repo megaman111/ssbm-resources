@@ -1089,16 +1089,34 @@ export class IKneeDataUI {
         await this._loadMoves(fd.attackerCharId);
         this._d('def').value = fd.defenderCharId;
         this._defChar = fd.defenderCharId;
-        this._d('pct').value = fd.defenderPercent || 0;
+        this._d('pct').value = Math.floor(fd.defenderPercent || 0);
         if (fd.stageKey) {
             this._stageKey = fd.stageKey;
-            // Sync stage buttons
             this._d('stageBar').querySelectorAll('.ikd-stage-btn').forEach(b => b.classList.toggle('active', b.dataset.stage === fd.stageKey));
             this._d('fodSliders').style.display = fd.stageKey === 'fountain_of_dreams' ? 'flex' : 'none';
         }
         if (fd.startX != null) this._startX = Math.round(fd.startX);
         if (fd.startY != null) this._startY = Math.round(fd.startY);
         this._positionFrozen = true;
+
+        // Hit direction
+        if (fd.reverse != null) {
+            this._reverse = !!fd.reverse;
+            this.container.querySelectorAll('.ikd-dir-btn').forEach(b => {
+                b.classList.toggle('active', (b.dataset.dir === 'left') === this._reverse);
+            });
+        }
+
+        // Trajectory DI from replay
+        if (fd.diX != null && fd.diY != null) {
+            // Round to Melee precision
+            const dx = Math.round(fd.diX / 0.0125) * 0.0125;
+            const dy = Math.round(fd.diY / 0.0125) * 0.0125;
+            this._diState.t = { x: dx, y: dy, frozen: true };
+            this._activeDI = 't';
+            this._updateDIDisplay();
+        }
+
         // FoD platform heights from replay viewer
         if (fd.fodLeftY != null) {
             STAGES.fountain_of_dreams.platforms[2].y = fd.fodLeftY;
