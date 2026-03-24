@@ -73,7 +73,7 @@
         /* ===== REPLAY HOVER TOOLTIPS ===== */
         .replay-file-row { position: relative; }
         .replay-file-row .replay-file-btn { width: 100%; }
-        .replay-tooltip { position: absolute; left: 0; right: 0; top: 100%; z-index: 100; padding-top: 4px; pointer-events: none; }
+        .replay-tooltip { position: fixed; z-index: 9999; pointer-events: none; width: 320px; display: none; }
         .replay-tooltip-inner { background: #1a1a2e; border: 1px solid #334; border-radius: 10px; padding: 0.65rem 0.8rem; box-shadow: 0 8px 28px rgba(0,0,0,0.55); font-size: 0.8rem; color: #ddd; line-height: 1.45; }
         .tt-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; font-weight: 700; color: #a78bfa; margin-bottom: 0.5rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a2a4a; }
         .tt-player { padding: 0.35rem 0; border-bottom: 1px solid #1e1e3a; }
@@ -4969,13 +4969,36 @@ async function buildReplayBrowser() {
 
         // Hover: fetch stats and show tooltip
         let hoverTimer = null;
+        function positionTooltip() {
+            const rect = row.getBoundingClientRect();
+            const ttH = tooltip.offsetHeight || 200;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            // Position to the right of the list if possible, otherwise overlay
+            const listRect = list.getBoundingClientRect();
+            let left = listRect.right + 6;
+            if (left + 320 > window.innerWidth) left = listRect.left - 326;
+            if (left < 0) left = rect.left;
+            let top;
+            if (spaceBelow >= ttH + 8 || spaceBelow >= spaceAbove) {
+                top = rect.bottom + 4;
+                if (top + ttH > window.innerHeight) top = window.innerHeight - ttH - 4;
+            } else {
+                top = rect.top - ttH - 4;
+                if (top < 0) top = 4;
+            }
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
         row.addEventListener('mouseenter', () => {
             hoverTimer = setTimeout(async () => {
                 tooltip.innerHTML = '<div class="replay-tooltip-inner"><span style="color:#888;">Loading stats...</span></div>';
                 tooltip.style.display = 'block';
+                positionTooltip();
                 const data = await fetchReplayStats(file, source);
                 if (row.matches(':hover')) {
                     tooltip.innerHTML = formatReplayTooltip(data);
+                    positionTooltip();
                 }
             }, 300);
         });
