@@ -151,9 +151,6 @@ export class IKneeDataUI {
         this._positionFrozen = false;
         this._lastResult = null;
 
-        // Ready promise — resolves when _init() completes (DOM rendered + moves loaded)
-        this.ready = this._init();
-
         // Stale queue: array of 9 booleans (positions 1-9)
         this._staleQueue = [false,false,false,false,false,false,false,false,false];
         // Smash charge frames
@@ -185,20 +182,27 @@ export class IKneeDataUI {
             fadeIn: true,
             doubleJump: false,
         };
+
+        // Ready promise — must be LAST in constructor (after all properties initialized)
+        this.ready = this._init();
     }
 
     async _init() {
-        if (!document.getElementById('ikd-styles')) {
-            const s = document.createElement('style');
-            s.id = 'ikd-styles';
-            s.textContent = CSS;
-            document.head.appendChild(s);
+        try {
+            if (!document.getElementById('ikd-styles')) {
+                const s = document.createElement('style');
+                s.id = 'ikd-styles';
+                s.textContent = CSS;
+                document.head.appendChild(s);
+            }
+            this._render();
+            this._setupCanvas();
+            this._setupDIStick();
+            await this._loadMoves(this._atkChar);
+            this._recalc();
+        } catch (e) {
+            console.error('IKneeDataUI _init error:', e);
         }
-        this._render();
-        this._setupCanvas();
-        this._setupDIStick();
-        await this._loadMoves(this._atkChar);
-        this._recalc();
     }
 
     _d(id) { return this.container.querySelector(`[data-id="${id}"]`); }
