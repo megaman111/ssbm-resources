@@ -2501,22 +2501,33 @@ function buildStatsPanel() {
                 <span class="sp-port" style="background:${color}">P${p.port + 1}</span>
                 <span class="sp-tag" style="margin-bottom:0.3rem;">${tag}</span>
             </div>`;
+            const lHit = a.lCancelCount?.success ?? 0;
+            const lMiss = a.lCancelCount?.fail ?? 0;
+            const lTotal = lHit + lMiss;
+            const grabSuccess = a.grabCount?.success ?? 0;
+            const grabFail = a.grabCount?.fail ?? 0;
+            const throwTotal = (a.throwCount?.up ?? 0) + (a.throwCount?.forward ?? 0) + (a.throwCount?.back ?? 0) + (a.throwCount?.down ?? 0);
+            const gtAway = a.groundTechCount?.away ?? 0;
+            const gtIn = a.groundTechCount?.in ?? 0;
+            const gtNeutral = a.groundTechCount?.neutral ?? 0;
+            const gtFail = a.groundTechCount?.fail ?? 0;
+            const wtSuccess = a.wallTechCount?.success ?? 0;
+            const wtFail = a.wallTechCount?.fail ?? 0;
             const acts = [
                 ['Wavedashes', a.wavedashCount],
                 ['Wavelands', a.wavelandCount],
                 ['Air Dodges', a.airDodgeCount],
                 ['Dash Dances', a.dashDanceCount],
                 ['Spot Dodges', a.spotDodgeCount],
+                ['Ledge Grabs', a.ledgegrabCount],
                 ['Rolls', a.rollCount],
-                ['L-Cancels Hit', a.lCancelSuccessCount],
-                ['L-Cancels Missed', a.lCancelFailCount],
-                ['L-Cancel %', (a.lCancelSuccessCount + a.lCancelFailCount) > 0
-                    ? ((a.lCancelSuccessCount / (a.lCancelSuccessCount + a.lCancelFailCount)) * 100).toFixed(1) + '%'
-                    : '—'],
-                ['Grabs', a.grabCount],
-                ['Throws', a.throwCount],
-                ['Wall Techs', a.wallTechCount],
-                ['Ground Techs', a.groundTechCount],
+                ['L-Cancels Hit', lHit],
+                ['L-Cancels Missed', lMiss],
+                ['L-Cancel %', lTotal > 0 ? ((lHit / lTotal) * 100).toFixed(1) + '%' : '—'],
+                ['Grabs (Hit / Whiff)', `${grabSuccess} / ${grabFail}`],
+                ['Throws', throwTotal > 0 ? `${throwTotal} (F:${a.throwCount?.forward??0} B:${a.throwCount?.back??0} U:${a.throwCount?.up??0} D:${a.throwCount?.down??0})` : '0'],
+                ['Ground Techs', (gtAway+gtIn+gtNeutral+gtFail) > 0 ? `${gtAway+gtIn+gtNeutral+gtFail} (Away:${gtAway} In:${gtIn} Neutral:${gtNeutral} Missed:${gtFail})` : '0'],
+                ['Wall Techs', (wtSuccess+wtFail) > 0 ? `${wtSuccess+wtFail} (Hit:${wtSuccess} Missed:${wtFail})` : '0'],
             ];
             html += '<table class="sp-table">';
             acts.forEach(([label, val]) => {
@@ -2528,8 +2539,21 @@ function buildStatsPanel() {
         html += '</div>';
     }
 
-    // Stocks
+    // Move ID → name mapping (from slippi-js moves.json)
+    const MOVE_NAMES = {1:'Misc',2:'Jab',3:'Jab',4:'Jab',5:'Rapid Jabs',6:'Dash Attack',7:'F-Tilt',8:'U-Tilt',9:'D-Tilt',10:'F-Smash',11:'U-Smash',12:'D-Smash',13:'Nair',14:'Fair',15:'Bair',16:'Uair',17:'Dair',18:'Neutral B',19:'Side B',20:'Up B',21:'Down B',50:'Getup Attack',51:'Getup Attack (Slow)',52:'Pummel',53:'F-Throw',54:'B-Throw',55:'U-Throw',56:'D-Throw',61:'Edge Attack (Slow)',62:'Edge Attack'};
+
+    // Stocks — find kill move from combos data
     if (stats?.stocks?.length) {
+        // Build a map: for each player, find combos that killed and get the last moveId
+        const killMoves = {};
+        (stats.combos || []).forEach(c => {
+            if (c.didKill && c.moves?.length) {
+                const lastMove = c.moves[c.moves.length - 1];
+                const key = `${c.playerIndex}_${c.endFrame}`;
+                killMoves[key] = lastMove.moveId;
+            }
+        });
+
         html += '<div class="sp-section"><div class="sp-section-title">Stock Details</div>';
         players.forEach((p, i) => {
             const pStocks = stats.stocks.filter(s => s.playerIndex === i);
@@ -2542,8 +2566,23 @@ function buildStatsPanel() {
             </div><table class="sp-table"><tr><th class="sp-label">Stock</th><th class="sp-val">End %</th><th class="sp-val">Kill Move</th></tr>`;
             pStocks.forEach((s, si) => {
                 const endPct = s.endPercent != null ? s.endPercent.toFixed(0) + '%' : 'alive';
-                const killMove = s.deathAnimation != null ? `Anim ${s.deathAnimation}` : '—';
-                html += `<tr><td class="sp-label">#${si + 1}</td><td class="sp-val">${endPct}</td><td class="sp-val">${killMove}</td></tr>`;
+                // Find the kill move: look for a combo that killed this player near this stock's end frame
+                let killMoveName = '—';
+                if (s.endFrame != null) {
+                    // The combo that killed this stock belongs to the opponent, targeting this player
+                    // Search combos ending near this stock's endFrame
+                    const killingCombo = (stats.combos || []).find(c =>
+                        c.didKill && c.playerIndex !== i && c.endFrame != null &&
+                        Math.abs(c.endFrame - s.endFrame) <= 5
+                    );
+                    if (killingCombo?.moves?.length) {
+                        const lastMove = killingCombo.moves[killingCombo.moves.length - 1];
+                        killMoveName = MOVE_NAMES[lastMove.moveId] || `Move ${lastMove.moveId}`;
+                    } else if (killingCombo?.lastHitBy != null) {
+                        killMoveName = MOVE_NAMES[killingCombo.lastHitBy] || `Move ${killingCombo.lastHitBy}`;
+                    }
+                }
+                html += `<tr><td class="sp-label">#${si + 1}</td><td class="sp-val">${endPct}</td><td class="sp-val">${killMoveName}</td></tr>`;
             });
             html += '</table>';
         });
