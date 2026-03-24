@@ -403,6 +403,7 @@
                             <button class="sidebar-tab" data-tab="ccasdi" onclick="switchSidebarTab('ccasdi')" title="CC / ASDI Down">🛡️</button>
                             <button class="sidebar-tab" data-tab="killpct" onclick="switchSidebarTab('killpct')" title="Kill Percents">💀</button>
                             <button class="sidebar-tab" data-tab="stats" onclick="switchSidebarTab('stats')" title="Match Stats">📊</button>
+                            <button class="sidebar-tab" data-tab="calc" onclick="switchSidebarTab('calc')" title="Calculator">🧮</button>
                         </div>
                         <div class="sidebar-content">
                             <div class="sidebar-panel active" id="sidebarControllers">
@@ -428,6 +429,9 @@
                             </div>
                             <div class="sidebar-panel" id="sidebarStats">
                                 <div id="statsPanel" class="clips-panel-inner"></div>
+                            </div>
+                            <div class="sidebar-panel" id="sidebarCalc">
+                                <div id="calcPanel" class="clips-panel-inner" style="padding:0;"></div>
                             </div>
                         </div>
                     </div>
@@ -566,6 +570,7 @@
 import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
 import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
 import { FightCore } from './fightcore.js';
+import { embedCalculator } from './ikneedata-ui.js';
 
 // Savestate WASM module (lazy-loaded only when user clicks download)
 let tmReplayWasm = null;
@@ -2398,7 +2403,7 @@ async function buildCCAsdiPanel() {
 window.switchSidebarTab = (tabId) => {
     document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
     document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
-    const panelMap = { controllers: 'sidebarControllers', clips: 'sidebarClips', ccasdi: 'sidebarCcAsdi', killpct: 'sidebarKillPct', stats: 'sidebarStats' };
+    const panelMap = { controllers: 'sidebarControllers', clips: 'sidebarClips', ccasdi: 'sidebarCcAsdi', killpct: 'sidebarKillPct', stats: 'sidebarStats', calc: 'sidebarCalc' };
     const el = document.getElementById(panelMap[tabId]);
     if (el) el.classList.add('active');
 };
@@ -2412,6 +2417,145 @@ async function buildKillPctPanel() {
         <div style="font-size:0.9rem;color:#a78bfa;font-weight:700;margin-bottom:0.4rem;">Kill Percents</div>
         <div style="font-size:0.8rem;color:#666;">Coming soon — requires IKneeData calculator module for accurate knockback, DI, and stage position calculations.</div>
     </div>`;
+}
+
+// ===== CALCULATOR INTEGRATION =====
+const STAGE_ID_TO_KEY = {
+    2: 'fountain_of_dreams', 3: 'pokemon_stadium', 8: 'yoshis_story',
+    28: 'dreamland', 31: 'battlefield', 32: 'final_destination',
+};
+
+let calcInstance = null;
+let lastCalcHitFrame = -1;
+
+function initCalcPanel() {
+    const panel = document.getElementById('calcPanel');
+    if (!panel || calcInstance) return;
+    // Show a "send to calc" hint before any hit is detected
+    panel.innerHTML = `<div id="calcHitInfo" style="padding:0.4rem 0.6rem;font-size:0.75rem;color:#888;text-align:center;border-bottom:1px solid #333;">
+        Pause on a hit to auto-populate</div>
+    <div id="calcRoot"></div>`;
+    const stageKey = STAGE_ID_TO_KEY[replaySettings?.stageId] || 'final_destination';
+    const players = replaySettings?.players || [];
+    const atkChar = players[0]?.characterId ?? 2;
+    const defChar = players[1]?.characterId ?? 2;
+    calcInstance = embedCalculator('calcRoot', { attackerCharId: atkChar, defenderCharId: defChar, stageKey });
+}
+
+function detectHitOnFrame(frameIdx) {
+    if (!replayFrames || !replaySettings) return null;
+    const keys = getFrameKeys();
+    if (frameIdx < 1 || frameIdx >= keys.length) return null;
+
+    const prevFrame = replayFrames[keys[frameIdx - 1]];
+    const currFrame = replayFrames[keys[frameIdx]];
+    if (!prevFrame || !currFrame) return null;
+
+    const players = replaySettings.players;
+    for (let i = 0; i < players.length; i++) {
+        const prev = prevFrame.players?.[players[i].playerIndex]?.post;
+        const curr = currFrame.players?.[players[i].playerIndex]?.post;
+        if (!prev || !curr) continue;
+
+        // Hit detected: hitstun went from 0 to positive
+        if ((prev.hitstunRemaining || 0) === 0 && (curr.hitstunRemaining || 0) > 0) {
+            // Find the attacker: the other player who was in an attack action
+            let attackerIdx = -1;
+            let attackerAction = -1;
+            for (let j = 0; j < players.length; j++) {
+                if (j === i) continue;
+                const atkPost = currFrame.players?.[players[j].playerIndex]?.post;
+                if (!atkPost) continue;
+                const as = atkPost.actionStateId;
+                // Attack actions: 44-69 (grounded attacks + aerials), 212+ (specials)
+                if ((as >= 44 && as <= 69) || as >= 212) {
+                    attackerIdx = j;
+                    attackerAction = as;
+                    break;
+                }
+            }
+            // Also check previous frame for attacker (they may have transitioned)
+            if (attackerIdx === -1) {
+                for (let j = 0; j < players.length; j++) {
+                    if (j === i) continue;
+                    const atkPrev = prevFrame.players?.[players[j].playerIndex]?.post;
+                    if (!atkPrev) continue;
+                    const as = atkPrev.actionStateId;
+                    if ((as >= 44 && as <= 69) || as >= 212) {
+                        attackerIdx = j;
+                        attackerAction = as;
+                        break;
+                    }
+                }
+            }
+            if (attackerIdx === -1) continue;
+
+            return {
+                defenderIdx: i,
+                attackerIdx,
+                attackerCharId: players[attackerIdx].characterId,
+                defenderCharId: players[i].characterId,
+                actionState: attackerAction,
+                defenderPercent: prev.percent || 0,
+                defenderX: curr.positionX,
+                defenderY: curr.positionY,
+            };
+        }
+    }
+    return null;
+}
+
+function updateCalcFromFrame(frameIdx) {
+    if (!calcInstance || !replaySettings) return;
+    if (frameIdx === lastCalcHitFrame) return;
+
+    // Scan nearby frames (±5) to find the closest hit
+    let hit = null;
+    let hitFrame = frameIdx;
+    for (let d = 0; d <= 5; d++) {
+        hit = detectHitOnFrame(frameIdx + d);
+        if (hit) { hitFrame = frameIdx + d; break; }
+        if (d > 0) {
+            hit = detectHitOnFrame(frameIdx - d);
+            if (hit) { hitFrame = frameIdx - d; break; }
+        }
+    }
+    if (!hit) return;
+    lastCalcHitFrame = frameIdx;
+
+    const stageKey = STAGE_ID_TO_KEY[replaySettings.stageId] || 'final_destination';
+    const fd = {
+        attackerCharId: hit.attackerCharId,
+        defenderCharId: hit.defenderCharId,
+        actionState: hit.actionState,
+        defenderPercent: hit.defenderPercent,
+        stageKey,
+        startX: hit.defenderX || 0,
+        startY: hit.defenderY || 0,
+    };
+
+    // FoD platform heights
+    if (replaySettings.stageId === 2 && fodPlatformMap) {
+        const keys = getFrameKeys();
+        const frameNum = keys[hitFrame];
+        const plat = fodPlatformMap.get(frameNum);
+        if (plat) {
+            fd.fodLeftY = plat.left;
+            fd.fodRightY = plat.right;
+        }
+    }
+
+    calcInstance.populateFromReplay(fd);
+
+    // Update hit info bar
+    const infoEl = document.getElementById('calcHitInfo');
+    if (infoEl) {
+        const atkName = CHAR_NAMES[hit.attackerCharId] || '?';
+        const defName = CHAR_NAMES[hit.defenderCharId] || '?';
+        const moveName = fightCore.getFrameDataForAction(hit.attackerCharId, hit.actionState)?.name || `Action ${hit.actionState}`;
+        infoEl.innerHTML = `<span style="color:#a78bfa;">Frame ${hitFrame}</span> · ${atkName} <span style="color:#e0e0e0;">${moveName}</span> → ${defName} at ${Math.floor(hit.defenderPercent)}%`;
+        infoEl.style.color = '#ccc';
+    }
 }
 
 // ===== MATCH STATS PANEL (slippi-js) =====
@@ -2678,6 +2822,9 @@ async function initReplayFromBuffer(uint8, filename) {
 
     // Build match stats panel from slippi-js stats
     setTimeout(() => { buildStatsPanel(); }, 250);
+
+    // Initialize calculator panel
+    setTimeout(() => { initCalcPanel(); }, 300);
 
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
@@ -3608,6 +3755,7 @@ window.togglePlayback = () => {
     btn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
     btn.classList.toggle('active', isPlaying);
     if (isPlaying) lastTimestamp = null;
+    else updateCalcFromFrame(currentFrame);
 };
 
 window.stepFrame = delta => {
@@ -3617,12 +3765,14 @@ window.stepFrame = delta => {
     currentFrame = Math.max(0, Math.min(totalFrames - 1, currentFrame + delta));
     updateDynamicCamera(currentFrame);
     renderFrame(currentFrame);
+    updateCalcFromFrame(currentFrame);
 };
 
 window.seekToFrame = idx => {
     currentFrame = Math.max(0, Math.min(totalFrames - 1, idx));
     updateDynamicCamera(currentFrame);
     renderFrame(currentFrame);
+    if (!isPlaying) updateCalcFromFrame(currentFrame);
 };
 
 window.setSpeed = s => { playbackSpeed = s; };
