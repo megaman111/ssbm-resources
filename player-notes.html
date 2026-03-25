@@ -2903,23 +2903,65 @@ function buildStatsPanel() {
     // Move ID → name mapping (from slippi-js moves.json)
     const MOVE_NAMES = {1:'Misc',2:'Jab',3:'Jab',4:'Jab',5:'Rapid Jabs',6:'Dash Attack',7:'F-Tilt',8:'U-Tilt',9:'D-Tilt',10:'F-Smash',11:'U-Smash',12:'D-Smash',13:'Nair',14:'Fair',15:'Bair',16:'Uair',17:'Dair',18:'Neutral B',19:'Side B',20:'Up B',21:'Down B',50:'Getup Attack',51:'Getup Attack (Slow)',52:'Pummel',53:'F-Throw',54:'B-Throw',55:'U-Throw',56:'D-Throw',61:'Edge Attack (Slow)',62:'Edge Attack'};
 
-    // Stocks — find kill move from combos data
-    if (stats?.stocks?.length) {
-        // Build a map: for each player, find combos that killed and get the last moveId
-        const killMoves = {};
-        (stats.combos || []).forEach(c => {
-            if (c.didKill && c.moves?.length) {
+    // === Kill Moves & Neutral Openers Breakdown (per player) ===
+    if (stats?.conversions?.length) {
+        html += '<div class="sp-section"><div class="sp-section-title">Kill Moves & Neutral Openers</div>';
+        players.forEach((p, pi) => {
+            const pIdx = p.playerIndex;
+            const color = getPlayerColor(pi);
+            const tag = p.displayName || p.nametag || `P${p.port + 1}`;
+            // Kill moves: last move of conversions that killed, performed by this player
+            const killConvs = (stats.conversions || []).filter(c => c.playerIndex === pIdx && c.didKill && c.moves?.length);
+            const killCounts = {};
+            killConvs.forEach(c => {
                 const lastMove = c.moves[c.moves.length - 1];
-                const key = `${c.playerIndex}_${c.endFrame}`;
-                killMoves[key] = lastMove.moveId;
+                const name = MOVE_NAMES[lastMove.moveId] || `Move ${lastMove.moveId}`;
+                killCounts[name] = (killCounts[name] || 0) + 1;
+            });
+            const killSorted = Object.entries(killCounts).sort((a, b) => b[1] - a[1]);
+
+            // Neutral openers: first move of conversions started from neutral by this player
+            const neutralConvs = (stats.conversions || []).filter(c => c.playerIndex === pIdx && c.openingType === 'neutral-win' && c.moves?.length);
+            const openerCounts = {};
+            neutralConvs.forEach(c => {
+                const firstMove = c.moves[0];
+                const name = MOVE_NAMES[firstMove.moveId] || `Move ${firstMove.moveId}`;
+                openerCounts[name] = (openerCounts[name] || 0) + 1;
+            });
+            const openerSorted = Object.entries(openerCounts).sort((a, b) => b[1] - a[1]);
+
+            html += `<div class="sp-action-block">
+                <span class="sp-port" style="background:${color}">P${p.port + 1}</span>
+                <span class="sp-tag">${tag}</span>
+            </div>`;
+            if (killSorted.length) {
+                html += '<table class="sp-table"><tr><th class="sp-label">Kill Move</th><th class="sp-val">Count</th></tr>';
+                killSorted.forEach(([name, count]) => {
+                    html += `<tr><td class="sp-label">${name}</td><td class="sp-val">${count}</td></tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<div style="color:#666;font-size:0.75rem;padding:0.2rem 0;">No kills</div>';
+            }
+            if (openerSorted.length) {
+                html += '<table class="sp-table" style="margin-top:0.3rem;"><tr><th class="sp-label">Neutral Opener</th><th class="sp-val">Count</th></tr>';
+                openerSorted.forEach(([name, count]) => {
+                    html += `<tr><td class="sp-label">${name}</td><td class="sp-val">${count}</td></tr>`;
+                });
+                html += '</table>';
             }
         });
+        html += '</div>';
+    }
 
+    // Stocks — use conversions to find the kill move for each stock
+    if (stats?.stocks?.length) {
         html += '<div class="sp-section"><div class="sp-section-title">Stock Details</div>';
-        players.forEach((p, i) => {
-            const pStocks = stats.stocks.filter(s => s.playerIndex === i);
+        players.forEach((p, pi) => {
+            const pIdx = p.playerIndex;
+            const pStocks = stats.stocks.filter(s => s.playerIndex === pIdx);
             if (!pStocks.length) return;
-            const color = getPlayerColor(i);
+            const color = getPlayerColor(pi);
             const tag = p.displayName || p.nametag || `P${p.port + 1}`;
             html += `<div class="sp-action-block">
                 <span class="sp-port" style="background:${color}">P${p.port + 1}</span>
@@ -2927,20 +2969,20 @@ function buildStatsPanel() {
             </div><table class="sp-table"><tr><th class="sp-label">Stock</th><th class="sp-val">End %</th><th class="sp-val">Kill Move</th></tr>`;
             pStocks.forEach((s, si) => {
                 const endPct = s.endPercent != null ? s.endPercent.toFixed(0) + '%' : 'alive';
-                // Find the kill move: look for a combo that killed this player near this stock's end frame
                 let killMoveName = '—';
                 if (s.endFrame != null) {
-                    // The combo that killed this stock belongs to the opponent, targeting this player
-                    // Search combos ending near this stock's endFrame
-                    const killingCombo = (stats.combos || []).find(c =>
-                        c.didKill && c.playerIndex !== i && c.endFrame != null &&
-                        Math.abs(c.endFrame - s.endFrame) <= 5
+                    // Find the conversion by the OPPONENT that killed this player near this stock's end frame
+                    const killingConv = (stats.conversions || []).find(c =>
+                        c.didKill && c.playerIndex !== pIdx && c.moves?.length &&
+                        c.endFrame != null && Math.abs(c.endFrame - s.endFrame) <= 10
                     );
-                    if (killingCombo?.moves?.length) {
-                        const lastMove = killingCombo.moves[killingCombo.moves.length - 1];
+                    if (killingConv?.moves?.length) {
+                        const lastMove = killingConv.moves[killingConv.moves.length - 1];
                         killMoveName = MOVE_NAMES[lastMove.moveId] || `Move ${lastMove.moveId}`;
-                    } else if (killingCombo?.lastHitBy != null) {
-                        killMoveName = MOVE_NAMES[killingCombo.lastHitBy] || `Move ${killingCombo.lastHitBy}`;
+                    }
+                    // Fallback: check lastHitBy on the stock itself (if slippi-js provides it)
+                    if (killMoveName === '—' && s.lastHitBy != null) {
+                        killMoveName = MOVE_NAMES[s.lastHitBy] || `Move ${s.lastHitBy}`;
                     }
                 }
                 html += `<tr><td class="sp-label">#${si + 1}</td><td class="sp-val">${endPct}</td><td class="sp-val">${killMoveName}</td></tr>`;
