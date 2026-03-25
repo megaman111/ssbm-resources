@@ -1738,8 +1738,17 @@ function isConceptNote(note) {
 async function loadNotesFromFile() {
     try {
         const r = await fetch('player-notes.json');
-        notes = r.ok ? await r.json() : [];
-    } catch { notes = []; }
+        if (!r.ok) {
+            console.warn('player-notes.json fetch failed:', r.status, r.statusText);
+            notes = [];
+        } else {
+            notes = await r.json();
+            console.log('Loaded', notes.length, 'notes from player-notes.json');
+        }
+    } catch (e) {
+        console.error('Failed to load/parse player-notes.json:', e);
+        notes = [];
+    }
     displayNotes();
 }
 
