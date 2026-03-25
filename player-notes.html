@@ -48,11 +48,11 @@
         .note-video-badge { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
         .video-embed-wrap { position: relative; width: 100%; padding-bottom: 56.25%; margin-bottom: 0.5rem; background: #000; border-radius: 8px; overflow: hidden; }
         .video-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
-        .video-embed-fullscreen { display: none; flex: 1; min-height: 0; flex-direction: column; }
+        .video-embed-fullscreen { display: none; flex: 1; min-height: 0; flex-direction: column; align-items: center; justify-content: center; }
         .video-embed-fullscreen.open { display: flex; }
-        .video-embed-fullscreen .video-embed-wrap { flex: 1; padding-bottom: 0; border-radius: 0; }
+        .video-embed-fullscreen .video-embed-wrap { width: 100%; max-width: 960px; padding-bottom: 0; border-radius: 8px; aspect-ratio: 16/9; }
         .video-embed-fullscreen .video-embed-wrap iframe { position: absolute; inset: 0; }
-        .video-embed-fullscreen .vod-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.4); border-bottom: 1px solid #333; font-size: 0.8rem; flex-shrink: 0; }
+        .video-embed-fullscreen .vod-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.4); border-bottom: 1px solid #333; font-size: 0.8rem; flex-shrink: 0; width: 100%; max-width: 960px; border-radius: 8px 8px 0 0; }
         .video-embed-fullscreen .vod-bar a { color: #f59e0b; text-decoration: none; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .video-embed-fullscreen .vod-bar a:hover { text-decoration: underline; }
         .video-link-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem; }
