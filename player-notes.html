@@ -48,6 +48,13 @@
         .note-video-badge { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
         .video-embed-wrap { position: relative; width: 100%; padding-bottom: 56.25%; margin-bottom: 0.5rem; background: #000; border-radius: 8px; overflow: hidden; }
         .video-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+        .video-embed-fullscreen { display: none; flex: 1; min-height: 0; flex-direction: column; }
+        .video-embed-fullscreen.open { display: flex; }
+        .video-embed-fullscreen .video-embed-wrap { flex: 1; padding-bottom: 0; border-radius: 0; }
+        .video-embed-fullscreen .video-embed-wrap iframe { position: absolute; inset: 0; }
+        .video-embed-fullscreen .vod-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.4); border-bottom: 1px solid #333; font-size: 0.8rem; flex-shrink: 0; }
+        .video-embed-fullscreen .vod-bar a { color: #f59e0b; text-decoration: none; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .video-embed-fullscreen .vod-bar a:hover { text-decoration: underline; }
         .video-link-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem; }
         .video-link-bar a { color: #f59e0b; text-decoration: none; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
         .video-link-bar a:hover { text-decoration: underline; }
@@ -375,6 +382,7 @@
                 <input type="file" id="slpFileInput" accept=".slp" onchange="loadSlpFile(event)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
                 <div id="videoEmbedArea" style="display:none;margin-top:1rem;width:100%;max-width:640px;"></div>
             </div>
+            <div class="video-embed-fullscreen" id="vodFullscreen"></div>
             <div id="replayStatus" class="replay-status" style="display:none;"></div>
             <div id="replayViewerArea" style="display:none;">
                 <div class="replay-hud" id="replayHud"></div>
@@ -513,11 +521,12 @@
                 <label for="uploadSlpInput" class="import-btn" style="display:inline-block;cursor:pointer;">📤 Upload .slp Replay</label>
                 <input type="file" id="uploadSlpInput" accept=".slp" style="display:none;">
                 <button class="import-btn" style="display:inline-block;cursor:pointer;margin-left:0.5rem;" onclick="addVodLink()">📺 Add VOD Link</button>
+                <button class="import-btn" style="display:inline-block;cursor:pointer;margin-left:0.5rem;" onclick="convertSlpToMp4()">🎬 .slp → Video</button>
                 <span style="color:#999;font-size:0.75rem;display:block;margin-top:0.4rem;">Replays saved in browser · VOD links open in embedded player</span>
             </div>
-            <div style="margin-top:1rem;border-top:1px solid #eee;padding-top:1rem;">
+            <div style="margin-top:0.75rem;border-top:1px solid #eee;padding-top:0.75rem;">
                 <details style="font-size:0.85rem;">
-                    <summary style="cursor:pointer;color:#667eea;font-weight:600;">🎬 Convert .slp to MP4</summary>
+                    <summary style="cursor:pointer;color:#667eea;font-weight:600;">ℹ️ External SLP-to-MP4 tools (Dolphin-based)</summary>
                     <div style="padding:0.75rem 0;color:#555;line-height:1.6;">
                         <p style="margin-bottom:0.5rem;">To convert Slippi replays to video files, use one of these tools:</p>
                         <ul style="margin:0.5rem 0;padding-left:1.2rem;">
@@ -526,7 +535,6 @@
                             <li><a href="https://github.com/nachoverdon/Slippi2VideoHX" target="_blank" rel="noopener" style="color:#667eea;font-weight:600;">Slippi2Video</a> — Automates OBS recording of Slippi replays.</li>
                         </ul>
                         <p style="margin-top:0.5rem;font-size:0.8rem;color:#888;">All require Slippi Dolphin installed locally. slp2mp4 is the most straightforward.</p>
-                        <button class="import-btn" style="margin-top:0.5rem;" onclick="convertSlpToMp4()">🎬 Convert a .slp File</button>
                     </div>
                 </details>
             </div>
@@ -2023,6 +2031,8 @@ window.openReplayModal = async idx => {
     document.getElementById('replayLoadLabel').style.display = '';
     const videoArea = document.getElementById('videoEmbedArea');
     if (videoArea) { videoArea.innerHTML = ''; videoArea.style.display = 'none'; }
+    const vod = document.getElementById('vodFullscreen');
+    if (vod) { vod.innerHTML = ''; vod.classList.remove('open'); }
     // Reset zoom/pan when opening new replay
     viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
     cameraMode = 'fixed';
@@ -2081,15 +2091,27 @@ window.openReplayModal = async idx => {
         document.getElementById('replayLoadMsg').textContent = 'Attach a .slp file — it will be saved so you never have to browse again.';
     }
 
-    // Show video embed if note has a video URL
-    const videoEl = document.getElementById('videoEmbedArea');
-    if (videoEl) {
+    // Show video embed if note has a video URL (full-screen in modal)
+    const vodFs = document.getElementById('vodFullscreen');
+    if (vodFs) {
         if (note.videoUrl) {
-            videoEl.innerHTML = buildVideoEmbed(note.videoUrl);
-            videoEl.style.display = 'block';
+            const embedUrl = getVideoEmbedUrl(note.videoUrl);
+            if (embedUrl) {
+                vodFs.innerHTML = `<div class="vod-bar"><a href="${note.videoUrl}" target="_blank" rel="noopener">${note.videoUrl}</a></div>
+                    <div class="video-embed-wrap"><iframe src="${embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+            } else {
+                vodFs.innerHTML = `<div class="vod-bar"><a href="${note.videoUrl}" target="_blank" rel="noopener">🔗 ${note.videoUrl}</a></div>`;
+            }
+            // Only show full-screen VOD if there's no replay to show
+            if (!stored && !note.replayFile) {
+                vodFs.classList.add('open');
+            } else {
+                // Show as a small bar above the replay — user can click the link
+                vodFs.classList.remove('open');
+            }
         } else {
-            videoEl.innerHTML = '';
-            videoEl.style.display = 'none';
+            vodFs.innerHTML = '';
+            vodFs.classList.remove('open');
         }
     }
 };
@@ -2100,6 +2122,8 @@ window.closeReplayModal = () => {
     if (_mediaRecorder) stopCanvasRecording();
     const videoArea = document.getElementById('videoEmbedArea');
     if (videoArea) { videoArea.innerHTML = ''; videoArea.style.display = 'none'; }
+    const vod = document.getElementById('vodFullscreen');
+    if (vod) { vod.innerHTML = ''; vod.classList.remove('open'); }
     // Reset position so re-opening centers the modal
     const modal = document.getElementById('replayModal');
     modal.style.transform = 'translate(-50%, -50%)';
@@ -5319,10 +5343,10 @@ function openVodInModal(url) {
     const label = url.replace(/https?:\/\/(www\.)?/, '').slice(0, 60);
     document.getElementById('replayModalTitle').textContent = '📺 ' + label;
     document.getElementById('replayViewerArea').style.display = 'none';
-    document.getElementById('replayLoadArea').style.display = 'block';
-    document.getElementById('replayFilenameHint').textContent = '';
-    document.getElementById('replayLoadMsg').textContent = '';
-    document.getElementById('replayLoadLabel').style.display = 'none';
+    document.getElementById('replayLoadArea').style.display = 'none';
+    document.getElementById('replayStatus').style.display = 'none';
+    const videoArea = document.getElementById('videoEmbedArea');
+    if (videoArea) { videoArea.innerHTML = ''; videoArea.style.display = 'none'; }
     viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
     cameraMode = 'fixed';
     const camBtn = document.getElementById('cameraBtn');
@@ -5334,12 +5358,17 @@ function openVodInModal(url) {
     stopPlayback();
     replayGame = null; replayFrames = null;
 
-    const videoArea = document.getElementById('videoEmbedArea');
-    if (videoArea) {
-        videoArea.innerHTML = buildVideoEmbed(url);
-        videoArea.style.display = 'block';
+    // Full-screen VOD embed
+    const vod = document.getElementById('vodFullscreen');
+    const embedUrl = getVideoEmbedUrl(url);
+    if (embedUrl) {
+        vod.innerHTML = `<div class="vod-bar"><a href="${url}" target="_blank" rel="noopener">${url}</a></div>
+            <div class="video-embed-wrap"><iframe src="${embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+    } else {
+        vod.innerHTML = `<div class="vod-bar"><a href="${url}" target="_blank" rel="noopener">🔗 ${url}</a></div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#888;font-size:1.1rem;">Could not embed this URL — <a href="${url}" target="_blank" rel="noopener" style="color:#f59e0b;margin-left:0.4rem;">open in new tab</a></div>`;
     }
-    document.getElementById('replayStatus').style.display = 'none';
+    vod.classList.add('open');
 }
 
 // ===== Replay stats cache for hover tooltips =====
@@ -5558,6 +5587,8 @@ function openReplayInModal(filename) {
     document.getElementById('replayLoadLabel').style.display = '';
     const videoArea = document.getElementById('videoEmbedArea');
     if (videoArea) { videoArea.innerHTML = ''; videoArea.style.display = 'none'; }
+    const vod = document.getElementById('vodFullscreen');
+    if (vod) { vod.innerHTML = ''; vod.classList.remove('open'); }
     viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
     cameraMode = 'fixed';
     const camBtn = document.getElementById('cameraBtn');
