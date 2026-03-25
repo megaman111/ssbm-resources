@@ -2970,19 +2970,37 @@ function buildStatsPanel() {
             pStocks.forEach((s, si) => {
                 const endPct = s.endPercent != null ? s.endPercent.toFixed(0) + '%' : 'alive';
                 let killMoveName = '—';
-                if (s.endFrame != null) {
-                    // Find the conversion by the OPPONENT that killed this player near this stock's end frame
-                    const killingConv = (stats.conversions || []).find(c =>
-                        c.didKill && c.playerIndex !== pIdx && c.moves?.length &&
-                        c.endFrame != null && Math.abs(c.endFrame - s.endFrame) <= 10
+                if (s.endFrame != null && s.endPercent != null) {
+                    // Find the killing conversion: opponent's conversion that killed, closest to this stock's end frame
+                    const killConvs = (stats.conversions || []).filter(c =>
+                        c.didKill && c.playerIndex !== pIdx && c.moves?.length && c.endFrame != null
                     );
-                    if (killingConv?.moves?.length) {
-                        const lastMove = killingConv.moves[killingConv.moves.length - 1];
+                    // Find the closest one by frame
+                    let best = null, bestDist = Infinity;
+                    for (const c of killConvs) {
+                        const dist = Math.abs(c.endFrame - s.endFrame);
+                        if (dist < bestDist) { bestDist = dist; best = c; }
+                    }
+                    if (best && bestDist <= 120) { // 2 seconds tolerance for blast zone travel
+                        const lastMove = best.moves[best.moves.length - 1];
                         killMoveName = MOVE_NAMES[lastMove.moveId] || `Move ${lastMove.moveId}`;
                     }
-                    // Fallback: check lastHitBy on the stock itself (if slippi-js provides it)
+                    // Fallback: check lastHitBy on the stock itself
                     if (killMoveName === '—' && s.lastHitBy != null) {
                         killMoveName = MOVE_NAMES[s.lastHitBy] || `Move ${s.lastHitBy}`;
+                    }
+                    // Fallback 2: search combos too
+                    if (killMoveName === '—') {
+                        const killCombo = (stats.combos || []).filter(c =>
+                            c.didKill && c.playerIndex !== pIdx && c.moves?.length && c.endFrame != null
+                        ).reduce((best, c) => {
+                            const d = Math.abs(c.endFrame - s.endFrame);
+                            return (!best || d < best.dist) ? { combo: c, dist: d } : best;
+                        }, null);
+                        if (killCombo && killCombo.dist <= 120) {
+                            const lastMove = killCombo.combo.moves[killCombo.combo.moves.length - 1];
+                            killMoveName = MOVE_NAMES[lastMove.moveId] || `Move ${lastMove.moveId}`;
+                        }
                     }
                 }
                 html += `<tr><td class="sp-label">#${si + 1}</td><td class="sp-val">${endPct}</td><td class="sp-val">${killMoveName}</td></tr>`;
