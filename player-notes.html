@@ -42,6 +42,15 @@
         .attach-btn.attached:hover { background: #2a4a3a; }
         .detach-btn { background: none; color: #ff6b6b; border: 1px solid #ff6b6b; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
         .detach-btn:hover { background: rgba(255,107,107,0.1); }
+        .attach-video-btn { background: #2d2d4e; color: #f59e0b; border: 1px solid #f59e0b; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+        .attach-video-btn:hover { background: #3d3d6e; }
+        .attach-video-btn.attached { background: #3a2a1a; color: #f59e0b; border-color: #f59e0b; }
+        .note-video-badge { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
+        .video-embed-wrap { position: relative; width: 100%; padding-bottom: 56.25%; margin-bottom: 0.5rem; background: #000; border-radius: 8px; overflow: hidden; }
+        .video-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+        .video-link-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem; }
+        .video-link-bar a { color: #f59e0b; text-decoration: none; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .video-link-bar a:hover { text-decoration: underline; }
         .replay-attached-label { font-size: 0.75rem; color: #4ade80; margin-top: 0.5rem; }
         .edit-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
         .edit-btn:hover { background: #5568d3; }
@@ -364,6 +373,7 @@
                 <p id="replayLoadMsg">Attach a .slp file to this note to watch the replay</p>
                 <label for="slpFileInput" class="load-slp-btn" style="display:inline-block;cursor:pointer;" id="replayLoadLabel">📂 Attach .slp File</label>
                 <input type="file" id="slpFileInput" accept=".slp" onchange="loadSlpFile(event)" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;">
+                <div id="videoEmbedArea" style="display:none;margin-top:1rem;width:100%;max-width:640px;"></div>
             </div>
             <div id="replayStatus" class="replay-status" style="display:none;"></div>
             <div id="replayViewerArea" style="display:none;">
@@ -502,7 +512,23 @@
             <div style="margin-top:1rem;border-top:1px solid #eee;padding-top:1rem;">
                 <label for="uploadSlpInput" class="import-btn" style="display:inline-block;cursor:pointer;">📤 Upload .slp Replay</label>
                 <input type="file" id="uploadSlpInput" accept=".slp" style="display:none;">
-                <span style="color:#999;font-size:0.75rem;display:block;margin-top:0.4rem;">Saved in your browser — persists across sessions</span>
+                <button class="import-btn" style="display:inline-block;cursor:pointer;margin-left:0.5rem;" onclick="addVodLink()">📺 Add VOD Link</button>
+                <span style="color:#999;font-size:0.75rem;display:block;margin-top:0.4rem;">Replays saved in browser · VOD links open in embedded player</span>
+            </div>
+            <div style="margin-top:1rem;border-top:1px solid #eee;padding-top:1rem;">
+                <details style="font-size:0.85rem;">
+                    <summary style="cursor:pointer;color:#667eea;font-weight:600;">🎬 Convert .slp to MP4</summary>
+                    <div style="padding:0.75rem 0;color:#555;line-height:1.6;">
+                        <p style="margin-bottom:0.5rem;">To convert Slippi replays to video files, use one of these tools:</p>
+                        <ul style="margin:0.5rem 0;padding-left:1.2rem;">
+                            <li><a href="https://github.com/davisdude/slp2mp4" target="_blank" rel="noopener" style="color:#667eea;font-weight:600;">slp2mp4</a> — Python tool, converts .slp files to .mp4 using Dolphin. Supports batch conversion.</li>
+                            <li><a href="https://github.com/kevinsung/slp-to-video" target="_blank" rel="noopener" style="color:#667eea;font-weight:600;">slp-to-video</a> — Another Python converter using Dolphin playback.</li>
+                            <li><a href="https://github.com/nachoverdon/Slippi2VideoHX" target="_blank" rel="noopener" style="color:#667eea;font-weight:600;">Slippi2Video</a> — Automates OBS recording of Slippi replays.</li>
+                        </ul>
+                        <p style="margin-top:0.5rem;font-size:0.8rem;color:#888;">All require Slippi Dolphin installed locally. slp2mp4 is the most straightforward.</p>
+                        <button class="import-btn" style="margin-top:0.5rem;" onclick="convertSlpToMp4()">🎬 Convert a .slp File</button>
+                    </div>
+                </details>
             </div>
         </div>
         <div class="export-section notes-only">
@@ -1746,21 +1772,31 @@ function displayNotes() {
     container.innerHTML = filtered.map(note => {
         const idx = notes.indexOf(note);
         const attached = hasAttachedReplay(note);
+        const hasVideo = !!note.videoUrl;
         const attachBtn = attached
             ? `<button class="attach-btn attached" onclick="event.stopPropagation();triggerAttach(${idx})" title="Replace attached replay">🎮 Replay Attached</button>
                <button class="detach-btn" onclick="event.stopPropagation();detachReplay(${idx})" title="Remove replay">✕</button>`
             : `<button class="attach-btn" onclick="event.stopPropagation();triggerAttach(${idx})">📎 Attach Replay</button>`;
+        const videoBtn = hasVideo
+            ? `<button class="attach-video-btn attached" onclick="event.stopPropagation();attachVideoLink(${idx})" title="Change video link">📺 VOD</button>
+               <button class="detach-btn" onclick="event.stopPropagation();detachVideo(${idx})" title="Remove video">✕</button>`
+            : `<button class="attach-video-btn" onclick="event.stopPropagation();attachVideoLink(${idx})">📺 Attach VOD</button>`;
+        const badges = [
+            attached ? '<span class="note-replay-badge">🎮 replay</span>' : '',
+            hasVideo ? '<span class="note-video-badge">📺 vod</span>' : '',
+        ].filter(Boolean).join('');
         return `
         <div class="note-card ${attached ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})" title="${attached ? 'Double-click to watch replay' : 'Double-click to open replay viewer'}">
             <div class="note-actions">
                 ${attachBtn}
+                ${videoBtn}
                 <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
             <div class="note-header">
                 <img src="${characterIcons[note.character] || ''}" alt="${note.character}">
                 <div>
-                    <div class="note-player">${note.playerName}${attached ? '<span class="note-replay-badge">🎮 replay</span>' : ''}</div>
+                    <div class="note-player">${note.playerName}${badges}</div>
                     <div style="color:#667eea;font-weight:600;">${note.character}</div>
                 </div>
             </div>
@@ -1776,7 +1812,7 @@ function displayNotes() {
                     <button class="cancel-btn" onclick="cancelEdit(${idx})">Cancel</button>
                 </div>
             </div>
-            <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}${attached ? ' · <span style="color:#4ade80">🎮 double-click to watch</span>' : ''}</div>
+            <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}${attached ? ' · <span style="color:#4ade80">🎮 double-click to watch</span>' : ''}${hasVideo ? ' · <span style="color:#f59e0b">📺 has VOD</span>' : ''}</div>
         </div>`;
     }).join('');
 
@@ -1821,6 +1857,85 @@ async function handleAttachFile(event) {
             console.log(`Replay attached as "${safeName}". Copy this .slp to replays/ folder and export notes for remote access.`);
         }
     } catch(e) { alert('Failed to attach replay: ' + e.message); }
+}
+
+// ===== Video link (YouTube / Twitch VOD) attach/detach =====
+window.attachVideoLink = idx => {
+    const note = notes[idx];
+    const current = note.videoUrl || '';
+    const url = prompt('Paste a YouTube or Twitch VOD link (with timestamp if desired):', current);
+    if (url === null) return; // cancelled
+    if (!url.trim()) { delete note.videoUrl; displayNotes(); return; }
+    // Basic validation
+    if (!/youtube\.com|youtu\.be|twitch\.tv/i.test(url)) {
+        if (!confirm('This doesn\'t look like a YouTube or Twitch link. Save anyway?')) return;
+    }
+    note.videoUrl = url.trim();
+    displayNotes();
+};
+
+window.detachVideo = idx => {
+    if (confirm('Remove video link from this note?')) {
+        delete notes[idx].videoUrl;
+        displayNotes();
+    }
+};
+
+/**
+ * Parse a YouTube or Twitch URL into an embeddable iframe src.
+ * Supports: youtube.com/watch?v=X&t=Y, youtu.be/X?t=Y, twitch.tv/videos/X?t=XhYmZs
+ */
+function getVideoEmbedUrl(url) {
+    if (!url) return null;
+    try {
+        const u = new URL(url.startsWith('http') ? url : 'https://' + url);
+        // YouTube
+        if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+            let videoId, startSec = 0;
+            if (u.hostname.includes('youtu.be')) {
+                videoId = u.pathname.slice(1).split('/')[0];
+            } else {
+                videoId = u.searchParams.get('v');
+            }
+            if (!videoId) return null;
+            // Parse timestamp: t=123 (seconds) or t=1m30s
+            const t = u.searchParams.get('t');
+            if (t) {
+                const m = t.match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?/);
+                if (m) startSec = (parseInt(m[1]||0)*3600) + (parseInt(m[2]||0)*60) + parseInt(m[3]||0);
+                if (!startSec && /^\d+$/.test(t)) startSec = parseInt(t);
+            }
+            return `https://www.youtube.com/embed/${videoId}?start=${startSec}&rel=0`;
+        }
+        // Twitch VOD
+        if (u.hostname.includes('twitch.tv')) {
+            const vodMatch = u.pathname.match(/\/videos\/(\d+)/);
+            if (vodMatch) {
+                const vodId = vodMatch[1];
+                const t = u.searchParams.get('t') || '';
+                return `https://player.twitch.tv/?video=${vodId}&time=${t}&parent=${location.hostname}&autoplay=false`;
+            }
+            // Twitch clip
+            const clipMatch = u.pathname.match(/\/\w+\/clip\/(\w+)/);
+            if (clipMatch) {
+                return `https://clips.twitch.tv/embed?clip=${clipMatch[1]}&parent=${location.hostname}&autoplay=false`;
+            }
+        }
+    } catch {}
+    return null;
+}
+
+/**
+ * Build a video embed or link bar for a given URL.
+ * Returns HTML string.
+ */
+function buildVideoEmbed(url) {
+    const embedUrl = getVideoEmbedUrl(url);
+    if (embedUrl) {
+        return `<div class="video-embed-wrap"><iframe src="${embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+    }
+    // Fallback: just show a link
+    return `<div class="video-link-bar">📺 <a href="${url}" target="_blank" rel="noopener">${url}</a></div>`;
 }
 
 document.getElementById('noteForm').addEventListener('submit', e => {
@@ -1905,6 +2020,9 @@ window.openReplayModal = async idx => {
     const note = notes[idx];
     document.getElementById('replayModalTitle').textContent = `🎮 ${note.playerName} — ${note.character}`;
     document.getElementById('replayViewerArea').style.display = 'none';
+    document.getElementById('replayLoadLabel').style.display = '';
+    const videoArea = document.getElementById('videoEmbedArea');
+    if (videoArea) { videoArea.innerHTML = ''; videoArea.style.display = 'none'; }
     // Reset zoom/pan when opening new replay
     viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
     cameraMode = 'fixed';
@@ -1962,11 +2080,26 @@ window.openReplayModal = async idx => {
         document.getElementById('replayLoadLabel').textContent = '📂 Attach .slp File';
         document.getElementById('replayLoadMsg').textContent = 'Attach a .slp file — it will be saved so you never have to browse again.';
     }
+
+    // Show video embed if note has a video URL
+    const videoEl = document.getElementById('videoEmbedArea');
+    if (videoEl) {
+        if (note.videoUrl) {
+            videoEl.innerHTML = buildVideoEmbed(note.videoUrl);
+            videoEl.style.display = 'block';
+        } else {
+            videoEl.innerHTML = '';
+            videoEl.style.display = 'none';
+        }
+    }
 };
 
 window.closeReplayModal = () => {
     document.getElementById('replayModalOverlay').classList.remove('open');
     stopPlayback();
+    if (_mediaRecorder) stopCanvasRecording();
+    const videoArea = document.getElementById('videoEmbedArea');
+    if (videoArea) { videoArea.innerHTML = ''; videoArea.style.display = 'none'; }
     // Reset position so re-opening centers the modal
     const modal = document.getElementById('replayModal');
     modal.style.transform = 'translate(-50%, -50%)';
@@ -3796,6 +3929,11 @@ function playLoop(ts) {
         if (currentFrame < totalFrames - 1) {
             currentFrame++;
         } else {
+            // If recording, stop at end instead of looping
+            if (_mediaRecorder && _mediaRecorder.state === 'recording') {
+                stopCanvasRecording();
+                return;
+            }
             currentFrame = 0; // loop
         }
     }
@@ -5049,6 +5187,161 @@ async function deleteUploadedReplay(name) {
     });
 }
 
+// ===== VOD link storage (localStorage — just URLs, tiny) =====
+const VOD_STORAGE_KEY = 'melee_saved_vods';
+
+function getSavedVodLinks() {
+    try { return JSON.parse(localStorage.getItem(VOD_STORAGE_KEY) || '[]'); }
+    catch { return []; }
+}
+
+function saveVodLink(label, url) {
+    const vods = getSavedVodLinks();
+    // Dedupe by URL
+    if (vods.some(v => v.url === url)) return;
+    vods.push({ label, url });
+    localStorage.setItem(VOD_STORAGE_KEY, JSON.stringify(vods));
+}
+
+function removeVodLink(url) {
+    const vods = getSavedVodLinks().filter(v => v.url !== url);
+    localStorage.setItem(VOD_STORAGE_KEY, JSON.stringify(vods));
+}
+
+window.addVodLink = () => {
+    const url = prompt('Paste a YouTube or Twitch VOD link (with timestamp if desired):');
+    if (!url?.trim()) return;
+    const label = prompt('Give it a short label (e.g. "moky vs Cody G3"):', '') || url.replace(/https?:\/\/(www\.)?/, '').slice(0, 50);
+    saveVodLink(label.trim(), url.trim());
+    buildReplayBrowser();
+};
+
+/**
+ * SLP-to-MP4 conversion using the built-in canvas renderer + MediaRecorder API.
+ * Records the replay canvas at 60fps and exports as .webm (or .mp4 if codec supported).
+ * This is a browser-native approach — no Dolphin needed, but uses the silhouette renderer.
+ */
+window.convertSlpToMp4 = () => {
+    // If a replay is already loaded, offer to record it
+    if (replayFrames && replaySettings) {
+        if (confirm('Record the currently loaded replay as a video?\n\nThis will play through the replay at 1x speed and capture the canvas.\nThe result will be a .webm file you can convert to .mp4 with any video tool.')) {
+            startCanvasRecording();
+            return;
+        }
+    }
+    // Otherwise, prompt to load one first
+    const inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = '.slp';
+    inp.onchange = async e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const buffer = await file.arrayBuffer();
+            const uint8 = new Uint8Array(buffer);
+            // Open in modal and start recording after init
+            openReplayInModal(file.name);
+            const status = document.getElementById('replayStatus');
+            status.style.display = 'block';
+            status.textContent = '⏳ Loading replay for recording...';
+            await initReplayFromBuffer(uint8, file.name);
+            if (confirm('Replay loaded. Start recording now?\n\nThe replay will play at 1x and the canvas will be captured as video.')) {
+                startCanvasRecording();
+            }
+        } catch (err) {
+            alert('Failed to load replay: ' + err.message);
+        }
+    };
+    inp.click();
+};
+
+let _mediaRecorder = null;
+let _recordedChunks = [];
+
+function startCanvasRecording() {
+    const canvas = document.getElementById('replayCanvas');
+    if (!canvas) { alert('No replay canvas found'); return; }
+    if (_mediaRecorder) { alert('Already recording'); return; }
+
+    const stream = canvas.captureStream(60);
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+        ? 'video/webm;codecs=vp9'
+        : 'video/webm';
+    _recordedChunks = [];
+    _mediaRecorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+
+    _mediaRecorder.ondataavailable = e => { if (e.data.size > 0) _recordedChunks.push(e.data); };
+    _mediaRecorder.onstop = () => {
+        const blob = new Blob(_recordedChunks, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (replaySettings?.players?.[0]?.displayName || 'replay') + '.webm';
+        document.body.appendChild(a); a.click();
+        document.body.removeChild(a); URL.revokeObjectURL(url);
+        _mediaRecorder = null; _recordedChunks = [];
+        alert('Recording saved. You can convert .webm to .mp4 using FFmpeg:\nffmpeg -i replay.webm -c:v libx264 replay.mp4');
+    };
+
+    _mediaRecorder.start(100); // collect data every 100ms
+
+    // Start playback from frame 0
+    currentFrame = 0;
+    document.getElementById('replayTimeline').value = 0;
+    isPlaying = true;
+    document.getElementById('playPauseBtn').textContent = '⏸ Pause';
+    document.getElementById('playPauseBtn').classList.add('active');
+
+    // Show recording indicator
+    const indicator = document.createElement('div');
+    indicator.id = 'recordingIndicator';
+    indicator.style.cssText = 'position:fixed;top:1rem;right:1rem;background:rgba(255,0,0,0.9);color:white;padding:0.5rem 1rem;border-radius:8px;font-weight:700;z-index:99999;cursor:pointer;font-size:0.9rem;';
+    indicator.textContent = '🔴 Recording... (click to stop)';
+    indicator.onclick = stopCanvasRecording;
+    document.body.appendChild(indicator);
+}
+
+function stopCanvasRecording() {
+    if (_mediaRecorder && _mediaRecorder.state !== 'inactive') {
+        _mediaRecorder.stop();
+    }
+    const indicator = document.getElementById('recordingIndicator');
+    if (indicator) indicator.remove();
+    isPlaying = false;
+    document.getElementById('playPauseBtn').textContent = '▶ Play';
+    document.getElementById('playPauseBtn').classList.remove('active');
+}
+
+// Auto-stop recording when replay ends is handled in playLoop above
+
+
+function openVodInModal(url) {
+    activeNoteIdx = null;
+    const label = url.replace(/https?:\/\/(www\.)?/, '').slice(0, 60);
+    document.getElementById('replayModalTitle').textContent = '📺 ' + label;
+    document.getElementById('replayViewerArea').style.display = 'none';
+    document.getElementById('replayLoadArea').style.display = 'block';
+    document.getElementById('replayFilenameHint').textContent = '';
+    document.getElementById('replayLoadMsg').textContent = '';
+    document.getElementById('replayLoadLabel').style.display = 'none';
+    viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
+    cameraMode = 'fixed';
+    const camBtn = document.getElementById('cameraBtn');
+    if (camBtn) camBtn.classList.remove('active');
+    const modal = document.getElementById('replayModal');
+    modal.style.top = '50%'; modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    document.getElementById('replayModalOverlay').classList.add('open');
+    stopPlayback();
+    replayGame = null; replayFrames = null;
+
+    const videoArea = document.getElementById('videoEmbedArea');
+    if (videoArea) {
+        videoArea.innerHTML = buildVideoEmbed(url);
+        videoArea.style.display = 'block';
+    }
+    document.getElementById('replayStatus').style.display = 'none';
+}
+
 // ===== Replay stats cache for hover tooltips =====
 const _replayStatsCache = new Map();
 
@@ -5140,15 +5433,23 @@ async function buildReplayBrowser() {
     const list = document.getElementById('replayFileList');
     if (!list) return;
     const uploaded = await getUploadedReplays();
+    const vodLinks = getSavedVodLinks();
     const allFiles = [
-        ...SAVED_REPLAYS.map(f => ({ name: f, source: 'server' })),
-        ...uploaded.map(f => ({ name: f, source: 'local' })),
+        ...SAVED_REPLAYS.map(f => ({ name: f, source: 'server', type: 'slp' })),
+        ...uploaded.map(f => ({ name: f, source: 'local', type: 'slp' })),
+        ...vodLinks.map(v => ({ name: v.label, source: 'vod', type: 'vod', url: v.url })),
     ];
     if (!allFiles.length) {
-        list.innerHTML = '<p style="color:#999;font-size:0.85rem;">No replays yet — upload one below</p>';
+        list.innerHTML = '<p style="color:#999;font-size:0.85rem;">No replays or VODs yet — upload one below</p>';
         return;
     }
     list.innerHTML = allFiles.map(f => {
+        if (f.type === 'vod') {
+            const delBtn = `<span class="vod-del-btn" data-url="${f.url.replace(/"/g,'&quot;')}" title="Remove VOD link" style="color:#f66;font-weight:700;font-size:1rem;margin-left:0.4rem;cursor:pointer;">&times;</span>`;
+            return `<div class="replay-file-row" data-source="vod" data-url="${f.url.replace(/"/g,'&quot;')}">
+                <button class="replay-file-btn" title="${f.url}" style="border-left:3px solid #f59e0b;">📺 ${f.name}${delBtn}</button>
+            </div>`;
+        }
         const display = f.name.replace('.slp', '').replace(/_/g, ' ');
         const icon = f.source === 'local' ? '💾 ' : '📄 ';
         const delBtn = f.source === 'local'
@@ -5162,10 +5463,20 @@ async function buildReplayBrowser() {
 
     // Click handlers
     list.querySelectorAll('.replay-file-row').forEach(row => {
+        const source = row.dataset.source;
+
+        if (source === 'vod') {
+            const btn = row.querySelector('.replay-file-btn');
+            btn.addEventListener('click', e => {
+                if (e.target.classList.contains('vod-del-btn')) return;
+                openVodInModal(row.dataset.url);
+            });
+            return;
+        }
+
         const btn = row.querySelector('.replay-file-btn');
         const tooltip = row.querySelector('.replay-tooltip');
         const file = row.dataset.file;
-        const source = row.dataset.source;
 
         btn.addEventListener('click', e => {
             if (e.target.classList.contains('replay-del-btn')) return;
@@ -5225,6 +5536,18 @@ async function buildReplayBrowser() {
             }
         });
     });
+
+    // VOD delete handlers
+    list.querySelectorAll('.vod-del-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            const url = btn.dataset.url;
+            if (confirm('Remove this VOD link?')) {
+                removeVodLink(url);
+                buildReplayBrowser();
+            }
+        });
+    });
 }
 
 function openReplayInModal(filename) {
@@ -5232,6 +5555,9 @@ function openReplayInModal(filename) {
     document.getElementById('replayModalTitle').textContent = '🎮 ' + filename.replace('.slp', '');
     document.getElementById('replayViewerArea').style.display = 'none';
     document.getElementById('replayLoadArea').style.display = 'none';
+    document.getElementById('replayLoadLabel').style.display = '';
+    const videoArea = document.getElementById('videoEmbedArea');
+    if (videoArea) { videoArea.innerHTML = ''; videoArea.style.display = 'none'; }
     viewZoom = 1.0; viewPanX = 0; viewPanY = 0;
     cameraMode = 'fixed';
     const camBtn = document.getElementById('cameraBtn');
