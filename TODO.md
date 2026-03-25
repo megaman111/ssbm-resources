@@ -97,10 +97,12 @@
 - [x] Embeddable as a module on any page
 - [x] **FoD platform sliders** — two range sliders for Fountain of Dreams side platforms (left/right), adjustable height 7.5–27.375, updates stage rendering and trajectory calculations in real-time. `populateFromReplay()` accepts `fodLeftY`/`fodRightY` for replay viewer integration.
 - [x] Replay viewer integration — pause on a frame and auto-populate the calculator with that frame's data
+- [ ] **Fix calculator not loading the right frame data on hit** — calculator overlay opens but doesn't always populate with the correct move/hitbox when pausing on a hit frame. Needs debugging of `detectHitOnFrame` → `updateCalcFromFrame` → `populateFromReplay` pipeline.
 
 ### VOD Linking Module
-- [ ] Link VODs (YouTube/Twitch timestamps) to notes
-- [ ] Embedded VOD player with timestamp jumping
+- [x] Link VODs (YouTube/Twitch timestamps) to notes
+- [x] Embedded VOD player with timestamp jumping (full-modal YouTube/Twitch iframe)
+- [ ] **Fix VOD attach not saving** — attaching a VOD link via the note card button may not persist correctly; needs debugging of `videoUrl` field save/export flow
 - [ ] Cross-reference VODs with .slp replays
 - [ ] Side-by-side VOD + replay viewer — sync stream footage with input data
 
