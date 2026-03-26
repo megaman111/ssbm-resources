@@ -2646,6 +2646,18 @@ function detectHitOnFrame(frameIdx) {
     if (!prevFrame || !currFrame) return null;
 
     const players = replaySettings.players;
+    // One-time debug: log frame data structure
+    if (!detectHitOnFrame._logged) {
+        detectHitOnFrame._logged = true;
+        console.log('[HitDetect] Frame keys sample:', keys[0], keys[1]);
+        console.log('[HitDetect] Players in frame:', Object.keys(currFrame.players || {}));
+        console.log('[HitDetect] Settings players:', players.map(p => ({ playerIndex: p.playerIndex, port: p.port, charId: p.characterId })));
+        for (const p of players) {
+            const post = currFrame.players?.[p.playerIndex]?.post;
+            console.log(`[HitDetect] P${p.port} (idx ${p.playerIndex}) post:`, post ? { actionStateId: post.actionStateId, hitstun: post.hitstunRemaining, percent: post.percent } : 'MISSING');
+        }
+    }
+
     for (let i = 0; i < players.length; i++) {
         const pIdx = players[i].playerIndex;
         const prev = prevFrame.players?.[pIdx]?.post;
