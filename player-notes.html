@@ -4087,10 +4087,15 @@ window.stepFrame = delta => {
 
 window.seekToFrame = idx => {
     currentFrame = Math.max(0, Math.min(totalFrames - 1, idx));
+    isPlaying = false;
+    document.getElementById('playPauseBtn').textContent = '▶ Play';
+    document.getElementById('playPauseBtn').classList.remove('active');
     updateDynamicCamera(currentFrame);
     renderFrame(currentFrame);
-    if (!isPlaying) updateCalcFromFrame(currentFrame);
+    updateCalcFromFrame(currentFrame);
 };
+
+window.renderFrame = renderFrame;
 
 window.setSpeed = s => { playbackSpeed = s; };
 
@@ -5066,7 +5071,7 @@ function buildClipsPanel() {
         </div>`;
     }
 
-    const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${t})"`; };
+    const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t})"`; };
 
     let html = '';
 
@@ -5174,7 +5179,7 @@ window.showActionClips = (actionName) => {
         const idx = players.findIndex(p => p.port === port);
         return idx >= 0 ? getPlayerColor(idx) : '#888';
     };
-    const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t});isPlaying=false;document.getElementById('playPauseBtn').textContent='▶ Play';document.getElementById('playPauseBtn').classList.remove('active');renderFrame(${t})"`; };
+    const frameClick = (f) => { const t = Math.max(0, f - 16); return `onclick="seekToFrame(${t})"`; };
 
     let html = `<div style="max-height:200px;overflow-y:auto;margin-bottom:0.4rem;">`;
     ranges.slice(0, 100).forEach(r => {
