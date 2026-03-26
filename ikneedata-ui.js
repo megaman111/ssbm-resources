@@ -1108,6 +1108,7 @@ export class IKneeDataUI {
         if (fd.startX != null) this._startX = Math.round(fd.startX);
         if (fd.startY != null) this._startY = Math.round(fd.startY);
         this._positionFrozen = true;
+        console.log('[Calc] Position set to:', this._startX, this._startY, '| Stage:', this._stageKey);
 
         // Hit direction
         if (fd.reverse != null) {
