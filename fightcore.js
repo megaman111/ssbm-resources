@@ -57,20 +57,20 @@ const SPECIAL_TO_FC_MOVE = {
     "SpecialN": "neutralb", "SpecialNStart": "neutralb",
     "SpecialNLoop": "neutralb", "SpecialNEnd": "neutralb",
     "SpecialNCansel": "neutralb", "SpecialNCancel": "neutralb",
-    "SpecialAirN": "neutralb", "SpecialAirNStart": "neutralb",
-    "SpecialAirNLoop": "neutralb", "SpecialAirNEnd": "neutralb",
+    "SpecialAirN": "aneutralb", "SpecialAirNStart": "aneutralb",
+    "SpecialAirNLoop": "aneutralb", "SpecialAirNEnd": "aneutralb",
     "SpecialS": "sideb", "SpecialSStart": "sideb",
     "SpecialS1": "sideb", "SpecialS2": "sideb", "SpecialSEnd": "sideb",
-    "SpecialAirS": "sideb", "SpecialAirSStart": "sideb",
-    "SpecialAirS1": "sideb", "SpecialAirS2": "sideb",
-    "SpecialAirSEnd": "sideb",
+    "SpecialAirS": "asideb", "SpecialAirSStart": "asideb",
+    "SpecialAirS1": "asideb", "SpecialAirS2": "asideb",
+    "SpecialAirSEnd": "asideb",
     "SpecialHi": "upb", "SpecialHiStart": "upb", "SpecialHiHold": "upb",
-    "SpecialAirHi": "upb", "SpecialAirHiStart": "upb",
+    "SpecialAirHi": "aupb", "SpecialAirHiStart": "aupb",
     "SpecialLw": "downb", "SpecialLwStart": "downb",
     "SpecialLwLoop": "downb", "SpecialLwHit": "downb",
-    "SpecialLwEnd": "downb", "SpecialAirLw": "downb",
-    "SpecialAirLwStart": "downb", "SpecialAirLwLoop": "downb",
-    "SpecialAirLwHit": "downb", "SpecialAirLwEnd": "downb",
+    "SpecialLwEnd": "downb", "SpecialAirLw": "adownb",
+    "SpecialAirLwStart": "adownb", "SpecialAirLwLoop": "adownb",
+    "SpecialAirLwHit": "adownb", "SpecialAirLwEnd": "adownb",
 };
 
 const DANCING_BLADE_MAP = {
@@ -222,7 +222,17 @@ export class FightCore {
         let fcName = ACTION_TO_FC_MOVE[actionName];
         if (fcName) return map.get(fcName) || null;
         fcName = SPECIAL_TO_FC_MOVE[actionName];
-        if (fcName) return map.get(fcName) || null;
+        if (fcName) {
+            // Try aerial version first, fall back to ground version
+            const result = map.get(fcName);
+            if (result) return result;
+            // Fallback: aerial "asideb" → "sideb", "aupb" → "upb", etc.
+            if (fcName.startsWith('a')) {
+                const ground = map.get(fcName.slice(1));
+                if (ground) return ground;
+            }
+            return null;
+        }
         return map.get(actionName.toLowerCase()) || null;
     }
 
