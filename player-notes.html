@@ -2731,6 +2731,7 @@ async function updateCalcFromFrame(frameIdx) {
 
     // Convert action state ID to action name for FightCore lookup
     const actionName = hit.actionState < ACTION_NAMES.length ? ACTION_NAMES[hit.actionState] : null;
+    console.log('[Calc] Hit detected at frame', hitFrame, '| actionStateId:', hit.actionState, '| actionName:', actionName, '| attacker:', hit.attackerCharId, '| defender:', hit.defenderCharId);
 
     // Auto-open overlay and init calc if needed
     if (!calcOverlayOpen) toggleCalcOverlay(true);
@@ -2762,6 +2763,7 @@ async function updateCalcFromFrame(frameIdx) {
         }
     }
 
+    console.log('[Calc] populateFromReplay fd:', fd);
     await calcInstance.populateFromReplay(fd);
 
     // Update hit info bar
@@ -2956,6 +2958,18 @@ function buildStatsPanel() {
 
     // Stocks — use conversions to find the kill move for each stock
     if (stats?.stocks?.length) {
+        // Debug: log stock and conversion data shapes
+        console.log('Stats stocks sample:', stats.stocks[0]);
+        console.log('Stats conversions count:', stats.conversions?.length, 'sample:', stats.conversions?.[0]);
+        console.log('Players:', players.map(p => ({ playerIndex: p.playerIndex, port: p.port })));
+
+        // Pre-build a list of all killing conversions
+        const allKillConvs = (stats.conversions || []).filter(c => c.didKill && c.moves?.length);
+        console.log('Killing conversions:', allKillConvs.length, allKillConvs.map(c => ({
+            attacker: c.playerIndex, endFrame: c.endFrame,
+            lastMove: c.moves[c.moves.length - 1]?.moveId
+        })));
+
         html += '<div class="sp-section"><div class="sp-section-title">Stock Details</div>';
         players.forEach((p, pi) => {
             const pIdx = p.playerIndex;

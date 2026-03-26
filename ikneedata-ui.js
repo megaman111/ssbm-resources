@@ -1139,10 +1139,13 @@ export class IKneeDataUI {
             this._d('fodRightVal').textContent = fd.fodRightY === 0 ? 'Off' : fd.fodRightY.toFixed(1);
         }
         const m = fc.getFrameDataForAction(fd.attackerCharId, fd.actionState);
+        console.log('[Calc] getFrameDataForAction:', fd.attackerCharId, fd.actionState, '→', m?.normalizedName || 'NOT FOUND', m ? '' : '(fc._moveMap has char?', fc._moveMap.has(fd.attackerCharId), ')');
         if (m?.normalizedName) {
             this._d('move').value = m.normalizedName;
             this._selectedMove = m;
             this._onMoveChange();
+        } else {
+            console.warn('[Calc] Could not find move for action:', fd.actionState, 'charId:', fd.attackerCharId);
         }
         this._recalc();
     }
