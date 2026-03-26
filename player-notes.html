@@ -2724,7 +2724,7 @@ async function updateCalcFromFrame(frameIdx) {
             if (hit) { hitFrame = frameIdx - d; break; }
         }
     }
-    if (!hit) return;
+    if (!hit) { console.log('[Calc] No hit found near frame', frameIdx); return; }
     // Skip if we already processed this exact hit frame
     if (hitFrame === lastCalcHitFrame) return;
     lastCalcHitFrame = hitFrame;
@@ -2985,17 +2985,30 @@ function buildStatsPanel() {
                 const endPct = s.endPercent != null ? s.endPercent.toFixed(0) + '%' : 'alive';
                 let killMoveName = '—';
                 if (s.endFrame != null && s.endPercent != null) {
-                    // Find the killing conversion: opponent's conversion that killed, closest to this stock's end frame
-                    const killConvs = (stats.conversions || []).filter(c =>
+                    // Strategy: find the opponent's conversion whose endFrame is closest to
+                    // (but not too far after) this stock's endFrame.
+                    // The conversion endFrame can be BEFORE the stock endFrame (knockback travel)
+                    // or AT the same frame (instant kill / blast zone).
+                    const oppKillConvs = (stats.conversions || []).filter(c =>
                         c.didKill && c.playerIndex !== pIdx && c.moves?.length && c.endFrame != null
                     );
-                    // Find the closest one by frame
+                    // Find the one whose endFrame is closest but <= stock endFrame + small buffer
                     let best = null, bestDist = Infinity;
-                    for (const c of killConvs) {
-                        const dist = Math.abs(c.endFrame - s.endFrame);
-                        if (dist < bestDist) { bestDist = dist; best = c; }
+                    for (const c of oppKillConvs) {
+                        // Conversion must end before or near the stock death
+                        if (c.endFrame <= s.endFrame + 10) {
+                            const dist = s.endFrame - c.endFrame;
+                            if (dist >= 0 && dist < bestDist) { bestDist = dist; best = c; }
+                        }
                     }
-                    if (best && bestDist <= 120) { // 2 seconds tolerance for blast zone travel
+                    // If nothing found going backwards, try the closest one overall
+                    if (!best) {
+                        for (const c of oppKillConvs) {
+                            const dist = Math.abs(c.endFrame - s.endFrame);
+                            if (dist < bestDist) { bestDist = dist; best = c; }
+                        }
+                    }
+                    if (best) {
                         const lastMove = best.moves[best.moves.length - 1];
                         killMoveName = MOVE_NAMES[lastMove.moveId] || `Move ${lastMove.moveId}`;
                     }
@@ -3003,16 +3016,20 @@ function buildStatsPanel() {
                     if (killMoveName === '—' && s.lastHitBy != null) {
                         killMoveName = MOVE_NAMES[s.lastHitBy] || `Move ${s.lastHitBy}`;
                     }
-                    // Fallback 2: search combos too
+                    // Fallback 2: search combos
                     if (killMoveName === '—') {
-                        const killCombo = (stats.combos || []).filter(c =>
+                        const oppKillCombos = (stats.combos || []).filter(c =>
                             c.didKill && c.playerIndex !== pIdx && c.moves?.length && c.endFrame != null
-                        ).reduce((best, c) => {
-                            const d = Math.abs(c.endFrame - s.endFrame);
-                            return (!best || d < best.dist) ? { combo: c, dist: d } : best;
-                        }, null);
-                        if (killCombo && killCombo.dist <= 120) {
-                            const lastMove = killCombo.combo.moves[killCombo.combo.moves.length - 1];
+                        );
+                        let bestCombo = null, bestCDist = Infinity;
+                        for (const c of oppKillCombos) {
+                            if (c.endFrame <= s.endFrame + 10) {
+                                const dist = s.endFrame - c.endFrame;
+                                if (dist >= 0 && dist < bestCDist) { bestCDist = dist; bestCombo = c; }
+                            }
+                        }
+                        if (bestCombo) {
+                            const lastMove = bestCombo.moves[bestCombo.moves.length - 1];
                             killMoveName = MOVE_NAMES[lastMove.moveId] || `Move ${lastMove.moveId}`;
                         }
                     }
