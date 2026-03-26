@@ -2748,7 +2748,11 @@ async function updateCalcFromFrame(frameIdx) {
     lastCalcHitFrame = hitFrame;
 
     // Convert action state ID to action name for FightCore lookup
-    const actionName = hit.actionState < ACTION_NAMES.length ? ACTION_NAMES[hit.actionState] : null;
+    // ACTION_NAMES covers 0-340, CHAR_SPECIALS covers 341+ per character
+    let actionName = hit.actionState < ACTION_NAMES.length ? ACTION_NAMES[hit.actionState] : null;
+    if (!actionName && CHAR_SPECIALS[hit.attackerCharId]) {
+        actionName = CHAR_SPECIALS[hit.attackerCharId][hit.actionState] || null;
+    }
     console.log('[Calc] Hit detected at frame', hitFrame, '| actionStateId:', hit.actionState, '| actionName:', actionName, '| attacker:', hit.attackerCharId, '| defender:', hit.defenderCharId);
 
     // Auto-open overlay and init calc if needed
