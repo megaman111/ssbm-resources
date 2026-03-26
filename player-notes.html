@@ -2636,168 +2636,130 @@ function initCalcPanel() {
     }
 }
 
-function detectHitOnFrame(frameIdx) {
-    if (!replayFrames || !replaySettings) return null;
+// Detect ALL hits on a given frame (returns array, empty if none)
+function detectHitsOnFrame(frameIdx) {
+    if (!replayFrames || !replaySettings) return [];
     const keys = getFrameKeys();
-    if (frameIdx < 1 || frameIdx >= keys.length) return null;
-
+    if (frameIdx < 1 || frameIdx >= keys.length) return [];
     const prevFrame = replayFrames[keys[frameIdx - 1]];
     const currFrame = replayFrames[keys[frameIdx]];
-    if (!prevFrame || !currFrame) return null;
-
+    if (!prevFrame || !currFrame) return [];
     const players = replaySettings.players;
-    // One-time debug: log frame data structure
-    if (!detectHitOnFrame._logged) {
-        detectHitOnFrame._logged = true;
-        console.log('[HitDetect] Frame keys sample:', keys[0], keys[1]);
-        console.log('[HitDetect] Players in frame:', Object.keys(currFrame.players || {}));
-        console.log('[HitDetect] Settings players:', players.map(p => ({ playerIndex: p.playerIndex, port: p.port, charId: p.characterId })));
-        for (const p of players) {
-            const post = currFrame.players?.[p.playerIndex]?.post;
-            console.log(`[HitDetect] P${p.port} (idx ${p.playerIndex}) post:`, post ? { actionStateId: post.actionStateId, hitstun: post.hitstunRemaining, percent: post.percent } : 'MISSING');
-        }
-    }
-
+    const hits = [];
     for (let i = 0; i < players.length; i++) {
         const pIdx = players[i].playerIndex;
         const prev = prevFrame.players?.[pIdx]?.post;
         const curr = currFrame.players?.[pIdx]?.post;
         if (!prev || !curr) continue;
-
-        // Hit detected: player entered a damage/hitstun action state
-        // Hitstun action states: 0x4b-0x5b (75-91), DamageBind 0x26 (38)
         const prevAs = prev.actionStateId ?? 0;
         const currAs = curr.actionStateId ?? 0;
         const prevInHitstun = (prevAs >= 0x4b && prevAs <= 0x5b) || prevAs === 0x26;
         const currInHitstun = (currAs >= 0x4b && currAs <= 0x5b) || currAs === 0x26;
-
         if (!prevInHitstun && currInHitstun) {
-            // Find the attacker
-            let attackerIdx = -1;
-            let attackerAction = -1;
-            let atkFacing = 1;
+            let attackerIdx = -1, attackerAction = -1, atkFacing = 1;
             for (let j = 0; j < players.length; j++) {
                 if (j === i) continue;
                 const ajIdx = players[j].playerIndex;
-                // Check current frame first, then previous
                 for (const fr of [currFrame, prevFrame]) {
                     const atkPost = fr.players?.[ajIdx]?.post;
                     if (!atkPost) continue;
                     const as = atkPost.actionStateId;
                     if ((as >= 44 && as <= 69) || as >= 212) {
-                        attackerIdx = j;
-                        attackerAction = as;
-                        atkFacing = atkPost.facingDirection ?? 1;
-                        break;
+                        attackerIdx = j; attackerAction = as;
+                        atkFacing = atkPost.facingDirection ?? 1; break;
                     }
                 }
                 if (attackerIdx !== -1) break;
             }
             if (attackerIdx === -1) continue;
-
-            // Defender DI: joystick input on the frame they enter hitstun
             const defPre = currFrame.players?.[pIdx]?.pre;
-            const diX = defPre?.joystickX ?? 0;
-            const diY = defPre?.joystickY ?? 0;
-
-            // Hit direction: attacker facing relative to defender position
-            // If attacker faces right (+1) and defender is to the right, hit goes right
-            // If attacker faces left (-1), hit goes left
-            const atkPost = currFrame.players?.[players[attackerIdx].playerIndex]?.post
-                         || prevFrame.players?.[players[attackerIdx].playerIndex]?.post;
-            const atkX = atkPost?.positionX ?? 0;
-            const defX = prev.positionX ?? 0;
-            // Reverse = attacker hitting to the left (facing left, or facing right but defender is behind)
-            const hitGoesLeft = atkFacing < 0;
-
-            return {
-                defenderIdx: i,
-                attackerIdx,
+            hits.push({
+                defenderIdx: i, attackerIdx,
                 attackerCharId: players[attackerIdx].characterId,
                 defenderCharId: players[i].characterId,
                 actionState: attackerAction,
                 defenderPercent: prev.percent || 0,
-                defenderX: prev.positionX,
-                defenderY: prev.positionY,
-                hitGoesLeft,
-                diX,
-                diY,
-            };
+                defenderX: prev.positionX, defenderY: prev.positionY,
+                hitGoesLeft: atkFacing < 0,
+                diX: defPre?.joystickX ?? 0, diY: defPre?.joystickY ?? 0,
+            });
         }
     }
-    return null;
+    return hits;
 }
+
+function detectHitOnFrame(frameIdx) {
+    const hits = detectHitsOnFrame(frameIdx);
+    return hits.length ? hits[0] : null;
+}
+
+let _calcHitChoices = [];
+let _calcHitChoiceIdx = 0;
 
 async function updateCalcFromFrame(frameIdx) {
     if (!replaySettings) return;
-
-    // Scan nearby frames (±5) to find the closest hit
-    let hit = null;
+    // Search backwards up to 60 frames (1 sec), then forward up to 10
+    let allHits = [];
     let hitFrame = frameIdx;
-    for (let d = 0; d <= 5; d++) {
-        hit = detectHitOnFrame(frameIdx + d);
-        if (hit) { hitFrame = frameIdx + d; break; }
-        if (d > 0) {
-            hit = detectHitOnFrame(frameIdx - d);
-            if (hit) { hitFrame = frameIdx - d; break; }
+    for (let d = 0; d <= 60; d++) {
+        const f = frameIdx - d;
+        if (f < 1) continue;
+        const hits = detectHitsOnFrame(f);
+        if (hits.length) { allHits = hits; hitFrame = f; break; }
+    }
+    if (!allHits.length) {
+        for (let d = 1; d <= 10; d++) {
+            const hits = detectHitsOnFrame(frameIdx + d);
+            if (hits.length) { allHits = hits; hitFrame = frameIdx + d; break; }
         }
     }
-    if (!hit) { console.log('[Calc] No hit found near frame', frameIdx); return; }
-    // Skip if we already processed this exact hit frame
+    if (!allHits.length) return;
     if (hitFrame === lastCalcHitFrame) return;
     lastCalcHitFrame = hitFrame;
+    _calcHitChoices = allHits;
+    _calcHitChoiceIdx = 0;
+    await applyCalcHit(hitFrame, allHits[0], allHits.length > 1);
+}
 
-    // Convert action state ID to action name for FightCore lookup
-    // ACTION_NAMES covers 0-340, CHAR_SPECIALS covers 341+ per character
+window.cycleCalcHit = async () => {
+    if (_calcHitChoices.length < 2) return;
+    _calcHitChoiceIdx = (_calcHitChoiceIdx + 1) % _calcHitChoices.length;
+    await applyCalcHit(lastCalcHitFrame, _calcHitChoices[_calcHitChoiceIdx], true);
+};
+
+async function applyCalcHit(hitFrame, hit, isTrade) {
     let actionName = hit.actionState < ACTION_NAMES.length ? ACTION_NAMES[hit.actionState] : null;
     if (!actionName && CHAR_SPECIALS[hit.attackerCharId]) {
         actionName = CHAR_SPECIALS[hit.attackerCharId][hit.actionState] || null;
     }
-    console.log('[Calc] Hit detected at frame', hitFrame, '| actionStateId:', hit.actionState, '| actionName:', actionName, '| attacker:', hit.attackerCharId, '| defender:', hit.defenderCharId);
-
-    // Auto-open overlay and init calc if needed
     if (!calcOverlayOpen) toggleCalcOverlay(true);
     if (!calcInstance) initCalcPanel();
     if (!calcInstance) return;
-
     const stageKey = STAGE_ID_TO_KEY[replaySettings.stageId] || 'final_destination';
     const fd = {
-        attackerCharId: hit.attackerCharId,
-        defenderCharId: hit.defenderCharId,
+        attackerCharId: hit.attackerCharId, defenderCharId: hit.defenderCharId,
         actionState: actionName || String(hit.actionState),
-        defenderPercent: hit.defenderPercent,
-        stageKey,
-        startX: hit.defenderX ?? 0,
-        startY: hit.defenderY ?? 0,
-        reverse: hit.hitGoesLeft,
-        diX: hit.diX,
-        diY: hit.diY,
+        defenderPercent: hit.defenderPercent, stageKey,
+        startX: hit.defenderX ?? 0, startY: hit.defenderY ?? 0,
+        reverse: hit.hitGoesLeft, diX: hit.diX, diY: hit.diY,
     };
-
-    // FoD platform heights
     if (replaySettings.stageId === 2 && fodPlatformMap) {
         const keys = getFrameKeys();
-        const frameNum = keys[hitFrame];
-        const plat = fodPlatformMap.get(frameNum);
-        if (plat) {
-            fd.fodLeftY = plat.left;
-            fd.fodRightY = plat.right;
-        }
+        const plat = fodPlatformMap.get(keys[hitFrame]);
+        if (plat) { fd.fodLeftY = plat.left; fd.fodRightY = plat.right; }
     }
-
-    console.log('[Calc] populateFromReplay fd:', fd);
     await calcInstance.populateFromReplay(fd);
-
-    // Update hit info bar
     const infoEl = document.getElementById('calcHitInfo');
     if (infoEl) {
         const atkName = CHAR_NAMES[hit.attackerCharId] || '?';
         const defName = CHAR_NAMES[hit.defenderCharId] || '?';
         const moveName = actionName ? (fightCore.getFrameDataForAction(hit.attackerCharId, actionName)?.name || actionName) : `Action ${hit.actionState}`;
-        infoEl.innerHTML = `<span style="color:#a78bfa;">Frame ${hitFrame}</span> · ${atkName} <span style="color:#e0e0e0;">${moveName}</span> → ${defName} at ${Math.floor(hit.defenderPercent)}%`;
+        const tradeBtn = isTrade ? ` <button onclick="cycleCalcHit()" style="background:#f59e0b;color:#000;border:none;padding:0.1rem 0.4rem;border-radius:4px;cursor:pointer;font-size:0.7rem;font-weight:700;">⇄ Trade (${_calcHitChoiceIdx+1}/${_calcHitChoices.length})</button>` : '';
+        infoEl.innerHTML = `<span style="color:#a78bfa;">Frame ${hitFrame}</span> · ${atkName} <span style="color:#e0e0e0;">${moveName}</span> → ${defName} at ${Math.floor(hit.defenderPercent)}%${tradeBtn}`;
         infoEl.style.color = '#ccc';
     }
 }
+
 
 // ===== MATCH STATS PANEL (slippi-js) =====
 function buildStatsPanel() {
