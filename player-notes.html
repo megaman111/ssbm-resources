@@ -2664,8 +2664,14 @@ function detectHitOnFrame(frameIdx) {
         const curr = currFrame.players?.[pIdx]?.post;
         if (!prev || !curr) continue;
 
-        // Hit detected: hitstun went from 0 to positive
-        if ((prev.hitstunRemaining || 0) === 0 && (curr.hitstunRemaining || 0) > 0) {
+        // Hit detected: player entered a damage/hitstun action state
+        // Hitstun action states: 0x4b-0x5b (75-91), DamageBind 0x26 (38)
+        const prevAs = prev.actionStateId ?? 0;
+        const currAs = curr.actionStateId ?? 0;
+        const prevInHitstun = (prevAs >= 0x4b && prevAs <= 0x5b) || prevAs === 0x26;
+        const currInHitstun = (currAs >= 0x4b && currAs <= 0x5b) || currAs === 0x26;
+
+        if (!prevInHitstun && currInHitstun) {
             // Find the attacker
             let attackerIdx = -1;
             let attackerAction = -1;
