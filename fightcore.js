@@ -175,25 +175,32 @@ export class FightCore {
         const folderName = FC_CHAR_NAMES[charId];
         if (!folderName) return [];
         const promise = (async () => {
-            try {
-                const resp = await fetch(FC_DATA_BASE + "/" + folderName + "/moves.json");
-                if (!resp.ok) throw new Error("HTTP " + resp.status);
-                const moves = await resp.json();
-                this._cache.set(charId, moves);
-                const map = new Map();
-                for (const m of moves) {
-                    if (m.normalizedName) map.set(m.normalizedName, m);
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
+                    const resp = await fetch(FC_DATA_BASE + "/" + folderName + "/moves.json");
+                    if (resp.status === 429) { console.warn("FightCore: rate limited, retry", attempt + 1); continue; }
+                    if (!resp.ok) throw new Error("HTTP " + resp.status);
+                    const moves = await resp.json();
+                    this._cache.set(charId, moves);
+                    const map = new Map();
+                    for (const m of moves) {
+                        if (m.normalizedName) map.set(m.normalizedName, m);
+                    }
+                    this._moveMap.set(charId, map);
+                    this._loading.delete(charId);
+                    return moves;
+                } catch (e) {
+                    if (attempt === 2) {
+                        console.warn("FightCore: failed to load moves for char " + charId, e);
+                        this._loading.delete(charId);
+                        // Don't cache failures — allow retry on next call
+                        return [];
+                    }
                 }
-                this._moveMap.set(charId, map);
-                this._loading.delete(charId);
-                return moves;
-            } catch (e) {
-                console.warn("FightCore: failed to load moves for char " + charId, e);
-                this._cache.set(charId, []);
-                this._moveMap.set(charId, new Map());
-                this._loading.delete(charId);
-                return [];
             }
+            this._loading.delete(charId);
+            return [];
         })();
         this._loading.set(charId, promise);
         return promise;
