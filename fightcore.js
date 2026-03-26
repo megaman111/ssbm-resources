@@ -206,6 +206,7 @@ export class FightCore {
 
     getFrameDataForAction(charId, actionName) {
         if (!actionName) return null;
+        if (typeof actionName !== 'string') actionName = String(actionName);
         const map = this._moveMap.get(charId);
         if (!map) return null;
         if ((charId === 9 || charId === 23) && DANCING_BLADE_MAP[actionName]) {

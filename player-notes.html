@@ -2760,7 +2760,7 @@ async function updateCalcFromFrame(frameIdx) {
     const fd = {
         attackerCharId: hit.attackerCharId,
         defenderCharId: hit.defenderCharId,
-        actionState: actionName || hit.actionState,
+        actionState: actionName || String(hit.actionState),
         defenderPercent: hit.defenderPercent,
         stageKey,
         startX: hit.defenderX ?? 0,
