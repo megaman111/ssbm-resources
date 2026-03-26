@@ -65,6 +65,7 @@
 - [x] **Timer display** — Melee-accurate timer with hundredths conversion (slippilab lookup table), shown on canvas and in HUD
 - [ ] **Highlight navigation** — jump between notable moments (kills, combos, etc.) with prev/next hotkeys using clips panel data
 - [ ] **Kill zone overlay** — colored regions on canvas showing where a move at current % would kill, based on blast zone distances
+- [ ] **Reaction point preview** — toggle button that shows a ghost/preview of the game state 15 frames ahead (human reaction time), so you can see where you could have set your reaction point. Similar to the rewinding feature concept — helps identify "what could I have reacted to here?" moments during VOD review.
 - [x] **Practice plan generator** — auto-summarize habits from clips data (missed L-cancels, shield options, ledge habits) into a "here's what to work on" report, includes edgeguard analysis and opponent recovery pattern tracking might be hard to implement
 
 ### FightCore Integration
