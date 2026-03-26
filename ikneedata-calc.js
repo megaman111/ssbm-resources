@@ -5,7 +5,7 @@
  *
  * Pure functions, no DOM dependencies. Reuses FightCore for move data.
  */
-import { FightCore } from './fightcore.js';
+import { FightCore } from './fightcore.js?v=2';
 
 // ===== Shared FightCore instance =====
 const fc = new FightCore();

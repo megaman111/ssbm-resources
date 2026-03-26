@@ -8,7 +8,7 @@ import {
     calcKnockback, calcHitstun, calcHitlag, resolveSakuraiAngle,
     applyDI, applyDIFromAngle, simulateTrajectory,
     fullCalc, findKillPercent, applyStaleness,
-} from './ikneedata-calc.js';
+} from './ikneedata-calc.js?v=2';
 
 const STAGE_COLORS = {
     ground: '#4a7a4a', platform: '#6a6a8a', blastzone: 'rgba(255,60,60,0.15)',
