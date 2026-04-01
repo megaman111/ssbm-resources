@@ -1956,7 +1956,7 @@ function renderMarkdown(text) {
  *   "Name — timestamp\nMessage"  (Discord/Chem style)
  * Returns HTML string, or null if not a chat.
  */
-function renderChatNote(text) {
+function renderChatNote(text, force) {
     const lines = text.split('\n');
 
     // Speaker line patterns — must be short, no leading dash/bullet
@@ -1981,8 +1981,8 @@ function renderChatNote(text) {
     const hasDiscordFormat = [...detectedSpeakers].some(s => {
         return lines.some(l => discordRe.test(l.trim()) && l.trim().toLowerCase().startsWith(s));
     });
-    if (detectedSpeakers.size < 2 && !hasDiscordFormat) return null;
-    if (detectedSpeakers.size < 1) return null;
+    if (!force && detectedSpeakers.size < 2 && !hasDiscordFormat) return null;
+    if (!force && detectedSpeakers.size < 1) return null;
 
     // Parse into blocks: [{speaker, lines[]}]
     const blocks = [];
@@ -2073,7 +2073,7 @@ function displayNotes() {
             hasVideo ? `<span class="note-video-badge">📺 ${vods.length} vod${vods.length>1?'s':''}</span>` : '',
         ].filter(Boolean).join('');
         const isChatView = getChatView(note.id);
-        const chatHtml = isChatView ? renderChatNote(note.notes) : null;
+        const chatHtml = isChatView ? renderChatNote(note.notes, true) : null;
         const contentHtml = chatHtml
             ? `<div class="note-content">${chatHtml}</div>`
             : `<div class="note-content">${renderMarkdown(note.notes)}</div>`;
