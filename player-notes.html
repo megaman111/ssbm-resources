@@ -1877,7 +1877,7 @@ function updateGhUI() {
     else { setup.style.display = ''; connected.style.display = 'none'; }
 }
 
-async function commitNotesToGithub(token) {
+async function commitNotesToGithub(token, message) {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(notes, null, 2))));
     // Get current SHA (cache-busted)
     const fileRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}?ref=${GH_BRANCH}&_=${Date.now()}`, {
@@ -1890,7 +1890,7 @@ async function commitNotesToGithub(token) {
     const putRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`, {
         method: 'PUT',
         headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Update notes', content, sha, branch: GH_BRANCH })
+        body: JSON.stringify({ message: message || 'Update notes', content, sha, branch: GH_BRANCH })
     });
     if (!putRes.ok) { const err = await putRes.json(); throw new Error(err.message || putRes.status); }
 }
@@ -1909,12 +1909,12 @@ async function syncNowToGithub() {
 window.syncNowToGithub = syncNowToGithub;
 
 // Auto-sync after adding/editing a note
-async function autoSync(statusEl) {
+async function autoSync(statusEl, message) {
     const token = getGhToken();
-    if (!token) return; // silently skip if not connected
+    if (!token) return;
     if (statusEl) { statusEl.style.color = '#999'; statusEl.textContent = '⏳ Saving to GitHub...'; }
     try {
-        await commitNotesToGithub(token);
+        await commitNotesToGithub(token, message || 'Update notes');
         if (statusEl) { statusEl.style.color = '#4ade80'; statusEl.textContent = '✅ Saved to GitHub'; setTimeout(() => { statusEl.textContent = ''; }, 4000); }
         setGhStatus('✅ Last sync: just now', '#4ade80');
     } catch(e) {
@@ -2249,7 +2249,7 @@ document.getElementById('noteForm').addEventListener('submit', e => {
     document.getElementById('noteForm').reset();
     displayNotes();
     const statusEl = document.getElementById('noteSubmitStatus');
-    autoSync(statusEl);
+    autoSync(statusEl, `Add note: ${newNote.playerName}`);
 });
 
 window.deleteNote = async idx => {
@@ -2268,7 +2268,7 @@ window.saveEdit = idx => {
     if (!p || !c || !n) { alert('Fill in all required fields'); return; }
     notes[idx] = { ...notes[idx], playerName: p, character: c, notes: n };
     displayNotes();
-    autoSync(null);
+    autoSync(null, `Edit note: ${p}`);
 };
 
 document.querySelectorAll('.char-filter-btn').forEach(btn => {
