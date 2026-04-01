@@ -33,6 +33,17 @@
         .note-header img { width: 40px; height: 40px; }
         .note-player { font-size: 1.25rem; font-weight: 700; color: #667eea; }
         .note-content { color: #333; line-height: 1.6; white-space: pre-wrap; }
+        /* Chat-style note rendering */
+        .chat-log { display: flex; flex-direction: column; gap: 0.6rem; }
+        .chat-msg { display: flex; flex-direction: column; max-width: 85%; }
+        .chat-msg.me { align-self: flex-end; align-items: flex-end; }
+        .chat-msg.them { align-self: flex-start; align-items: flex-start; }
+        .chat-speaker { font-size: 0.72rem; font-weight: 700; margin-bottom: 0.2rem; color: #888; }
+        .chat-msg.me .chat-speaker { color: #667eea; }
+        .chat-bubble { padding: 0.5rem 0.85rem; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+        .chat-msg.me .chat-bubble { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-bottom-right-radius: 4px; }
+        .chat-msg.them .chat-bubble { background: #e8e8f0; color: #222; border-bottom-left-radius: 4px; }
+        .chat-section-label { font-size: 0.75rem; font-weight: 700; color: #aaa; text-align: center; margin: 0.5rem 0 0.25rem; letter-spacing: 0.05em; text-transform: uppercase; }
         .note-date { font-size: 0.875rem; color: #999; margin-top: 1rem; }
         .note-replay-badge { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
         .note-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 0.75rem; }
@@ -1912,6 +1923,98 @@ async function autoSync(statusEl) {
     }
 }
 
+/**
+ * Detect if a note is a chat log and render it as chat bubbles.
+ * Supports two formats:
+ *   "Name:\nMessage"  (Fiction style)
+ *   "Name — timestamp\nMessage"  (Discord/Chem style)
+ * Returns HTML string, or null if not a chat.
+ */
+function renderChatNote(text) {
+    // Split into lines and try to detect speaker blocks
+    const lines = text.split('\n');
+    // A "speaker line" is a short line (≤60 chars) ending with : or matching "Name — ..."
+    const speakerRe = /^([A-Za-z0-9 _'\-\.\/]+?)(?:\s*[—–-]+\s*.+)?:\s*$/;
+    const discordRe = /^([A-Za-z0-9 _'\-\.\/\[\]]+?)\s*[,—–]\s*.{3,30}$/; // "Name — Yesterday at 10:27 PM"
+
+    // Count how many lines look like speaker headers
+    let speakerHits = 0;
+    for (const line of lines) {
+        if (speakerRe.test(line.trim()) || discordRe.test(line.trim())) speakerHits++;
+    }
+    // Need at least 2 speaker changes to treat as chat
+    if (speakerHits < 2) return null;
+
+    // Parse into blocks: [{speaker, lines[]}]
+    const blocks = [];
+    let current = null;
+    for (const line of lines) {
+        const trimmed = line.trim();
+        let speaker = null;
+        const m1 = trimmed.match(/^([A-Za-z0-9 _'\-\.\/\[\]]+?)(?:\s*[—–-]+\s*.+)?:\s*$/);
+        const m2 = trimmed.match(/^([A-Za-z0-9 _'\-\.\/\[\]]+?)\s*[,—–]\s*.{3,30}$/);
+        if (m1 && trimmed.length <= 80) speaker = m1[1].trim();
+        else if (m2 && trimmed.length <= 80) speaker = m2[1].trim();
+
+        if (speaker) {
+            if (current) blocks.push(current);
+            current = { speaker, lines: [] };
+        } else if (current) {
+            current.lines.push(line);
+        } else {
+            // Text before first speaker — treat as a section label
+            if (trimmed) blocks.push({ speaker: null, lines: [line] });
+        }
+    }
+    if (current) blocks.push(current);
+    if (!blocks.length) return null;
+
+    // Identify "me" — the speaker who appears most with "me", "megaman", "mmunder" or similar
+    const meSpeakers = new Set(['me', 'megaman', 'mmunder', 'mmunder aka megaman']);
+    const speakerCounts = {};
+    for (const b of blocks) {
+        if (!b.speaker) continue;
+        const key = b.speaker.toLowerCase();
+        speakerCounts[key] = (speakerCounts[key] || 0) + 1;
+    }
+    // Pick "me" speaker
+    const isMeSpeaker = s => {
+        const k = s.toLowerCase();
+        return meSpeakers.has(k) || k.startsWith('me') || k.includes('megaman') || k.includes('mmunder');
+    };
+
+    // Assign a color per non-me speaker
+    const palette = ['#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#8b5cf6'];
+    const speakerColors = {};
+    let colorIdx = 0;
+    for (const b of blocks) {
+        if (!b.speaker || isMeSpeaker(b.speaker)) continue;
+        const k = b.speaker.toLowerCase();
+        if (!speakerColors[k]) speakerColors[k] = palette[colorIdx++ % palette.length];
+    }
+
+    let html = '<div class="chat-log">';
+    for (const b of blocks) {
+        if (!b.speaker) {
+            // Section label
+            const label = b.lines.join(' ').trim();
+            if (label) html += `<div class="chat-section-label">${label}</div>`;
+            continue;
+        }
+        const msgText = b.lines.join('\n').trim();
+        if (!msgText) continue;
+        const isMe = isMeSpeaker(b.speaker);
+        const cls = isMe ? 'me' : 'them';
+        const color = isMe ? '' : `style="background:${speakerColors[b.speaker.toLowerCase()]}22;border-left:3px solid ${speakerColors[b.speaker.toLowerCase()]}"`;
+        html += `<div class="chat-msg ${cls}">
+            <div class="chat-speaker">${b.speaker}</div>
+            <div class="chat-bubble" ${color}>${msgText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+        </div>`;
+    }
+    html += '</div>';
+    return html;
+}
+
 function displayNotes() {
     const container = document.getElementById('notesContainer');
     let filtered = currentFilter === 'all' ? notes : notes.filter(n => n.character === currentFilter);
@@ -1941,7 +2044,10 @@ function displayNotes() {
             attached ? '<span class="note-replay-badge">🎮 replay</span>' : '',
             hasVideo ? `<span class="note-video-badge">📺 ${vods.length} vod${vods.length>1?'s':''}</span>` : '',
         ].filter(Boolean).join('');
-        const shareUrl = `${location.origin}${location.pathname}?note=${idx}`;
+            const chatHtml = renderChatNote(note.notes);
+            const contentHtml = chatHtml
+                ? `<div class="note-content">${chatHtml}</div>`
+                : `<div class="note-content">${note.notes}</div>`;
         return `
         <div class="note-card ${attached ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})" title="${attached ? 'Double-click to watch replay' : 'Double-click to open replay viewer'}">
             <div class="note-header">
@@ -1958,7 +2064,7 @@ function displayNotes() {
                 <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
-            <div class="note-content">${note.notes}</div>
+            ${contentHtml}
             ${vodListHtml}
             <div class="edit-form">
                 <input type="text" id="edit-player-${idx}" value="${note.playerName.replace(/"/g,'&quot;')}" placeholder="Player Name">
