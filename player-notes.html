@@ -2196,14 +2196,17 @@ window.detachVideo = idx => {
     displayNotes();
 };
 
-// ===== Chat view toggle (stored in localStorage per note ID) =====
+// ===== Chat view toggle (stored on note object) =====
 function getChatView(noteId) {
-    try { return JSON.parse(localStorage.getItem('chatView_' + noteId) || 'false'); } catch { return false; }
+    const note = notes.find(n => n.id === noteId);
+    return !!(note && note.chatView);
 }
 window.toggleChatView = noteId => {
-    const current = getChatView(noteId);
-    localStorage.setItem('chatView_' + noteId, JSON.stringify(!current));
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+    note.chatView = !note.chatView;
     displayNotes();
+    autoSync(null, `Toggle chat view: ${note.playerName}`);
 };
 
 // Share note: copy link to clipboard using stable note ID
