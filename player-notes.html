@@ -33,6 +33,12 @@
         .note-header img { width: 40px; height: 40px; }
         .note-player { font-size: 1.25rem; font-weight: 700; color: #667eea; }
         .note-content { color: #333; line-height: 1.6; white-space: pre-wrap; }
+        /* Markdown in notes */
+        .note-content strong { font-weight: 700; }
+        .note-content em { font-style: italic; }
+        .note-content code { background: rgba(0,0,0,0.08); padding: 0.1em 0.35em; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+        .note-content del { text-decoration: line-through; opacity: 0.6; }
+        .note-content .md-h { font-weight: 700; font-size: 1.05em; color: #444; display: block; margin: 0.4em 0 0.1em; }
         /* Chat-style note rendering */
         .chat-log { display: flex; flex-direction: column; gap: 0.6rem; }
         .chat-msg { display: flex; flex-direction: column; max-width: 85%; }
@@ -589,7 +595,7 @@
                 <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
                     <span id="ghConnectedLabel" style="color:#4ade80;font-weight:600;">✅ Connected</span>
                     <button onclick="syncNowToGithub()" class="export-btn" style="padding:0.5rem 1rem;">🔄 Sync Now</button>
-                    <button onclick="disconnectGhToken()" style="background:none;border:1px solid #f66;color:#f66;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.85rem;">Disconnect</button>
+                    <button onclick="if(prompt('Type DISCONNECT to confirm:')===\'DISCONNECT\'){disconnectGhToken()}" style="background:none;border:1px solid #555;color:#999;padding:0.4rem 0.6rem;border-radius:6px;cursor:pointer;font-size:0.75rem;">⚙️</button>
                 </div>
             </div>
         </div>
@@ -1923,6 +1929,26 @@ async function autoSync(statusEl, message) {
     }
 }
 
+// Simple Discord-style markdown renderer
+function renderMarkdown(text) {
+    return text
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        // Headers: ## or ###
+        .replace(/^###\s+(.+)$/gm, '<span class="md-h">$1</span>')
+        .replace(/^##\s+(.+)$/gm, '<span class="md-h">$1</span>')
+        // Bold+italic: ***text***
+        .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+        // Bold: **text**
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Italic: *text* or _text_
+        .replace(/\*([^*\n]+?)\*/g, '<em>$1</em>')
+        .replace(/_([^_\n]+?)_/g, '<em>$1</em>')
+        // Strikethrough: ~~text~~
+        .replace(/~~(.+?)~~/g, '<del>$1</del>')
+        // Inline code: `code`
+        .replace(/`([^`\n]+?)`/g, '<code>$1</code>');
+}
+
 /**
  * Detect if a note is a chat log and render it as chat bubbles.
  * Supports two formats:
@@ -1936,8 +1962,8 @@ function renderChatNote(text) {
     // Speaker line patterns — must be short, no leading dash/bullet
     // Format 1: "Name:" (1-3 words, ends with colon, no other content on line)
     const speakerRe = /^([A-Za-z][A-Za-z0-9 ]{1,30}?):\s*$/;
-    // Format 2: "Name — Yesterday at 10:27 PM" (Discord timestamp)
-    const discordRe = /^([A-Za-z][A-Za-z0-9 \[\]]{1,30}?)\s*[,—–]\s*(?:yesterday|today|\d{1,2}[\/\-]\d{1,2}|\w+ at \d)/i;
+    // Format 2: "Name — Yesterday at 10:27 PM" (Discord timestamp — must end with time pattern)
+    const discordRe = /^([A-Za-z][A-Za-z0-9 \[\]]{1,30}?)\s*[,—–]\s*(?:yesterday|today|\d{1,2}[\/\-]\d{1,2}|\w+ at \d{1,2}:\d{2})/i;
 
     // Collect all detected speakers
     const detectedSpeakers = new Set();
@@ -1950,8 +1976,13 @@ function renderChatNote(text) {
         else if (m2) detectedSpeakers.add(m2[1].trim().toLowerCase());
     }
 
-    // Need at least 2 distinct speakers for it to be a chat
-    if (detectedSpeakers.size < 2) return null;
+    // For Discord-style notes, a single non-me speaker is enough (it's a one-sided convo log)
+    // For Name: style, need 2 distinct speakers
+    const hasDiscordFormat = [...detectedSpeakers].some(s => {
+        return lines.some(l => discordRe.test(l.trim()) && l.trim().toLowerCase().startsWith(s));
+    });
+    if (detectedSpeakers.size < 2 && !hasDiscordFormat) return null;
+    if (detectedSpeakers.size < 1) return null;
 
     // Parse into blocks: [{speaker, lines[]}]
     const blocks = [];
@@ -1964,8 +1995,7 @@ function renderChatNote(text) {
             const m2 = t.match(discordRe);
             if (m1) speaker = m1[1].trim();
             else if (m2) speaker = m2[1].trim();
-        }
-        if (speaker) {
+        }        if (speaker) {
             if (current) blocks.push(current);
             current = { speaker, lines: [] };
         } else if (current) {
@@ -2006,7 +2036,7 @@ function renderChatNote(text) {
         const color = isMe ? '' : `style="background:${speakerColors[b.speaker.toLowerCase()]}22;border-left:3px solid ${speakerColors[b.speaker.toLowerCase()]}"`;
         html += `<div class="chat-msg ${cls}">
             <div class="chat-speaker">${b.speaker}</div>
-            <div class="chat-bubble" ${color}>${msgText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+            <div class="chat-bubble" ${color}>${renderMarkdown(msgText)}</div>
         </div>`;
     }
     html += '</div>';
@@ -2045,7 +2075,7 @@ function displayNotes() {
             const chatHtml = renderChatNote(note.notes);
             const contentHtml = chatHtml
                 ? `<div class="note-content">${chatHtml}</div>`
-                : `<div class="note-content">${note.notes}</div>`;
+                : `<div class="note-content">${renderMarkdown(note.notes)}</div>`;
         return `
         <div class="note-card ${attached ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})" title="${attached ? 'Double-click to watch replay' : 'Double-click to open replay viewer'}">
             <div class="note-header">
