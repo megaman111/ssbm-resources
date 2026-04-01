@@ -125,3 +125,30 @@
 - [ ] Make all modules embeddable on any page (way-of-fox, matchup pages, etc.)
 - [ ] Unified module loading system
 - [ ] Mobile-friendly replay viewer controls
+
+---
+
+## Long-Term Vision: Electron Desktop App
+
+The goal is to eventually port this into a full-stack Electron app that bundles all the tools and features from the web version into a native desktop experience. Key advantages over the current GitHub Pages setup:
+
+- No more export/push loop for notes — direct filesystem writes
+- Local .slp file access without browser file picker friction
+- Better performance for replay rendering (no browser sandbox limits)
+- Potential for real-time replay watching (live Slippi connection via slp-realtime)
+- Could run a local server for features that need a backend (e.g. auto-analysis, batch processing)
+
+### Features to port/expand
+- [ ] Full notes system with local JSON storage (no GitHub API needed)
+- [ ] Replay viewer (already mostly self-contained, should port cleanly)
+- [ ] IKneeData calculator module
+- [ ] VOD linking + embedded player
+- [ ] Matchup pages and Way of Fox guide
+- [ ] Chat-style note rendering + markdown
+
+### Rwing-inspired features to steal
+- [ ] Replay takeover / overlay on top of Dolphin (Rwing's core feature)
+- [ ] Real-time input display overlay
+- [ ] Auto-clip detection (notable moments: kills, combos, edgeguards)
+- [ ] Replay browser with filtering by character, opponent, stage, date
+- [ ] Session stats dashboard (L-cancel %, combo conversion, neutral win rate)
