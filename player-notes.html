@@ -1750,6 +1750,10 @@ let currentFilter = 'all';
 let currentTypeFilter = 'all';
 let notes = [];
 
+function genNoteId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
 function isConceptNote(note) {
     const kw = ['advice','concept','notes from','lesson','how to beat'];
     return kw.some(k => note.playerName.toLowerCase().includes(k));
@@ -1769,6 +1773,8 @@ async function loadNotesFromFile() {
         console.error('Failed to load/parse player-notes.json:', e);
         notes = [];
     }
+    // Ensure every note has a stable ID
+    notes.forEach(n => { if (!n.id) n.id = genNoteId(); });
     displayNotes();
 }
 
@@ -1942,9 +1948,11 @@ window.detachVideo = idx => {
     displayNotes();
 };
 
-// Share note: copy link to clipboard
+// Share note: copy link to clipboard using stable note ID
 window.shareNote = idx => {
-    const url = `${location.origin}${location.pathname}?note=${idx}`;
+    const note = notes[idx];
+    const id = note.id || idx;
+    const url = `${location.origin}${location.pathname}?note=${id}`;
     navigator.clipboard.writeText(url).then(() => {
         const btn = document.querySelector(`#note-${idx} .share-btn`);
         if (btn) { const orig = btn.textContent; btn.textContent = '✅ Copied!'; setTimeout(() => btn.textContent = orig, 2000); }
@@ -2014,6 +2022,7 @@ function buildVideoEmbed(url) {
 document.getElementById('noteForm').addEventListener('submit', e => {
     e.preventDefault();
     const newNote = {
+        id: genNoteId(),
         playerName: document.getElementById('playerName').value,
         character: document.getElementById('character').value,
         notes: document.getElementById('notes').value,
@@ -5819,11 +5828,17 @@ if (_urlParams.get('viewer') === '1') {
 buildReplayBrowser();
 
 initSlpKeyCache().then(() => loadNotesFromFile().then(() => {
-    // Handle ?note=INDEX share link — scroll to and highlight the note
+    // Handle ?note=ID (stable) or ?note=INDEX (legacy) share link
     const _noteParam = _urlParams.get('note');
     if (_noteParam !== null) {
-        const targetIdx = parseInt(_noteParam, 10);
-        if (!isNaN(targetIdx)) {
+        // Try to find by stable ID first
+        let targetIdx = notes.findIndex(n => n.id === _noteParam);
+        // Fall back to numeric index for old links
+        if (targetIdx === -1) {
+            const n = parseInt(_noteParam, 10);
+            if (!isNaN(n) && n >= 0 && n < notes.length) targetIdx = n;
+        }
+        if (targetIdx !== -1) {
             setTimeout(() => {
                 const el = document.getElementById(`note-${targetIdx}`);
                 if (el) {
