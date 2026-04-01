@@ -1868,9 +1868,9 @@ function updateGhUI() {
 
 async function commitNotesToGithub(token) {
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(notes, null, 2))));
-    // Get current SHA
-    const fileRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}?ref=${GH_BRANCH}`, {
-        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' }
+    // Get current SHA (cache-busted)
+    const fileRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}?ref=${GH_BRANCH}&_=${Date.now()}`, {
+        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json', 'Cache-Control': 'no-cache' }
     });
     if (!fileRes.ok) throw new Error(`Could not fetch file SHA: ${fileRes.status}`);
     const fileData = await fileRes.json();
