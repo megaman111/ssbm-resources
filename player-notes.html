@@ -2091,7 +2091,6 @@ function displayNotes() {
                 ${attachBtn}
                 <button class="attach-video-btn" onclick="event.stopPropagation();addVodToNote(${idx})">📺 Add VOD</button>
                 <button class="share-btn" onclick="event.stopPropagation();shareNote(${idx})" title="Copy share link">🔗 Share</button>
-                ${chatToggleBtn}
                 <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
@@ -2103,9 +2102,10 @@ function displayNotes() {
                     ${['Fox','Falco','Marth','Sheik','Peach','Jigglypuff','Captain Falcon','Samus','Ice Climbers','Pikachu','Yoshi','Luigi','Ganondorf','Dr. Mario','Donkey Kong'].map(c=>`<option value="${c}" ${note.character===c?'selected':''}>${c}</option>`).join('')}
                 </select>
                 <textarea id="edit-notes-${idx}">${note.notes}</textarea>
-                <div style="display:flex;gap:0.5rem;">
+                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                     <button class="save-btn" onclick="saveEdit(${idx})">Save</button>
                     <button class="cancel-btn" onclick="cancelEdit(${idx})">Cancel</button>
+                    <button type="button" onclick="event.stopPropagation();toggleChatView('${note.id}')" style="margin-left:auto;${isChatView ? 'background:#3d3d6e;color:#a78bfa;border:1px solid #a78bfa;' : 'background:#2d2d4e;color:#888;border:1px solid #555;'} padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.8rem;">💬 Chat view: ${isChatView ? 'ON' : 'OFF'}</button>
                 </div>
             </div>
             <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}${attached ? ' · <span style="color:#4ade80">🎮 double-click to watch</span>' : ''}${hasVideo ? ` · <span style="color:#f59e0b">📺 ${vods.length} VOD${vods.length>1?'s':''}</span>` : ''}</div>
