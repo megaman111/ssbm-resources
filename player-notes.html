@@ -559,11 +559,31 @@
                 </details>
             </div>
         </div>
+        <div class="export-section notes-only" id="githubSyncSection">
+            <h3>☁️ GitHub Sync</h3>
+            <div id="ghSyncStatus" style="margin-bottom:1rem;"></div>
+            <div id="ghSetupArea">
+                <p style="color:#666;margin-bottom:0.75rem;font-size:0.9rem;">Connect once with a GitHub token and notes will auto-save to the repo when you add or edit them. Your token is stored only in this browser.</p>
+                <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
+                    <input type="password" id="ghTokenInput" placeholder="GitHub Personal Access Token (repo scope)" style="flex:1;min-width:200px;padding:0.6rem;border:2px solid #ddd;border-radius:8px;font-size:0.9rem;">
+                    <button onclick="saveGhToken()" class="submit-btn" style="padding:0.6rem 1.2rem;white-space:nowrap;">Connect</button>
+                    <a href="https://github.com/settings/tokens/new?scopes=repo&description=ssbm-notes-sync" target="_blank" rel="noopener" style="font-size:0.8rem;color:#667eea;">Get a token →</a>
+                </div>
+            </div>
+            <div id="ghConnectedArea" style="display:none;">
+                <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+                    <span id="ghConnectedLabel" style="color:#4ade80;font-weight:600;">✅ Connected</span>
+                    <button onclick="syncNowToGithub()" class="export-btn" style="padding:0.5rem 1rem;">🔄 Sync Now</button>
+                    <button onclick="disconnectGhToken()" style="background:none;border:1px solid #f66;color:#f66;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-size:0.85rem;">Disconnect</button>
+                </div>
+            </div>
+        </div>
+
         <div class="export-section notes-only">
-            <h3>💾 Save Your Notes</h3>
-            <p style="color: #666; margin-bottom: 1rem;">After adding or editing notes, export the JSON file and replace player-notes.json in your repo, then push to GitHub.</p>
-            <button class="export-btn" onclick="exportNotes()">📥 Export Notes (Download JSON)</button>
-            <button class="import-btn" onclick="document.getElementById('fileInput').click()">📤 Import Notes (Load JSON)</button>
+            <h3>💾 Manual Backup</h3>
+            <p style="color: #666; margin-bottom: 1rem; font-size:0.9rem;">Download a local backup or import from a JSON file.</p>
+            <button class="export-btn" onclick="exportNotes()">📥 Export JSON</button>
+            <button class="import-btn" onclick="document.getElementById('fileInput').click()">📤 Import JSON</button>
             <input type="file" id="fileInput" accept=".json" onchange="importNotes(event)">
         </div>
 
@@ -599,7 +619,8 @@
                     <label for="notes">Notes</label>
                     <textarea id="notes" placeholder="What does this player like to do? Tendencies, habits, gameplan notes, lessons learned..." required></textarea>
                 </div>
-                <button type="submit" class="submit-btn">Add Note</button>
+                <button type="submit" class="submit-btn" id="noteSubmitBtn">Add Note</button>
+                <span id="noteSubmitStatus" style="font-size:0.85rem;margin-left:0.75rem;"></span>
             </form>
         </div>
 
@@ -1785,7 +1806,6 @@ function exportNotes() {
     a.href = url; a.download = 'player-notes.json';
     document.body.appendChild(a); a.click();
     document.body.removeChild(a); URL.revokeObjectURL(url);
-    alert('Notes exported! Replace player-notes.json in your repo.\nIf you have attached .slp replays, copy them to the replays/ folder too.\nThen commit and push so others can see them.');
 }
 window.exportNotes = exportNotes;
 
@@ -1800,6 +1820,93 @@ function importNotes(event) {
     reader.readAsText(file);
 }
 window.importNotes = importNotes;
+
+// ===== GitHub Sync =====
+const GH_REPO = 'megaman111/ssbm-resources';
+const GH_FILE = 'player-notes.json';
+const GH_BRANCH = 'main';
+
+function getGhToken() { return localStorage.getItem('gh_token'); }
+
+window.saveGhToken = () => {
+    const t = document.getElementById('ghTokenInput').value.trim();
+    if (!t) return;
+    localStorage.setItem('gh_token', t);
+    document.getElementById('ghTokenInput').value = '';
+    updateGhUI();
+    setGhStatus('⏳ Verifying...', '#999');
+    // Verify token works
+    fetch(`https://api.github.com/repos/${GH_REPO}`, {
+        headers: { Authorization: `token ${t}`, Accept: 'application/vnd.github+json' }
+    }).then(r => {
+        if (r.ok) setGhStatus('✅ Connected and verified', '#4ade80');
+        else { setGhStatus('❌ Token invalid or no repo access', '#f66'); localStorage.removeItem('gh_token'); updateGhUI(); }
+    }).catch(() => setGhStatus('⚠️ Could not verify (offline?)', '#f59e0b'));
+};
+
+window.disconnectGhToken = () => {
+    if (confirm('Disconnect GitHub token?')) { localStorage.removeItem('gh_token'); updateGhUI(); setGhStatus('', ''); }
+};
+
+function setGhStatus(msg, color) {
+    const el = document.getElementById('ghSyncStatus');
+    if (el) el.innerHTML = msg ? `<span style="color:${color};font-size:0.9rem;">${msg}</span>` : '';
+}
+
+function updateGhUI() {
+    const token = getGhToken();
+    const setup = document.getElementById('ghSetupArea');
+    const connected = document.getElementById('ghConnectedArea');
+    if (!setup || !connected) return;
+    if (token) { setup.style.display = 'none'; connected.style.display = ''; }
+    else { setup.style.display = ''; connected.style.display = 'none'; }
+}
+
+async function commitNotesToGithub(token) {
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(notes, null, 2))));
+    // Get current SHA
+    const fileRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}?ref=${GH_BRANCH}`, {
+        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json' }
+    });
+    if (!fileRes.ok) throw new Error(`Could not fetch file SHA: ${fileRes.status}`);
+    const fileData = await fileRes.json();
+    const sha = fileData.sha;
+    // Commit
+    const putRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${GH_FILE}`, {
+        method: 'PUT',
+        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Update notes', content, sha, branch: GH_BRANCH })
+    });
+    if (!putRes.ok) { const err = await putRes.json(); throw new Error(err.message || putRes.status); }
+}
+
+async function syncNowToGithub() {
+    const token = getGhToken();
+    if (!token) { setGhStatus('⚠️ No token — connect GitHub first', '#f59e0b'); return; }
+    setGhStatus('⏳ Syncing...', '#999');
+    try {
+        await commitNotesToGithub(token);
+        setGhStatus('✅ Synced to GitHub', '#4ade80');
+    } catch(e) {
+        setGhStatus(`❌ Sync failed: ${e.message}`, '#f66');
+    }
+}
+window.syncNowToGithub = syncNowToGithub;
+
+// Auto-sync after adding/editing a note
+async function autoSync(statusEl) {
+    const token = getGhToken();
+    if (!token) return; // silently skip if not connected
+    if (statusEl) { statusEl.style.color = '#999'; statusEl.textContent = '⏳ Saving to GitHub...'; }
+    try {
+        await commitNotesToGithub(token);
+        if (statusEl) { statusEl.style.color = '#4ade80'; statusEl.textContent = '✅ Saved to GitHub'; setTimeout(() => { statusEl.textContent = ''; }, 4000); }
+        setGhStatus('✅ Last sync: just now', '#4ade80');
+    } catch(e) {
+        if (statusEl) { statusEl.style.color = '#f66'; statusEl.textContent = `⚠️ GitHub sync failed: ${e.message}`; }
+        setGhStatus(`⚠️ Last sync failed: ${e.message}`, '#f66');
+    }
+}
 
 function displayNotes() {
     const container = document.getElementById('notesContainer');
@@ -2031,6 +2138,8 @@ document.getElementById('noteForm').addEventListener('submit', e => {
     notes.unshift(newNote);
     document.getElementById('noteForm').reset();
     displayNotes();
+    const statusEl = document.getElementById('noteSubmitStatus');
+    autoSync(statusEl);
 });
 
 window.deleteNote = async idx => {
@@ -2049,6 +2158,7 @@ window.saveEdit = idx => {
     if (!p || !c || !n) { alert('Fill in all required fields'); return; }
     notes[idx] = { ...notes[idx], playerName: p, character: c, notes: n };
     displayNotes();
+    autoSync(null);
 };
 
 document.querySelectorAll('.char-filter-btn').forEach(btn => {
@@ -5826,6 +5936,8 @@ if (_urlParams.get('viewer') === '1') {
 }
 
 buildReplayBrowser();
+
+updateGhUI();
 
 initSlpKeyCache().then(() => loadNotesFromFile().then(() => {
     // Handle ?note=ID (stable) or ?note=INDEX (legacy) share link
