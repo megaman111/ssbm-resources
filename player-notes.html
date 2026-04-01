@@ -2094,7 +2094,7 @@ function getVideoEmbedUrl(url) {
         }
         // Twitch VOD
         if (u.hostname.includes('twitch.tv')) {
-            const vodMatch = u.pathname.match(/\/videos\/(\d+)/);
+            const vodMatch = u.pathname.match(/\/videos?\/(\d+)/);
             if (vodMatch) {
                 const vodId = vodMatch[1];
                 const t = u.searchParams.get('t') || '';
