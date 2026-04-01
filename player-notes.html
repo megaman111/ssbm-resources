@@ -58,6 +58,26 @@
         .video-link-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.8rem; }
         .video-link-bar a { color: #f59e0b; text-decoration: none; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
         .video-link-bar a:hover { text-decoration: underline; }
+        /* Multi-VOD list on note card */
+        .note-vods-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
+        .note-vod-item { display: flex; align-items: center; gap: 0.4rem; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+        .note-vod-item a { color: #f59e0b; text-decoration: none; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .note-vod-item a:hover { text-decoration: underline; }
+        .note-vod-remove { background: none; border: none; color: #f66; cursor: pointer; font-size: 0.9rem; padding: 0 0.2rem; line-height: 1; flex-shrink: 0; }
+        .note-vod-remove:hover { color: #f00; }
+        /* Share button */
+        .share-btn { background: #2d2d4e; color: #a78bfa; border: 1px solid #a78bfa; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+        .share-btn:hover { background: #3d3d6e; }
+        /* Highlighted note from share link */
+        .note-card.shared-highlight { outline: 3px solid #a78bfa; animation: shareGlow 2s ease-out forwards; }
+        @keyframes shareGlow { 0%{box-shadow:0 0 0 6px rgba(167,139,250,0.4)} 100%{box-shadow:none} }
+        /* VOD modal list */
+        .vod-list-modal { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem 0; }
+        .vod-list-modal .vod-entry { border-bottom: 1px solid #2a2a4a; padding-bottom: 0.5rem; }
+        .vod-list-modal .vod-entry:last-child { border-bottom: none; }
+        .vod-entry-bar { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0.5rem; background: rgba(0,0,0,0.3); border-radius: 6px 6px 0 0; font-size: 0.8rem; }
+        .vod-entry-bar a { color: #f59e0b; text-decoration: none; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .vod-entry-bar a:hover { text-decoration: underline; }
         .replay-attached-label { font-size: 0.75rem; color: #4ade80; margin-top: 0.5rem; }
         .edit-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
         .edit-btn:hover { background: #5568d3; }
@@ -1789,24 +1809,28 @@ function displayNotes() {
     container.innerHTML = filtered.map(note => {
         const idx = notes.indexOf(note);
         const attached = hasAttachedReplay(note);
-        const hasVideo = !!note.videoUrl;
+        // Normalise: support legacy single videoUrl and new vods array
+        const vods = getNoteVods(note);
+        const hasVideo = vods.length > 0;
         const attachBtn = attached
             ? `<button class="attach-btn attached" onclick="event.stopPropagation();triggerAttach(${idx})" title="Replace attached replay">🎮 Replay Attached</button>
                <button class="detach-btn" onclick="event.stopPropagation();detachReplay(${idx})" title="Remove replay">✕</button>`
             : `<button class="attach-btn" onclick="event.stopPropagation();triggerAttach(${idx})">📎 Attach Replay</button>`;
-        const videoBtn = hasVideo
-            ? `<button class="attach-video-btn attached" onclick="event.stopPropagation();attachVideoLink(${idx})" title="Change video link">📺 VOD</button>
-               <button class="detach-btn" onclick="event.stopPropagation();detachVideo(${idx})" title="Remove video">✕</button>`
-            : `<button class="attach-video-btn" onclick="event.stopPropagation();attachVideoLink(${idx})">📺 Attach VOD</button>`;
+        const vodListHtml = vods.length ? `<div class="note-vods-list">${vods.map((v,vi) =>
+            `<div class="note-vod-item">📺 <a href="${v.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${v.label || v.url}</a>
+             <button class="note-vod-remove" onclick="event.stopPropagation();removeVod(${idx},${vi})" title="Remove VOD">✕</button></div>`
+        ).join('')}</div>` : '';
         const badges = [
             attached ? '<span class="note-replay-badge">🎮 replay</span>' : '',
-            hasVideo ? '<span class="note-video-badge">📺 vod</span>' : '',
+            hasVideo ? `<span class="note-video-badge">📺 ${vods.length} vod${vods.length>1?'s':''}</span>` : '',
         ].filter(Boolean).join('');
+        const shareUrl = `${location.origin}${location.pathname}?note=${idx}`;
         return `
         <div class="note-card ${attached ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})" title="${attached ? 'Double-click to watch replay' : 'Double-click to open replay viewer'}">
             <div class="note-actions">
                 ${attachBtn}
-                ${videoBtn}
+                <button class="attach-video-btn" onclick="event.stopPropagation();addVodToNote(${idx})">📺 Add VOD</button>
+                <button class="share-btn" onclick="event.stopPropagation();shareNote(${idx})" title="Copy share link">🔗 Share</button>
                 <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
@@ -1818,6 +1842,7 @@ function displayNotes() {
                 </div>
             </div>
             <div class="note-content">${note.notes}</div>
+            ${vodListHtml}
             <div class="edit-form">
                 <input type="text" id="edit-player-${idx}" value="${note.playerName.replace(/"/g,'&quot;')}" placeholder="Player Name">
                 <select id="edit-char-${idx}">
@@ -1829,7 +1854,7 @@ function displayNotes() {
                     <button class="cancel-btn" onclick="cancelEdit(${idx})">Cancel</button>
                 </div>
             </div>
-            <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}${attached ? ' · <span style="color:#4ade80">🎮 double-click to watch</span>' : ''}${hasVideo ? ' · <span style="color:#f59e0b">📺 has VOD</span>' : ''}</div>
+            <div class="note-date">Added: ${new Date(note.date).toLocaleDateString()}${attached ? ' · <span style="color:#4ade80">🎮 double-click to watch</span>' : ''}${hasVideo ? ` · <span style="color:#f59e0b">📺 ${vods.length} VOD${vods.length>1?'s':''}</span>` : ''}</div>
         </div>`;
     }).join('');
 
@@ -1876,26 +1901,54 @@ async function handleAttachFile(event) {
     } catch(e) { alert('Failed to attach replay: ' + e.message); }
 }
 
-// ===== Video link (YouTube / Twitch VOD) attach/detach =====
-window.attachVideoLink = idx => {
-    const note = notes[idx];
-    const current = note.videoUrl || '';
-    const url = prompt('Paste a YouTube or Twitch VOD link (with timestamp if desired):', current);
-    if (url === null) return; // cancelled
-    if (!url.trim()) { delete note.videoUrl; displayNotes(); return; }
-    // Basic validation
-    if (!/youtube\.com|youtu\.be|twitch\.tv/i.test(url)) {
-        if (!confirm('This doesn\'t look like a YouTube or Twitch link. Save anyway?')) return;
+// ===== Multi-VOD helpers =====
+// Normalise: support legacy single videoUrl and new vods array
+function getNoteVods(note) {
+    if (note.vods && Array.isArray(note.vods)) return note.vods;
+    if (note.videoUrl) return [{ label: note.videoUrl, url: note.videoUrl }];
+    return [];
+}
+
+function migrateToVods(note) {
+    if (!note.vods) {
+        note.vods = getNoteVods(note);
+        delete note.videoUrl;
     }
-    note.videoUrl = url.trim();
+}
+
+window.addVodToNote = idx => {
+    const note = notes[idx];
+    migrateToVods(note);
+    const url = prompt('Paste a YouTube, Twitch, or .mp4 URL:');
+    if (!url?.trim()) return;
+    const label = prompt('Short label (e.g. "vs Aerius G3"):', '') || '';
+    note.vods.push({ label: label.trim(), url: url.trim() });
     displayNotes();
 };
 
+window.removeVod = (idx, vodIdx) => {
+    const note = notes[idx];
+    migrateToVods(note);
+    note.vods.splice(vodIdx, 1);
+    displayNotes();
+};
+
+// Keep legacy functions as no-ops for any old references
+window.attachVideoLink = idx => window.addVodToNote(idx);
 window.detachVideo = idx => {
-    if (confirm('Remove video link from this note?')) {
-        delete notes[idx].videoUrl;
-        displayNotes();
-    }
+    const note = notes[idx];
+    migrateToVods(note);
+    note.vods = [];
+    displayNotes();
+};
+
+// Share note: copy link to clipboard
+window.shareNote = idx => {
+    const url = `${location.origin}${location.pathname}?note=${idx}`;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = document.querySelector(`#note-${idx} .share-btn`);
+        if (btn) { const orig = btn.textContent; btn.textContent = '✅ Copied!'; setTimeout(() => btn.textContent = orig, 2000); }
+    }).catch(() => prompt('Copy this link:', url));
 };
 
 /**
@@ -1944,9 +1997,12 @@ function getVideoEmbedUrl(url) {
 
 /**
  * Build a video embed or link bar for a given URL.
- * Returns HTML string.
+ * Returns HTML string. Supports YouTube, Twitch, and direct .mp4/.webm links.
  */
 function buildVideoEmbed(url) {
+    if (/\.mp4|\.webm|\.mov/i.test(url)) {
+        return `<video controls style="width:100%;border-radius:8px;background:#000;" src="${url}"></video>`;
+    }
     const embedUrl = getVideoEmbedUrl(url);
     if (embedUrl) {
         return `<div class="video-embed-wrap"><iframe src="${embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
@@ -2100,22 +2156,29 @@ window.openReplayModal = async idx => {
         document.getElementById('replayLoadMsg').textContent = 'Attach a .slp file — it will be saved so you never have to browse again.';
     }
 
-    // Show video embed if note has a video URL (full-screen in modal)
+    // Show video embed(s) if note has VODs
     const vodFs = document.getElementById('vodFullscreen');
     if (vodFs) {
-        if (note.videoUrl) {
-            const embedUrl = getVideoEmbedUrl(note.videoUrl);
-            if (embedUrl) {
-                vodFs.innerHTML = `<div class="vod-bar"><a href="${note.videoUrl}" target="_blank" rel="noopener">${note.videoUrl}</a></div>
-                    <div class="video-embed-wrap"><iframe src="${embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
-            } else {
-                vodFs.innerHTML = `<div class="vod-bar"><a href="${note.videoUrl}" target="_blank" rel="noopener">🔗 ${note.videoUrl}</a></div>`;
-            }
-            // Only show full-screen VOD if there's no replay to show
-            if (!stored && !note.replayFile) {
+        const vods = getNoteVods(note);
+        if (vods.length) {
+            const hasReplay = stored || note.replayFile;
+            if (!hasReplay) {
+                // Full-screen: show first embeddable VOD, list others as links
+                const first = vods[0];
+                const embedUrl = /\.mp4|\.webm|\.mov/i.test(first.url) ? null : getVideoEmbedUrl(first.url);
+                let html = `<div class="vod-bar"><a href="${first.url}" target="_blank" rel="noopener">${first.label || first.url}</a>`;
+                if (vods.length > 1) html += vods.slice(1).map(v => ` · <a href="${v.url}" target="_blank" rel="noopener" style="color:#ccc">${v.label || v.url}</a>`).join('');
+                html += '</div>';
+                if (/\.mp4|\.webm|\.mov/i.test(first.url)) {
+                    html += `<video controls style="width:100%;max-width:960px;border-radius:8px;background:#000;" src="${first.url}"></video>`;
+                } else if (embedUrl) {
+                    html += `<div class="video-embed-wrap"><iframe src="${embedUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+                }
+                vodFs.innerHTML = html;
                 vodFs.classList.add('open');
             } else {
-                // Show as a small bar above the replay — user can click the link
+                // Compact bar above replay listing all VODs
+                vodFs.innerHTML = `<div class="vod-bar">${vods.map(v => `<a href="${v.url}" target="_blank" rel="noopener">📺 ${v.label || v.url}</a>`).join(' · ')}</div>`;
                 vodFs.classList.remove('open');
             }
         } else {
@@ -5755,7 +5818,23 @@ if (_urlParams.get('viewer') === '1') {
 
 buildReplayBrowser();
 
-initSlpKeyCache().then(() => loadNotesFromFile());
+initSlpKeyCache().then(() => loadNotesFromFile().then(() => {
+    // Handle ?note=INDEX share link — scroll to and highlight the note
+    const _noteParam = _urlParams.get('note');
+    if (_noteParam !== null) {
+        const targetIdx = parseInt(_noteParam, 10);
+        if (!isNaN(targetIdx)) {
+            setTimeout(() => {
+                const el = document.getElementById(`note-${targetIdx}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('shared-highlight');
+                    setTimeout(() => el.classList.remove('shared-highlight'), 3000);
+                }
+            }, 300);
+        }
+    }
+}));
     </script>
 </body>
 </html>
