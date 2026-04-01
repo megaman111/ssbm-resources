@@ -35,7 +35,7 @@
         .note-content { color: #333; line-height: 1.6; white-space: pre-wrap; }
         .note-date { font-size: 0.875rem; color: #999; margin-top: 1rem; }
         .note-replay-badge { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
-        .note-actions { position: absolute; top: 1rem; right: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; max-width: 60%; }
+        .note-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 0.75rem; }
         .attach-btn { background: #2d2d4e; color: #a78bfa; border: 1px solid #a78bfa; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
         .attach-btn:hover { background: #3d3d6e; }
         .attach-btn.attached { background: #1a3a2a; color: #4ade80; border-color: #4ade80; }
@@ -1944,19 +1944,19 @@ function displayNotes() {
         const shareUrl = `${location.origin}${location.pathname}?note=${idx}`;
         return `
         <div class="note-card ${attached ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})" title="${attached ? 'Double-click to watch replay' : 'Double-click to open replay viewer'}">
-            <div class="note-actions">
-                ${attachBtn}
-                <button class="attach-video-btn" onclick="event.stopPropagation();addVodToNote(${idx})">📺 Add VOD</button>
-                <button class="share-btn" onclick="event.stopPropagation();shareNote(${idx})" title="Copy share link">🔗 Share</button>
-                <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
-                <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
-            </div>
             <div class="note-header">
                 <img src="${characterIcons[note.character] || ''}" alt="${note.character}">
                 <div>
                     <div class="note-player">${note.playerName}${badges}</div>
                     <div style="color:#667eea;font-weight:600;">${note.character}</div>
                 </div>
+            </div>
+            <div class="note-actions">
+                ${attachBtn}
+                <button class="attach-video-btn" onclick="event.stopPropagation();addVodToNote(${idx})">📺 Add VOD</button>
+                <button class="share-btn" onclick="event.stopPropagation();shareNote(${idx})" title="Copy share link">🔗 Share</button>
+                <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
+                <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
             <div class="note-content">${note.notes}</div>
             ${vodListHtml}
