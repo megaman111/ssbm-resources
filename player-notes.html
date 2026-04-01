@@ -2072,10 +2072,12 @@ function displayNotes() {
             attached ? '<span class="note-replay-badge">🎮 replay</span>' : '',
             hasVideo ? `<span class="note-video-badge">📺 ${vods.length} vod${vods.length>1?'s':''}</span>` : '',
         ].filter(Boolean).join('');
-            const chatHtml = renderChatNote(note.notes);
-            const contentHtml = chatHtml
-                ? `<div class="note-content">${chatHtml}</div>`
-                : `<div class="note-content">${renderMarkdown(note.notes)}</div>`;
+        const isChatView = getChatView(note.id);
+        const chatHtml = isChatView ? renderChatNote(note.notes) : null;
+        const contentHtml = chatHtml
+            ? `<div class="note-content">${chatHtml}</div>`
+            : `<div class="note-content">${renderMarkdown(note.notes)}</div>`;
+        const chatToggleBtn = `<button class="share-btn" onclick="event.stopPropagation();toggleChatView('${note.id}')" title="Toggle chat view" style="${isChatView ? 'background:#3d3d6e;color:#a78bfa;border-color:#a78bfa;' : ''}">💬${isChatView ? ' Chat' : ''}</button>`;
         return `
         <div class="note-card ${attached ? 'has-replay' : ''}" id="note-${idx}" ondblclick="openReplayModal(${idx})" title="${attached ? 'Double-click to watch replay' : 'Double-click to open replay viewer'}">
             <div class="note-header">
@@ -2089,6 +2091,7 @@ function displayNotes() {
                 ${attachBtn}
                 <button class="attach-video-btn" onclick="event.stopPropagation();addVodToNote(${idx})">📺 Add VOD</button>
                 <button class="share-btn" onclick="event.stopPropagation();shareNote(${idx})" title="Copy share link">🔗 Share</button>
+                ${chatToggleBtn}
                 <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
@@ -2190,6 +2193,16 @@ window.detachVideo = idx => {
     const note = notes[idx];
     migrateToVods(note);
     note.vods = [];
+    displayNotes();
+};
+
+// ===== Chat view toggle (stored in localStorage per note ID) =====
+function getChatView(noteId) {
+    try { return JSON.parse(localStorage.getItem('chatView_' + noteId) || 'false'); } catch { return false; }
+}
+window.toggleChatView = noteId => {
+    const current = getChatView(noteId);
+    localStorage.setItem('chatView_' + noteId, JSON.stringify(!current));
     displayNotes();
 };
 
