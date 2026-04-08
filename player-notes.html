@@ -85,6 +85,13 @@
         /* Share button */
         .share-btn { background: #2d2d4e; color: #a78bfa; border: 1px solid #a78bfa; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
         .share-btn:hover { background: #3d3d6e; }
+        /* Tags */
+        .note-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+        .note-tag { display: inline-block; background: linear-gradient(135deg, #667eea22, #764ba222); color: #667eea; font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 12px; border: 1px solid #667eea44; cursor: pointer; }
+        .note-tag:hover { background: #667eea; color: white; }
+        .tag-filter-wrap { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
+        .tag-filter-btn { display: inline-block; background: #ededf0; color: #667eea; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 12px; border: 1px solid #667eea44; cursor: pointer; }
+        .tag-filter-btn:hover, .tag-filter-btn.active { background: #667eea; color: white; border-color: #667eea; }
         /* Highlighted note from share link */
         .note-card.shared-highlight { outline: 3px solid #a78bfa; animation: shareGlow 2s ease-out forwards; }
         @keyframes shareGlow { 0%{box-shadow:0 0 0 6px rgba(167,139,250,0.4)} 100%{box-shadow:none} }
@@ -640,6 +647,10 @@
                     <label for="notes">Notes</label>
                     <textarea id="notes" placeholder="What does this player like to do? Tendencies, habits, gameplan notes, lessons learned..." required></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="noteTags">Tags <span style="font-weight:400;color:#999;font-size:0.85rem;">(comma-separated, e.g. neutral, edgeguard, mental)</span></label>
+                    <input type="text" id="noteTags" placeholder="neutral, edgeguard, punish, mental, tech chase...">
+                </div>
                 <button type="submit" class="submit-btn" id="noteSubmitBtn">Add Note</button>
                 <span id="noteSubmitStatus" style="font-size:0.85rem;margin-left:0.75rem;"></span>
             </form>
@@ -653,7 +664,9 @@
                 <button class="char-filter-btn" data-type="concepts">Concepts/Lessons</button>
                 <button class="char-filter-btn" data-type="chats">Chats</button>
             </div>
-            <h3>Filter by Character</h3>
+            <h3>Filter by Tags</h3>
+            <div class="tag-filter-wrap" id="tagFilterWrap"></div>
+            <h3 style="margin-top:1rem;">Filter by Character</h3>
             <div class="character-icons">
                 <button class="char-filter-btn active" data-char="all">All</button>
                 <button class="char-filter-btn" data-char="Fox">Fox</button>
@@ -1791,7 +1804,13 @@ function hasAttachedReplay(note) { return _slpLocalKeys.has(slpKey(note)) || !!n
 // ===== Notes state =====
 let currentFilter = 'all';
 let currentTypeFilter = 'all';
+let currentTagFilter = null;
 let notes = [];
+
+function parseTags(str) {
+    if (!str) return [];
+    return str.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+}
 
 function genNoteId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -2056,6 +2075,17 @@ function displayNotes() {
     if (currentTypeFilter === 'players') filtered = filtered.filter(n => !isConceptNote(n) && !isChatNote(n));
     else if (currentTypeFilter === 'concepts') filtered = filtered.filter(n => isConceptNote(n));
     else if (currentTypeFilter === 'chats') filtered = filtered.filter(n => isChatNote(n));
+    if (currentTagFilter) filtered = filtered.filter(n => (n.tags || []).includes(currentTagFilter));
+
+    // Build tag filter UI
+    const allTags = new Map();
+    notes.forEach(n => (n.tags || []).forEach(t => allTags.set(t, (allTags.get(t) || 0) + 1)));
+    const tagWrap = document.getElementById('tagFilterWrap');
+    if (tagWrap) {
+        const sorted = [...allTags.entries()].sort((a,b) => b[1] - a[1]);
+        tagWrap.innerHTML = `<button class="tag-filter-btn ${!currentTagFilter ? 'active' : ''}" onclick="setTagFilter(null)">All</button>` +
+            sorted.map(([t, c]) => `<button class="tag-filter-btn ${currentTagFilter === t ? 'active' : ''}" onclick="setTagFilter('${t}')">${t} (${c})</button>`).join('');
+    }
 
     if (!filtered.length) {
         container.innerHTML = '<p style="text-align:center;color:#999;padding:2rem;">No notes yet. Add your first player note above!</p>';
@@ -2104,12 +2134,14 @@ function displayNotes() {
             </div>
             ${contentHtml}
             ${vodListHtml}
+            ${(note.tags && note.tags.length) ? `<div class="note-tags">${note.tags.map(t => `<span class="note-tag" onclick="event.stopPropagation();setTagFilter('${t}')">#${t}</span>`).join('')}</div>` : ''}
             <div class="edit-form">
                 <input type="text" id="edit-player-${idx}" value="${note.playerName.replace(/"/g,'&quot;')}" placeholder="Player Name">
                 <select id="edit-char-${idx}">
                     ${['Fox','Falco','Marth','Sheik','Peach','Jigglypuff','Captain Falcon','Samus','Ice Climbers','Pikachu','Yoshi','Luigi','Ganondorf','Dr. Mario','Donkey Kong'].map(c=>`<option value="${c}" ${note.character===c?'selected':''}>${c}</option>`).join('')}
                 </select>
                 <textarea id="edit-notes-${idx}">${note.notes}</textarea>
+                <input type="text" id="edit-tags-${idx}" value="${(note.tags || []).join(', ')}" placeholder="Tags (comma-separated)" style="font-size:0.9rem;">
                 <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;">
                     <button class="save-btn" onclick="saveEdit(${idx})">Save</button>
                     <button class="cancel-btn" onclick="cancelEdit(${idx})">Cancel</button>
@@ -2204,6 +2236,8 @@ window.detachVideo = idx => {
     displayNotes();
 };
 
+window.setTagFilter = tag => { currentTagFilter = tag; displayNotes(); };
+
 // ===== Chat view toggle (stored on note object) =====
 function getChatView(noteId) {
     const note = notes.find(n => n.id === noteId);
@@ -2295,6 +2329,7 @@ document.getElementById('noteForm').addEventListener('submit', e => {
         playerName: document.getElementById('playerName').value,
         character: document.getElementById('character').value,
         notes: document.getElementById('notes').value,
+        tags: parseTags(document.getElementById('noteTags').value),
         date: new Date().toISOString()
     };
     notes.unshift(newNote);
@@ -2317,8 +2352,9 @@ window.saveEdit = idx => {
     const p = document.getElementById(`edit-player-${idx}`).value;
     const c = document.getElementById(`edit-char-${idx}`).value;
     const n = document.getElementById(`edit-notes-${idx}`).value;
+    const t = parseTags(document.getElementById(`edit-tags-${idx}`).value);
     if (!p || !c || !n) { alert('Fill in all required fields'); return; }
-    notes[idx] = { ...notes[idx], playerName: p, character: c, notes: n };
+    notes[idx] = { ...notes[idx], playerName: p, character: c, notes: n, tags: t };
     displayNotes();
     autoSync(null, `Edit note: ${p}`);
 };

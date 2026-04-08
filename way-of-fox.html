@@ -137,8 +137,10 @@
         </section>
 
         <section class="search-box">
-            <input type="text" id="searchInput" placeholder="Search for matchups, techniques, or concepts..." onkeyup="filterMatchups()">
+            <input type="text" id="searchInput" placeholder="Search for matchups, techniques, tags, or concepts..." onkeyup="filterMatchups()">
         </section>
+
+        <div id="noteSearchResults" style="display:none;margin-bottom:1.5rem;"></div>
 
         <h2 style="color: white; margin-bottom: 1rem; text-align: center;">Select a Matchup</h2>
         
@@ -260,42 +262,55 @@
             'doubles': ['teams', '2v1', 'team combo', 'formation', 'positioning', 'support', 'carry', 'hunting', 'trading', 'knockdown percent', 'projectile', 'stage selection', 'double fox', 'fox falco', 'fox falcon', 'fox peach', 'fox puff', 'floaties', 'nmw', 'philosophy']
         };
 
+        let _playerNotes = [];
+        fetch('player-notes.json').then(r => r.ok ? r.json() : []).then(d => _playerNotes = d).catch(() => {});
+
         function filterMatchups() {
             const input = document.getElementById('searchInput');
             const filter = input.value.toLowerCase().trim();
             const grid = document.getElementById('matchupGrid');
             const cards = grid.getElementsByClassName('matchup-card');
+            const noteResults = document.getElementById('noteSearchResults');
 
             if (filter === '') {
-                // Show all cards if search is empty
-                for (let i = 0; i < cards.length; i++) {
-                    cards[i].style.display = "";
-                }
+                for (let i = 0; i < cards.length; i++) cards[i].style.display = "";
+                if (noteResults) { noteResults.style.display = 'none'; noteResults.innerHTML = ''; }
                 return;
             }
 
-            // Search through each card
+            // Search matchup cards
             for (let i = 0; i < cards.length; i++) {
                 const card = cards[i];
                 const href = card.getAttribute('href');
-                
-                // Extract matchup name from href (e.g., "matchups/fox.html" -> "fox")
                 const matchupName = href.split('/')[1].split('.')[0];
-                
-                // Get visible text content
                 const text = card.textContent || card.innerText;
-                
-                // Get keywords for this matchup
                 const keywords = matchupKeywords[matchupName] || [];
-                
-                // Check if filter matches visible text OR any keyword
                 const matchesText = text.toLowerCase().indexOf(filter) > -1;
                 const matchesKeyword = keywords.some(keyword => keyword.toLowerCase().indexOf(filter) > -1);
-                
-                if (matchesText || matchesKeyword) {
-                    card.style.display = "";
+                card.style.display = (matchesText || matchesKeyword) ? "" : "none";
+            }
+
+            // Search player notes by tags, player name, character, and note content
+            if (_playerNotes.length && noteResults) {
+                const matches = _playerNotes.filter(n => {
+                    const tags = (n.tags || []).join(' ');
+                    const haystack = `${n.playerName} ${n.character} ${tags}`.toLowerCase();
+                    return haystack.includes(filter) || (n.tags || []).some(t => t.includes(filter));
+                }).slice(0, 8);
+
+                if (matches.length) {
+                    noteResults.style.display = 'block';
+                    noteResults.innerHTML = `<h3 style="color:#a78bfa;margin-bottom:0.5rem;">📝 Matching Notes (${matches.length})</h3>` +
+                        matches.map(n => {
+                            const tags = (n.tags || []).map(t => `<span style="background:#667eea33;color:#667eea;font-size:0.7rem;padding:0.1rem 0.4rem;border-radius:8px;margin-left:0.25rem;">#${t}</span>`).join('');
+                            return `<a href="player-notes.html?note=${n.id}" style="display:block;background:#ededf0;padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.4rem;text-decoration:none;color:#333;font-size:0.9rem;">
+                                <span style="font-weight:700;color:#667eea;">${n.playerName}</span>
+                                <span style="color:#888;margin-left:0.5rem;">${n.character}</span>${tags}
+                            </a>`;
+                        }).join('');
                 } else {
-                    card.style.display = "none";
+                    noteResults.style.display = 'none';
+                    noteResults.innerHTML = '';
                 }
             }
         }

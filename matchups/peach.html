@@ -550,6 +550,13 @@
         </div>
     </main>
 
+    <section class="container" style="margin-top:2rem;">
+        <div class="matchup-content">
+            <h2>📝 Related Notes</h2>
+            <div id="relatedNotes"><p style="color:#888;">Loading...</p></div>
+        </div>
+    </section>
+
     <footer>
         <div class="container">
             <p>The Way of Fox - Peach Matchup Guide</p>
@@ -559,6 +566,8 @@
     <script type="module">
         import { buildCCTables } from '../cc-table-builder.js';
         buildCCTables('cc-asdi-tables', 2, 12, 'Peach');
+        import { buildRelatedNotes } from '../note-tags.js';
+        buildRelatedNotes('relatedNotes', 'Peach');
     </script>
 </body>
 </html>
