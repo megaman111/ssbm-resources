@@ -26,8 +26,8 @@
         .import-btn:hover { transform: translateY(-2px); }
         #fileInput { display: none; }
         .notes-container { display: grid; gap: 1.5rem; }
-        .note-card { background: #ededf0; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); position: relative; cursor: pointer; transition: box-shadow 0.2s, transform 0.2s; }
-        .note-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.15); transform: translateY(-1px); }
+        .note-card { background: #ededf0; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); position: relative; cursor: pointer; transition: box-shadow 0.3s ease, transform 0.3s ease; }
+        .note-card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.15); transform: translateY(-3px); }
         .note-card.has-replay { border-left: 4px solid #667eea; }
         .note-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #e0e0e3; }
         .note-header img { width: 40px; height: 40px; }
@@ -80,7 +80,8 @@
         .video-link-bar a:hover { text-decoration: underline; }
         /* Multi-VOD list on note card */
         .note-vods-list { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
-        .note-vod-item { display: flex; align-items: center; gap: 0.4rem; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; }
+        .note-vod-item { display: flex; align-items: center; gap: 0.4rem; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px; padding: 0.3rem 0.6rem; font-size: 0.8rem; transition: background 0.2s ease, border-color 0.2s ease; }
+        .note-vod-item:hover { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.5); }
         .note-vod-item a { color: #f59e0b; text-decoration: none; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .note-vod-item a:hover { text-decoration: underline; }
         .note-vod-remove { background: none; border: none; color: #f66; cursor: pointer; font-size: 0.9rem; padding: 0 0.2rem; line-height: 1; flex-shrink: 0; }
@@ -90,11 +91,12 @@
         .share-btn:hover { background: #3d3d6e; }
         /* Tags */
         .note-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
-        .note-tag { display: inline-block; background: linear-gradient(135deg, #667eea22, #764ba222); color: #667eea; font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 12px; border: 1px solid #667eea44; cursor: pointer; }
-        .note-tag:hover { background: #667eea; color: white; }
+        .note-tag { display: inline-block; background: linear-gradient(135deg, #667eea22, #764ba222); color: #667eea; font-size: 0.72rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: 12px; border: 1px solid #667eea44; cursor: pointer; transition: all 0.2s ease; }
+        .note-tag:hover { background: #667eea; color: white; transform: scale(1.08); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35); }
         .tag-filter-wrap { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.5rem; }
-        .tag-filter-btn { display: inline-block; background: #ededf0; color: #667eea; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 12px; border: 1px solid #667eea44; cursor: pointer; }
-        .tag-filter-btn:hover, .tag-filter-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .tag-filter-btn { display: inline-block; background: #ededf0; color: #667eea; font-size: 0.78rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 12px; border: 1px solid #667eea44; cursor: pointer; transition: all 0.2s ease; }
+        .tag-filter-btn:hover { background: rgba(102, 126, 234, 0.15); transform: scale(1.05); }
+        .tag-filter-btn.active { background: #667eea; color: white; border-color: #667eea; box-shadow: 0 2px 6px rgba(102, 126, 234, 0.35); }
         /* Highlighted note from share link */
         .note-card.shared-highlight { outline: 3px solid #a78bfa; animation: shareGlow 2s ease-out forwards; }
         @keyframes shareGlow { 0%{box-shadow:0 0 0 6px rgba(167,139,250,0.4)} 100%{box-shadow:none} }
@@ -106,14 +108,14 @@
         .vod-entry-bar a { color: #f59e0b; text-decoration: none; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .vod-entry-bar a:hover { text-decoration: underline; }
         .replay-attached-label { font-size: 0.75rem; color: #4ade80; margin-top: 0.5rem; }
-        .edit-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
-        .edit-btn:hover { background: #5568d3; }
-        .delete-btn { background: #ff4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
-        .delete-btn:hover { background: #cc0000; }
-        .save-btn { background: #4CAF50; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
-        .save-btn:hover { background: #45a049; }
-        .cancel-btn { background: #999; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; }
-        .cancel-btn:hover { background: #777; }
+        .edit-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s ease; }
+        .edit-btn:hover { background: #5568d3; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4); }
+        .delete-btn { background: #ff4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s ease; }
+        .delete-btn:hover { background: #cc0000; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(255, 68, 68, 0.4); }
+        .save-btn { background: #4CAF50; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s ease; }
+        .save-btn:hover { background: #45a049; transform: translateY(-1px); box-shadow: 0 2px 6px rgba(76, 175, 80, 0.4); }
+        .cancel-btn { background: #999; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; transition: all 0.2s ease; }
+        .cancel-btn:hover { background: #777; transform: translateY(-1px); }
         .edit-mode .note-content { display: none; }
         .edit-mode .edit-form { display: block; }
         .edit-form { display: none; }
@@ -122,8 +124,9 @@
         .filter-section { background: #ededf0; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-bottom: 2rem; }
         .filter-section select { padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-right: 1rem; }
         .character-icons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-        .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: #ededf0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-        .char-filter-btn:hover, .char-filter-btn.active { background: #667eea; color: white; }
+        .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: #ededf0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; }
+        .char-filter-btn:hover { background: rgba(102, 126, 234, 0.15); transform: scale(1.03); }
+        .char-filter-btn.active { background: #667eea; color: white; transform: scale(1.05); box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4); }
         .slp-hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
         .replay-file-btn { background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 100%); color: #e0e0e0; border: none; border-bottom: 1px solid #eee; padding: 0.7rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; width: 100%; text-align: left; display: flex; align-items: center; justify-content: space-between; }
         .replay-file-btn:last-child { border-bottom: none; }

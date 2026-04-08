@@ -146,7 +146,7 @@
             <div style="margin-top:0.5rem;font-size:0.75rem;color:#888;line-height:1.6;">
                 Prefix filters: <span style="color:#f59e0b;">marth:</span> edgeguard · <span style="color:#f59e0b;">doubles:</span> positioning · <span style="color:#f59e0b;">singles:</span> neutral · <span style="color:#f59e0b;">fox:</span> dash dance · <span style="color:#f59e0b;">concepts:</span> ego · <span style="color:#f59e0b;">title:</span> section name · <span style="color:#f59e0b;">author:</span> billy · Works with any character.
             </div>
-            <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:100;max-height:70vh;overflow-y:auto;background:#1a1a2e;border:1px solid #334;border-radius:0 0 12px 12px;box-shadow:0 12px 40px rgba(0,0,0,0.6);"></div>
+            <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:100;max-height:70vh;overflow-y:auto;background:#1a1a2e;border:1px solid #334;border-radius:0 0 12px 12px;box-shadow:0 12px 40px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.15s ease;"></div>
         </section>
 
         <div id="noteSearchResults" style="display:none;"></div>
@@ -322,7 +322,7 @@
             }
 
             const { scope, query, titleOnly, authorOnly } = parseSearchQuery(raw);
-            if (!query || query.length < 2) { dropdown.style.display = 'none'; return; }
+            if (!query || query.length < 2) { dropdown.style.opacity = '0'; setTimeout(() => { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }, 150); return; }
 
             // Scope filter helpers
             const matchesScope = (matchupSlug) => {
@@ -407,16 +407,20 @@
             if (count) {
                 dropdown.innerHTML = html;
                 dropdown.style.display = 'block';
+                requestAnimationFrame(() => dropdown.style.opacity = '1');
             } else {
                 dropdown.innerHTML = '<div style="padding:1rem;text-align:center;color:#666;">No results for "' + (scope ? scope + ': ' : '') + query + '"</div>';
                 dropdown.style.display = 'block';
+                requestAnimationFrame(() => dropdown.style.opacity = '1');
             }
         }
 
         // Close dropdown when clicking outside
         document.addEventListener('click', e => {
             if (!e.target.closest('.search-box')) {
-                document.getElementById('searchDropdown').style.display = 'none';
+                const dd = document.getElementById('searchDropdown');
+                dd.style.opacity = '0';
+                setTimeout(() => { dd.style.display = 'none'; }, 150);
             }
         });
         document.getElementById('searchInput').addEventListener('focus', () => {
