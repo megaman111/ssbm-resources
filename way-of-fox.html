@@ -263,7 +263,9 @@
         };
 
         let _playerNotes = [];
+        let _matchupTags = {};
         fetch('player-notes.json').then(r => r.ok ? r.json() : []).then(d => _playerNotes = d).catch(() => {});
+        fetch('matchup-tags.json').then(r => r.ok ? r.json() : {}).then(d => _matchupTags = d).catch(() => {});
 
         function filterMatchups() {
             const input = document.getElementById('searchInput');
@@ -290,28 +292,52 @@
                 card.style.display = (matchesText || matchesKeyword) ? "" : "none";
             }
 
-            // Search player notes by tags, player name, character, and note content
-            if (_playerNotes.length && noteResults) {
-                const matches = _playerNotes.filter(n => {
+            // Search player notes by tags, player name, character
+            let html = '';
+            if (_playerNotes.length) {
+                const noteMatches = _playerNotes.filter(n => {
                     const tags = (n.tags || []).join(' ');
                     const haystack = `${n.playerName} ${n.character} ${tags}`.toLowerCase();
                     return haystack.includes(filter) || (n.tags || []).some(t => t.includes(filter));
-                }).slice(0, 8);
-
-                if (matches.length) {
-                    noteResults.style.display = 'block';
-                    noteResults.innerHTML = `<h3 style="color:#a78bfa;margin-bottom:0.5rem;">📝 Matching Notes (${matches.length})</h3>` +
-                        matches.map(n => {
-                            const tags = (n.tags || []).map(t => `<span style="background:#667eea33;color:#667eea;font-size:0.7rem;padding:0.1rem 0.4rem;border-radius:8px;margin-left:0.25rem;">#${t}</span>`).join('');
-                            return `<a href="player-notes.html?note=${n.id}" style="display:block;background:#ededf0;padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.4rem;text-decoration:none;color:#333;font-size:0.9rem;">
-                                <span style="font-weight:700;color:#667eea;">${n.playerName}</span>
-                                <span style="color:#888;margin-left:0.5rem;">${n.character}</span>${tags}
-                            </a>`;
-                        }).join('');
-                } else {
-                    noteResults.style.display = 'none';
-                    noteResults.innerHTML = '';
+                }).slice(0, 6);
+                if (noteMatches.length) {
+                    html += `<h3 style="color:#a78bfa;margin-bottom:0.5rem;">📝 Matching Notes (${noteMatches.length})</h3>`;
+                    html += noteMatches.map(n => {
+                        const tags = (n.tags || []).map(t => `<span style="background:#667eea33;color:#667eea;font-size:0.7rem;padding:0.1rem 0.4rem;border-radius:8px;margin-left:0.25rem;">#${t}</span>`).join('');
+                        return `<a href="player-notes.html?note=${n.id}" style="display:block;background:#ededf0;padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.4rem;text-decoration:none;color:#333;font-size:0.9rem;">
+                            <span style="font-weight:700;color:#667eea;">${n.playerName}</span>
+                            <span style="color:#888;margin-left:0.5rem;">${n.character}</span>${tags}
+                        </a>`;
+                    }).join('');
                 }
+            }
+
+            // Search matchup section tags
+            const sectionMatches = [];
+            for (const [key, tags] of Object.entries(_matchupTags)) {
+                const matchesTag = tags.some(t => t.includes(filter));
+                const matchesKey = key.toLowerCase().includes(filter);
+                if (matchesTag || matchesKey) {
+                    const parts = key.split('/');
+                    const matchup = parts[0];
+                    const section = parts.slice(1).join('/').replace(/-/g, ' ');
+                    sectionMatches.push({ matchup, section, tags, key });
+                }
+            }
+            if (sectionMatches.length) {
+                html += `<h3 style="color:#f59e0b;margin:0.75rem 0 0.5rem;">📖 Matchup Sections (${sectionMatches.length})</h3>`;
+                html += sectionMatches.slice(0, 8).map(s => {
+                    const tags = s.tags.map(t => `<span style="background:#f59e0b33;color:#f59e0b;font-size:0.7rem;padding:0.1rem 0.4rem;border-radius:8px;margin-left:0.25rem;">#${t}</span>`).join('');
+                    return `<a href="matchups/${s.matchup}.html" style="display:block;background:#ededf0;padding:0.6rem 1rem;border-radius:8px;margin-bottom:0.4rem;text-decoration:none;color:#333;font-size:0.9rem;">
+                        <span style="font-weight:700;color:#f59e0b;">${s.matchup}</span>
+                        <span style="color:#666;margin-left:0.5rem;">${s.section}</span>${tags}
+                    </a>`;
+                }).join('');
+            }
+
+            if (noteResults) {
+                if (html) { noteResults.style.display = 'block'; noteResults.innerHTML = html; }
+                else { noteResults.style.display = 'none'; noteResults.innerHTML = ''; }
             }
         }
     </script>
