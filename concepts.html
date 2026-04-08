@@ -117,11 +117,11 @@
         <div class="concept-section">
             <h2>Common Noob Habits to Break - NMW</h2>
             
-            <div class="source-section" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
+            <div class="source-section" id="concepts-common-noob-habits-to-break-nmw" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
                 <p style="margin: 0; line-height: 1.8;">This is a list of problems that newer players consistently have. The list isn't comprehensive, but if you've been playing for less than 2 years, odds are you have at least a couple of these habits. If you can possibly watch footage of yourself, review it and note any of these habits. If you can't watch yourself, then just try to think about these things next time you play.</p>
             </div>
 
-            <div class="source-section" style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
+            <div class="source-section" id="concepts-recovery-disadvantage-habits" style="background: #f8d7da; border-left: 4px solid #dc3545; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
                 <p style="margin: 0; line-height: 1.8; font-weight: 600;">Because decent players are cognizant of these bad habits, if you suffer from 2-3 of them, you are likely to be punished extremely hard, to the point that you don't have any chance of winning.</p>
             </div>
 
@@ -180,7 +180,7 @@
         <div class="concept-section">
             <h2>Ego and Improvement - NMW</h2>
             
-            <div class="source-section" style="background: #e8f4f8; border-left: 4px solid #667eea; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
+            <div class="source-section" id="concepts-ego-and-arrogance-difficulty-taking-feedback" style="background: #e8f4f8; border-left: 4px solid #667eea; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
                 <p style="margin: 0; line-height: 1.8; font-weight: 600;">Ego is one of the most common reasons why people plateau in their quest to become the best Melee players they can be. Ego interferes with improvement in many different ways. Even if you think you have your ego in check, you may realize in reading this that there are situations where it is at the heart of the problem, just not in an immediately apparent way.</p>
             </div>
 
@@ -787,7 +787,7 @@
         <div class="concept-section">
             <h2>Locals vs Nationals - NMW</h2>
             
-            <div class="source-section" style="background: #e8f4f8; border-left: 4px solid #667eea; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
+            <div class="source-section" id="concepts-challenges-unique-to-nationals" style="background: #e8f4f8; border-left: 4px solid #667eea; padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 8px;">
                 <p style="margin: 0; line-height: 1.8;">It's commonly believed in our community that nationals are the true test of Melee skill and that locals don't mean as much. People love to cite how in-region matchups are wonky and people develop counters and player-specific metas that don't reflect the overall skill levels of the players involved. A more accurate assessment would be that <strong>locals and nationals require different skillsets</strong>. While we love to think that locals are training grounds to hone our skills for nationals, in many ways, they don't prepare us at all.</p>
             </div>
 
@@ -1495,10 +1495,23 @@
 
     </main>
 
+    <section class="container" style="margin-top:2rem;">
+        <div class="matchup-content" style="background:#ededf0;padding:2rem;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);margin-bottom:2rem;">
+            <h2 style="color:#667eea;border-bottom:3px solid #667eea;padding-bottom:0.5rem;margin-bottom:1.5rem;">Related Notes</h2>
+            <div id="relatedNotes"><p style="color:#888;">Loading...</p></div>
+        </div>
+    </section>
+
     <footer>
         <div class="container">
             <p>Concepts & Lessons - Megaman's Archive</p>
         </div>
     </footer>
+    <script type="module">
+        import { buildRelatedNotes } from './note-tags.js';
+        buildRelatedNotes('relatedNotes', 'Fox');
+        import { initMatchupTags } from './matchup-tags-ui.js';
+        initMatchupTags('concepts');
+    </script>
 </body>
 </html>
