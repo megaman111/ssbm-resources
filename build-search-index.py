@@ -20,35 +20,56 @@ def extract_text(html_block):
 
 index = []
 
+# Index matchup pages
 for f in sorted(os.listdir('matchups')):
     if not f.endswith('.html'): continue
     path = os.path.join('matchups', f)
     content = open(path, encoding='utf-8').read()
     matchup = f.replace('.html', '')
     
-    # Find all source-sections with ids
     for m in re.finditer(r'<div\s+class="source-section"\s+id="([^"]+)"[^>]*>(.*?)</div>\s*(?=<div|</div>)', content, re.DOTALL):
         sid = m.group(1)
         block = m.group(2)
-        
-        # Get h3 title
         h3 = re.search(r'<h3[^>]*>(.*?)</h3>', block)
         title = strip_html(h3.group(1)) if h3 else ''
-        
-        # Get parent h2
-        # Find the h2 that precedes this section
         pos = m.start()
         h2_matches = list(re.finditer(r'<h2[^>]*>(.*?)</h2>', content[:pos]))
         h2_title = strip_html(h2_matches[-1].group(1)) if h2_matches else ''
-        
         bullets = extract_text(block)
         preview = ' · '.join(bullets[:3])
         if len(preview) > 200:
             preview = preview[:200] + '...'
-        
         index.append({
             'matchup': matchup,
             'file': 'matchups/' + f,
+            'id': sid,
+            'h2': h2_title,
+            'h3': title,
+            'preview': preview,
+            'text': ' '.join(bullets).lower()
+        })
+
+# Index root-level pages with source-sections (concepts.html, etc.)
+for f in ['concepts.html']:
+    if not os.path.exists(f): continue
+    content = open(f, encoding='utf-8').read()
+    slug = f.replace('.html', '')
+    
+    for m in re.finditer(r'<div\s+class="source-section"\s+id="([^"]+)"[^>]*>(.*?)</div>\s*(?=<div|</div>)', content, re.DOTALL):
+        sid = m.group(1)
+        block = m.group(2)
+        h3 = re.search(r'<h3[^>]*>(.*?)</h3>', block)
+        title = strip_html(h3.group(1)) if h3 else ''
+        pos = m.start()
+        h2_matches = list(re.finditer(r'<h2[^>]*>(.*?)</h2>', content[:pos]))
+        h2_title = strip_html(h2_matches[-1].group(1)) if h2_matches else ''
+        bullets = extract_text(block)
+        preview = ' · '.join(bullets[:3])
+        if len(preview) > 200:
+            preview = preview[:200] + '...'
+        index.append({
+            'matchup': slug,
+            'file': f,
             'id': sid,
             'h2': h2_title,
             'h3': title,
