@@ -153,6 +153,21 @@ The goal is to eventually port this into a full-stack Electron app that bundles 
 - [ ] Replay browser with filtering by character, opponent, stage, date
 - [ ] Session stats dashboard (L-cancel %, combo conversion, neutral win rate)
 
+### ISO-Powered Features (Electron only — requires Melee ISO)
+If the user provides a Melee ISO, the Electron app could extract actual game data for features that are impossible with just .slp files:
+- [ ] True hitbox/hurtbox visualization — extract hitbox data from the ISO's character DAT files (like Rwing does) instead of relying on FightCore API approximations
+- [ ] DI line visualization — show actual knockback trajectories with DI influence using the game's real knockback formula + hitbox data
+- [ ] Frame-accurate animation rendering — use the actual character model/animation data from the ISO instead of silhouette SVGs
+- [ ] Stage collision data — extract real stage geometry for accurate kill zone overlays
+- [ ] Move property extraction — pull exact damage, angle, KBG, BKB, hitlag multiplier directly from character files
+
+### Rwing Data Mining
+- [ ] Investigate what data Rwing extracts and how — it uses the ISO for hitbox rendering, DI lines, and frame data overlays
+- [ ] Research if any of Rwing's data extraction can be replicated (it's closed-source Patreon software, so we'd need to reverse-engineer the approach, not the code)
+- [ ] Look into existing open-source Melee data extraction tools: `melee-dat-editor`, `HSDLib`, `m-ex` — these parse the ISO's HAL DAT format
+- [ ] The `doldecomp/melee` decompilation project may have documented enough of the game's internal structures to build our own hitbox/hurtbox extractor
+- [ ] Consider building a DAT file parser in Rust/WASM that runs in the Electron app — parse character DAT files from the ISO on demand
+
 ---
 
 ## Modular Matchup Pages (Requires Careful Planning)
