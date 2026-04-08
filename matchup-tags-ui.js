@@ -91,6 +91,18 @@ export async function initMatchupTags(matchupName) {
     _matchupName = matchupName;
     await loadMatchupTags();
     document.querySelectorAll('.source-section').forEach(s => renderSectionTags(s));
+    // Scroll to section if URL has a hash
+    if (location.hash) {
+        const el = document.getElementById(location.hash.slice(1));
+        if (el) {
+            setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.style.outline = '3px solid #667eea';
+                el.style.transition = 'outline 0.3s';
+                setTimeout(() => { el.style.outline = 'none'; }, 3000);
+            }, 300);
+        }
+    }
 }
 
 /**
