@@ -90,6 +90,23 @@
 - [ ] Integrate into Way of Fox for character-specific frame data quick reference
 - [ ] Add kill percent calculations — per move, per stage, based on blast zone distances
 
+### FightCore Inline Frame Data Module (New)
+The goal is to make move names in matchup page text and player notes interactive — when a move name appears in a box (e.g. "nair", "up smash", "down tilt"), it becomes a clickable link that shows a popup/tooltip with:
+- Hitbox visualization (from the ISO-extracted hitbox data when available, or FightCore approximation)
+- Frame data: startup, active frames, total frames, IASA, landing lag
+- Damage, angle, KBG, BKB per hitbox
+- CC and ASDI Down max percents for the current matchup context
+
+Implementation approach:
+- [ ] Build a `move-linker.js` module that scans text content for known move names and wraps them in clickable spans
+- [ ] Move name dictionary: map common terms ("nair", "up smash", "shine", "drill", "fair", etc.) to FightCore move IDs per character
+- [ ] On click/hover: show a popup card with the move's frame data + a mini hitbox visualization
+- [ ] Context-aware: when on a matchup page (e.g. Fox vs Marth), the popup shows data for the relevant character
+- [ ] Taggable: allow manually tagging a word as a move reference in the matchup page editor (for ambiguous terms)
+- [ ] Works in both matchup page sections and player notes
+- [ ] When ISO-extracted hitbox data is available, show accurate hitbox circles in the popup; otherwise fall back to FightCore data
+- [ ] Integrate with the modular matchup pages system — move links are auto-detected in text blocks during rendering
+
 ### IKneeData Calculator Module
 - [x] Melee frame data calculator (like IKneeData)
 - [x] Knockback calculator
