@@ -190,3 +190,6 @@ The long-term goal is to make matchup page sections as modular as the notes syst
 - Requires stable section IDs (already implemented)
 - Requires the tagging system (already implemented)
 - Should be designed alongside the Electron app vision — the JSON data format should work for both web and desktop
+
+### Pre-Implementation Checkpoint
+- [ ] Before starting implementation, re-run the planning agent to update the spec (design.md, requirements.md, tasks.md) to account for any new features developed between now and then. The search system, tagging, note VODs, and matchup page content are still being actively refined — the spec should reflect the final state of these systems before committing to the migration.
