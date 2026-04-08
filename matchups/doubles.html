@@ -2179,10 +2179,23 @@
         </div>
     </main>
 
+    <section class="container" style="margin-top:2rem;">
+        <div class="matchup-content">
+            <h2>📝 Related Notes</h2>
+            <div id="relatedNotes"><p style="color:#888;">Loading...</p></div>
+        </div>
+    </section>
+
     <footer>
         <div class="container">
             <p>The Way of Fox - Doubles Guide</p>
         </div>
     </footer>
+    <script type="module">
+        import { buildRelatedNotes } from '../note-tags.js';
+        buildRelatedNotes('relatedNotes', 'Fox');
+        import { initMatchupTags } from '../matchup-tags-ui.js';
+        initMatchupTags('doubles');
+    </script>
 </body>
 </html>

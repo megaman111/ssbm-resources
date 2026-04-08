@@ -138,6 +138,9 @@
 
         <section class="search-box" style="position:relative;">
             <input type="text" id="searchInput" placeholder="Search tags, concepts... try marth: edgeguard or doubles: positioning" oninput="filterMatchups()" autocomplete="off">
+            <div style="margin-top:0.5rem;font-size:0.75rem;color:#888;line-height:1.6;">
+                Search with prefixes to filter by matchup: <span style="color:#f59e0b;">marth:</span> edgeguard · <span style="color:#f59e0b;">falco:</span> laser · <span style="color:#f59e0b;">doubles:</span> positioning · <span style="color:#f59e0b;">singles:</span> neutral · <span style="color:#f59e0b;">fox:</span> dash dance · Works with any character name.
+            </div>
             <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:100;max-height:70vh;overflow-y:auto;background:#1a1a2e;border:1px solid #334;border-radius:0 0 12px 12px;box-shadow:0 12px 40px rgba(0,0,0,0.6);"></div>
         </section>
 
