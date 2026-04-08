@@ -5932,10 +5932,23 @@ async function buildReplayBrowser() {
     if (!list) return;
     const uploaded = await getUploadedReplays();
     const vodLinks = getSavedVodLinks();
+    // Also collect VODs from player notes
+    const noteVods = [];
+    const seenUrls = new Set(vodLinks.map(v => v.url));
+    (typeof notes !== 'undefined' ? notes : []).forEach(n => {
+        const vods = n.vods || (n.videoUrl ? [{ label: n.videoUrl, url: n.videoUrl }] : []);
+        vods.forEach(v => {
+            if (v.url && !seenUrls.has(v.url)) {
+                seenUrls.add(v.url);
+                noteVods.push({ name: v.label || v.url, source: 'note-vod', type: 'vod', url: v.url, notePlayer: n.playerName });
+            }
+        });
+    });
     const allFiles = [
         ...SAVED_REPLAYS.map(f => ({ name: f, source: 'server', type: 'slp' })),
         ...uploaded.map(f => ({ name: f, source: 'local', type: 'slp' })),
         ...vodLinks.map(v => ({ name: v.label, source: 'vod', type: 'vod', url: v.url })),
+        ...noteVods,
     ];
     if (!allFiles.length) {
         list.innerHTML = '<p style="color:#999;font-size:0.85rem;">No replays or VODs yet — upload one below</p>';
@@ -5943,9 +5956,11 @@ async function buildReplayBrowser() {
     }
     list.innerHTML = allFiles.map(f => {
         if (f.type === 'vod') {
-            const delBtn = `<span class="vod-del-btn" data-url="${f.url.replace(/"/g,'&quot;')}" title="Remove VOD link" style="color:#f66;font-weight:700;font-size:1rem;margin-left:0.4rem;cursor:pointer;">&times;</span>`;
-            return `<div class="replay-file-row" data-source="vod" data-url="${f.url.replace(/"/g,'&quot;')}">
-                <button class="replay-file-btn" title="${f.url}" style="border-left:3px solid #f59e0b;">📺 ${f.name}${delBtn}</button>
+            const isNoteVod = f.source === 'note-vod';
+            const delBtn = isNoteVod ? '' : `<span class="vod-del-btn" data-url="${f.url.replace(/"/g,'&quot;')}" title="Remove VOD link" style="color:#f66;font-weight:700;font-size:1rem;margin-left:0.4rem;cursor:pointer;">&times;</span>`;
+            const label = isNoteVod ? `📺 ${f.name} <span style="color:#a78bfa;font-size:0.75rem;margin-left:0.3rem;">from: ${f.notePlayer}</span>` : `📺 ${f.name}`;
+            return `<div class="replay-file-row" data-source="${f.source}" data-url="${f.url.replace(/"/g,'&quot;')}">
+                <button class="replay-file-btn" title="${f.url}" style="border-left:3px solid ${isNoteVod ? '#a78bfa' : '#f59e0b'};">${label}${delBtn}</button>
             </div>`;
         }
         const display = f.name.replace('.slp', '').replace(/_/g, ' ');
