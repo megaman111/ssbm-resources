@@ -316,8 +316,8 @@
             for (let i = 0; i < cards.length; i++) cards[i].style.display = '';
 
             if (!raw || raw.length < 2) {
-                dropdown.style.display = 'none';
-                dropdown.innerHTML = '';
+                dropdown.style.opacity = '0';
+                setTimeout(() => { dropdown.style.display = 'none'; dropdown.innerHTML = ''; }, 150);
                 return;
             }
 

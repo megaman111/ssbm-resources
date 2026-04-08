@@ -208,6 +208,12 @@ footer {
     background: rgba(245, 245, 247, 0.6);
     border-radius: 8px;
     border-left: 4px solid #667eea;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.source-section:hover {
+    border-left-color: #764ba2;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .source-section:last-child {
@@ -258,15 +264,6 @@ input:focus, select:focus, textarea:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-}
-
-/* Source section hover */
-.source-section {
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.source-section:hover {
-    border-left-color: #764ba2;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* Matchup content cards — subtle entrance */
