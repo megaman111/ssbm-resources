@@ -152,3 +152,41 @@ The goal is to eventually port this into a full-stack Electron app that bundles 
 - [ ] Auto-clip detection (notable moments: kills, combos, edgeguards)
 - [ ] Replay browser with filtering by character, opponent, stage, date
 - [ ] Session stats dashboard (L-cancel %, combo conversion, neutral win rate)
+
+---
+
+## Modular Matchup Pages (Requires Careful Planning)
+
+The long-term goal is to make matchup page sections as modular as the notes system — editable, addable, removable, taggable, and shareable from the browser without touching HTML. This is a significant architectural change that needs to be planned carefully before implementation.
+
+### Core Concept
+- Each "box" (source-section) on a matchup page becomes a modular content block stored in JSON (like notes)
+- Blocks can be added, edited, reordered, and deleted from the browser
+- Each block has: title, content (markdown), tags, source attribution, and a stable ID for deep linking
+- The matchup page becomes a renderer that reads from `matchup-data/{character}.json` instead of hardcoded HTML
+
+### Design Considerations (Plan Before Building)
+- [ ] Data migration: convert existing hardcoded HTML sections into JSON format without losing content
+- [ ] Editor UI: inline editing vs modal vs separate edit mode — needs to feel natural, not clunky
+- [ ] Content format: markdown? Rich text? HTML? Need to support bullet lists, bold, links at minimum
+- [ ] Ordering: drag-and-drop reorder? Manual position numbers? Section grouping under h2 headers?
+- [ ] Permissions: should visitors see edit buttons? Or only when GitHub token is connected?
+- [ ] Search index: auto-rebuild on save, or manual rebuild step?
+- [ ] Module types: plain text blocks, embedded calculators (IKneeData), VOD embeds, CC tables, OoS heatmaps — each needs its own renderer
+- [ ] Cross-referencing: link a matchup section to a specific note, replay, or VOD timestamp
+- [ ] Version history: since it's all in git, every edit is tracked — but should we surface that in the UI?
+
+### Module Types to Support
+- [ ] Text block (current source-sections — bullet lists, paragraphs)
+- [ ] VOD embed block (YouTube/Twitch with timestamp)
+- [ ] Calculator block (IKneeData embed with pre-filled data)
+- [ ] CC/ASDI table block (already exists as a module)
+- [ ] OoS heatmap block (already exists as iframe embed)
+- [ ] Replay viewer block (link to a specific .slp at a specific frame)
+- [ ] Note reference block (pull in a player note inline)
+
+### Dependencies
+- Requires the GitHub API sync system to be solid (currently working)
+- Requires stable section IDs (already implemented)
+- Requires the tagging system (already implemented)
+- Should be designed alongside the Electron app vision — the JSON data format should work for both web and desktop

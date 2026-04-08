@@ -58,6 +58,7 @@ function getTagsForSection(key) {
 function renderSectionTags(sectionEl) {
     const key = getSectionKey(sectionEl);
     const tags = getTagsForSection(key);
+    const sectionId = sectionEl.id || '';
     let tagBar = sectionEl.querySelector('.section-tag-bar');
     if (!tagBar) {
         tagBar = document.createElement('div');
@@ -68,9 +69,22 @@ function renderSectionTags(sectionEl) {
     const tagHtml = tags.map(t =>
         `<span style="background:#667eea22;color:#667eea;font-size:0.72rem;font-weight:600;padding:0.15rem 0.5rem;border-radius:12px;border:1px solid #667eea44;">#${t}</span>`
     ).join('');
+    const shareBtn = sectionId
+        ? `<button onclick="shareSection(this,'${sectionId}')" style="background:none;border:1px solid #aaa;color:#888;padding:0.15rem 0.5rem;border-radius:12px;cursor:pointer;font-size:0.72rem;">🔗 share</button>`
+        : '';
     tagBar.innerHTML = tagHtml +
-        `<button onclick="editSectionTags(this)" data-key="${key}" style="background:none;border:1px solid #aaa;color:#888;padding:0.15rem 0.5rem;border-radius:12px;cursor:pointer;font-size:0.72rem;">🏷️ ${tags.length ? 'edit' : 'add tags'}</button>`;
+        `<button onclick="editSectionTags(this)" data-key="${key}" style="background:none;border:1px solid #aaa;color:#888;padding:0.15rem 0.5rem;border-radius:12px;cursor:pointer;font-size:0.72rem;">🏷️ ${tags.length ? 'edit' : 'add tags'}</button>` +
+        shareBtn;
 }
+
+window.shareSection = (btn, sectionId) => {
+    const url = location.origin + location.pathname + '#' + sectionId;
+    navigator.clipboard.writeText(url).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✅ copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    }).catch(() => prompt('Copy this link:', url));
+};
 
 window.editSectionTags = async (btn) => {
     const key = btn.dataset.key;
