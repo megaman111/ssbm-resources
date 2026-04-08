@@ -651,6 +651,7 @@
                 <button class="char-filter-btn active" data-type="all">All</button>
                 <button class="char-filter-btn" data-type="players">Player Notes</button>
                 <button class="char-filter-btn" data-type="concepts">Concepts/Lessons</button>
+                <button class="char-filter-btn" data-type="chats">Chats</button>
             </div>
             <h3>Filter by Character</h3>
             <div class="character-icons">
@@ -1801,6 +1802,12 @@ function isConceptNote(note) {
     return kw.some(k => note.playerName.toLowerCase().includes(k));
 }
 
+function isChatNote(note) {
+    if (note.chatView) return true;
+    const kw = ['convo','conversation','chat with'];
+    return kw.some(k => note.playerName.toLowerCase().includes(k));
+}
+
 async function loadNotesFromFile() {
     try {
         const r = await fetch('player-notes.json');
@@ -2046,8 +2053,9 @@ function renderChatNote(text, force) {
 function displayNotes() {
     const container = document.getElementById('notesContainer');
     let filtered = currentFilter === 'all' ? notes : notes.filter(n => n.character === currentFilter);
-    if (currentTypeFilter === 'players') filtered = filtered.filter(n => !isConceptNote(n));
+    if (currentTypeFilter === 'players') filtered = filtered.filter(n => !isConceptNote(n) && !isChatNote(n));
     else if (currentTypeFilter === 'concepts') filtered = filtered.filter(n => isConceptNote(n));
+    else if (currentTypeFilter === 'chats') filtered = filtered.filter(n => isChatNote(n));
 
     if (!filtered.length) {
         container.innerHTML = '<p style="text-align:center;color:#999;padding:2rem;">No notes yet. Add your first player note above!</p>';
