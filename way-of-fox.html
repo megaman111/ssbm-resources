@@ -82,6 +82,11 @@
             color: #666;
             font-size: 0.9rem;
         }
+        /* Drag mode wiggle */
+        .drag-mode .matchup-card { animation: wiggle 0.3s ease-in-out infinite alternate; cursor: grab; }
+        .drag-mode .matchup-card:nth-child(even) { animation-delay: 0.15s; }
+        .drag-mode .matchup-card:active { cursor: grabbing; animation: none; }
+        @keyframes wiggle { 0%{transform:rotate(-0.5deg)} 100%{transform:rotate(0.5deg)} }
         .doc-viewer {
             background: white;
             padding: 2rem;
@@ -417,6 +422,144 @@
         document.getElementById('searchInput').addEventListener('focus', () => {
             if (document.getElementById('searchInput').value.trim().length >= 2) filterMatchups();
         });
+
+        // ===== Easter egg: triple-click "Select a Matchup" to enable drag-to-swap =====
+        let _dragMode = false;
+        let _tripleClickCount = 0;
+        let _tripleClickTimer = null;
+
+        const _matchupHeader = document.querySelector('h2[style*="text-align: center"]');
+        if (_matchupHeader) {
+            _matchupHeader.addEventListener('click', () => {
+                _tripleClickCount++;
+                clearTimeout(_tripleClickTimer);
+                _tripleClickTimer = setTimeout(() => _tripleClickCount = 0, 500);
+                if (_tripleClickCount >= 3) {
+                    _tripleClickCount = 0;
+                    _dragMode = !_dragMode;
+                    toggleDragMode(_dragMode);
+                }
+            });
+        }
+
+        function toggleDragMode(on) {
+            const grid = document.getElementById('matchupGrid');
+            const cards = grid.querySelectorAll('.matchup-card');
+            if (on) {
+                _matchupHeader.textContent = '🔀 Drag to rearrange! (triple-click to lock)';
+                _matchupHeader.style.color = '#f59e0b';
+                grid.classList.add('drag-mode');
+                cards.forEach(c => {
+                    c.draggable = true;
+                    c.addEventListener('dragstart', onDragStart);
+                    c.addEventListener('dragover', onDragOver);
+                    c.addEventListener('drop', onDrop);
+                    c.addEventListener('dragend', onDragEnd);
+                    // Touch support
+                    c.addEventListener('touchstart', onTouchStart, {passive: false});
+                    c.addEventListener('touchmove', onTouchMove, {passive: false});
+                    c.addEventListener('touchend', onTouchEnd);
+                });
+            } else {
+                _matchupHeader.textContent = 'Select a Matchup';
+                _matchupHeader.style.color = 'white';
+                grid.classList.remove('drag-mode');
+                cards.forEach(c => {
+                    c.draggable = false;
+                    c.removeEventListener('dragstart', onDragStart);
+                    c.removeEventListener('dragover', onDragOver);
+                    c.removeEventListener('drop', onDrop);
+                    c.removeEventListener('dragend', onDragEnd);
+                });
+                // Save order to localStorage
+                const order = [...grid.querySelectorAll('.matchup-card')].map(c => c.getAttribute('href'));
+                localStorage.setItem('matchup_order', JSON.stringify(order));
+            }
+        }
+
+        let _draggedCard = null;
+        function onDragStart(e) {
+            _draggedCard = this;
+            this.style.opacity = '0.4';
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        function onDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            this.style.outline = '2px dashed #f59e0b';
+        }
+        function onDrop(e) {
+            e.preventDefault();
+            this.style.outline = '';
+            if (_draggedCard && _draggedCard !== this) {
+                const grid = document.getElementById('matchupGrid');
+                const cards = [...grid.children];
+                const fromIdx = cards.indexOf(_draggedCard);
+                const toIdx = cards.indexOf(this);
+                if (fromIdx < toIdx) grid.insertBefore(_draggedCard, this.nextSibling);
+                else grid.insertBefore(_draggedCard, this);
+            }
+        }
+        function onDragEnd() {
+            this.style.opacity = '';
+            document.querySelectorAll('.matchup-card').forEach(c => c.style.outline = '');
+            _draggedCard = null;
+        }
+
+        // Touch drag support
+        let _touchCard = null, _touchClone = null, _touchStartY = 0, _touchStartX = 0;
+        function onTouchStart(e) {
+            if (!_dragMode) return;
+            _touchCard = this;
+            const t = e.touches[0];
+            _touchStartX = t.clientX; _touchStartY = t.clientY;
+            this.style.opacity = '0.4';
+            e.preventDefault();
+        }
+        function onTouchMove(e) {
+            if (!_touchCard) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            const el = document.elementFromPoint(t.clientX, t.clientY);
+            document.querySelectorAll('.matchup-card').forEach(c => c.style.outline = '');
+            if (el) {
+                const card = el.closest('.matchup-card');
+                if (card && card !== _touchCard) card.style.outline = '2px dashed #f59e0b';
+            }
+        }
+        function onTouchEnd(e) {
+            if (!_touchCard) return;
+            _touchCard.style.opacity = '';
+            const t = e.changedTouches[0];
+            const el = document.elementFromPoint(t.clientX, t.clientY);
+            if (el) {
+                const target = el.closest('.matchup-card');
+                if (target && target !== _touchCard) {
+                    const grid = document.getElementById('matchupGrid');
+                    const cards = [...grid.children];
+                    const fromIdx = cards.indexOf(_touchCard);
+                    const toIdx = cards.indexOf(target);
+                    if (fromIdx < toIdx) grid.insertBefore(_touchCard, target.nextSibling);
+                    else grid.insertBefore(_touchCard, target);
+                }
+            }
+            document.querySelectorAll('.matchup-card').forEach(c => c.style.outline = '');
+            _touchCard = null;
+        }
+
+        // Restore saved order on load
+        try {
+            const saved = JSON.parse(localStorage.getItem('matchup_order') || '[]');
+            if (saved.length) {
+                const grid = document.getElementById('matchupGrid');
+                const cards = [...grid.querySelectorAll('.matchup-card')];
+                const cardMap = {};
+                cards.forEach(c => cardMap[c.getAttribute('href')] = c);
+                saved.forEach(href => { if (cardMap[href]) grid.appendChild(cardMap[href]); });
+                // Append any cards not in saved order (new ones)
+                cards.forEach(c => { if (!saved.includes(c.getAttribute('href'))) grid.appendChild(c); });
+            }
+        } catch {}
     </script>
 </body>
 </html>
