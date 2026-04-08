@@ -14,6 +14,11 @@
         /* Make the calculator fill available height */
         main.container .calc-wrapper { min-height: calc(100vh - 180px); }
         main.container .calc-wrapper > div { width: 100%; }
+        /* Fullscreen button */
+        .calc-fs-btn { position: fixed; bottom: 1rem; right: 1rem; z-index: 999; background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 0.5rem 0.75rem; font-size: 1.2rem; cursor: pointer; transition: background 0.15s, color 0.15s; line-height: 1; }
+        .calc-fs-btn:hover { background: rgba(0,0,0,0.85); color: #fff; border-color: rgba(255,255,255,0.5); }
+        .calc-wrapper:fullscreen { background: #1a1a2e; padding: 1rem; overflow: auto; }
+        .calc-wrapper:fullscreen .calc-fs-btn { position: absolute; }
     </style>
 </head>
 <body>
@@ -31,12 +36,18 @@
     </header>
 
     <main class="container">
-        <div class="calc-wrapper">
+        <div class="calc-wrapper" id="calcWrapper">
             <div id="calculator-root"></div>
+            <button class="calc-fs-btn" onclick="toggleCalcFullscreen()" title="Toggle fullscreen">⛶</button>
         </div>
     </main>
 
     <script>
+        function toggleCalcFullscreen() {
+            const el = document.getElementById('calcWrapper');
+            if (!document.fullscreenElement) el.requestFullscreen().catch(() => {});
+            else document.exitFullscreen();
+        }
         window.onerror = function(msg, src, line, col, err) {
             var d = document.createElement('pre');
             d.style.cssText = 'color:red;padding:1rem;white-space:pre-wrap;background:#111;margin:0;font-size:12px';
