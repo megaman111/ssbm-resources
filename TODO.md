@@ -153,20 +153,41 @@ The goal is to eventually port this into a full-stack Electron app that bundles 
 - [ ] Replay browser with filtering by character, opponent, stage, date
 - [ ] Session stats dashboard (L-cancel %, combo conversion, neutral win rate)
 
-### ISO-Powered Features (Electron only — requires Melee ISO)
-If the user provides a Melee ISO, the Electron app could extract actual game data for features that are impossible with just .slp files:
-- [ ] True hitbox/hurtbox visualization — extract hitbox data from the ISO's character DAT files (like Rwing does) instead of relying on FightCore API approximations
-- [ ] DI line visualization — show actual knockback trajectories with DI influence using the game's real knockback formula + hitbox data
-- [ ] Frame-accurate animation rendering — use the actual character model/animation data from the ISO instead of silhouette SVGs
-- [ ] Stage collision data — extract real stage geometry for accurate kill zone overlays
-- [ ] Move property extraction — pull exact damage, angle, KBG, BKB, hitlag multiplier directly from character files
+### ISO-Powered Hitbox/Hurtbox System (Web + Electron)
 
-### Rwing Data Mining
-- [ ] Investigate what data Rwing extracts and how — it uses the ISO for hitbox rendering, DI lines, and frame data overlays
-- [ ] Research if any of Rwing's data extraction can be replicated (it's closed-source Patreon software, so we'd need to reverse-engineer the approach, not the code)
-- [ ] Look into existing open-source Melee data extraction tools: `melee-dat-editor`, `HSDLib`, `m-ex` — these parse the ISO's HAL DAT format
-- [ ] The `doldecomp/melee` decompilation project may have documented enough of the game's internal structures to build our own hitbox/hurtbox extractor
-- [ ] Consider building a DAT file parser in Rust/WASM that runs in the Electron app — parse character DAT files from the ISO on demand
+Two-phase approach that works for both the website and the future Electron app:
+
+**Phase 1 — Offline extraction (Python script, runs locally with your ISO)**
+- [ ] Build a Python extraction pipeline using `pfirsich/meleeDat2Json` + `meleeFrameDataExtractor` to extract per-character data from the ISO's character DAT files
+- [ ] Extract hitbox data: position, size, bone attachment, damage, angle, KBG, BKB, active frames per subaction/animation frame
+- [ ] Extract bone/skeleton joint tree + bone positions per animation frame (needed to place hitboxes at correct world positions)
+- [ ] Extract hurtbox data: vulnerable regions per frame for defensive visualization
+- [ ] Output as compact JSON files in `hitbox-data/{character}.json` — small enough to commit to the repo
+- [ ] Also extract stage collision geometry for kill zone overlays
+- [ ] One-time extraction per ISO version — the JSON files are the artifact, not the ISO
+- [ ] NOTE: pre-generated hitbox JSON dumps (without bone data) already available at `melee.theshoemaker.de` — evaluate if these are sufficient as a starting point
+
+**Phase 2 — Rendering in replay viewer (works on web AND Electron)**
+- [ ] Load `hitbox-data/{character}.json` in the replay viewer alongside the .slp data
+- [ ] Per frame: look up current action state + animation frame → get active hitboxes → resolve bone positions → render hitbox circles at correct world positions
+- [ ] Render hurtboxes as blue outlines on the character
+- [ ] Color-code hitboxes by ID (like Rwing: red, orange, yellow, green for hitbox 0-3)
+- [ ] Show hitbox properties on hover (damage, angle, KBG, BKB)
+- [ ] Toggle hitbox/hurtbox display independently
+- [ ] Replace the current FightCore-based text overlay with actual visual hitbox rendering
+
+**Electron-only extras (future)**
+- [ ] Re-extract on the fly when user provides an ISO (no pre-built JSON needed)
+- [ ] DI line visualization using real knockback formula + hitbox data
+- [ ] Frame-accurate 3D model rendering using actual character model/animation data from ISO
+
+**Spec status:** Needs its own spec — run the planning agent when ready to implement. The spec should cover the extraction pipeline, JSON data format, bone position resolution algorithm, and renderer integration.
+
+### Rwing Data Mining & Open Source Resources
+- [ ] Investigate what data Rwing extracts — it uses the ISO for hitbox rendering, DI lines, and frame data overlays
+- [ ] Key open-source tools: `pfirsich/meleeDat2Json`, `pfirsich/meleeFrameDataExtractor`, `BroccoliRaab/meleedb`, `HSDLib`, `m-ex`, `doldecomp/melee`
+- [ ] The key missing piece for accurate rendering is bone/skeleton position data per animation frame — this requires parsing the character's animation data from the DAT files, not just the hitbox subaction scripts
+- [ ] `doldecomp/melee` decompilation may have documented enough internal structures to build our own bone position resolver
 
 ---
 
