@@ -40,16 +40,19 @@
         .note-content del { text-decoration: line-through; opacity: 0.6; }
         .note-content .md-h { font-weight: 700; font-size: 1.05em; color: #444; display: block; margin: 0.4em 0 0.1em; }
         /* Chat-style note rendering */
-        .chat-log { display: flex; flex-direction: column; gap: 0.6rem; }
-        .chat-msg { display: flex; flex-direction: column; max-width: 85%; }
+        .chat-log { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem; background: #f8f8fb; border-radius: 12px; border: 1px solid #e0e0e6; }
+        .chat-msg { display: flex; flex-direction: column; max-width: 80%; animation: chatFadeIn 0.15s ease-out; }
         .chat-msg.me { align-self: flex-end; align-items: flex-end; }
         .chat-msg.them { align-self: flex-start; align-items: flex-start; }
-        .chat-speaker { font-size: 0.72rem; font-weight: 700; margin-bottom: 0.2rem; color: #888; }
+        .chat-speaker { font-size: 0.7rem; font-weight: 700; margin-bottom: 0.15rem; padding: 0 0.4rem; letter-spacing: 0.02em; }
         .chat-msg.me .chat-speaker { color: #667eea; }
-        .chat-bubble { padding: 0.5rem 0.85rem; border-radius: 16px; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+        .chat-msg.them .chat-speaker { color: #555; }
+        .chat-bubble { padding: 0.6rem 1rem; border-radius: 18px; font-size: 0.88rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
         .chat-msg.me .chat-bubble { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-bottom-right-radius: 4px; }
-        .chat-msg.them .chat-bubble { background: #e8e8f0; color: #222; border-bottom-left-radius: 4px; }
-        .chat-section-label { font-size: 0.75rem; font-weight: 700; color: #aaa; text-align: center; margin: 0.5rem 0 0.25rem; letter-spacing: 0.05em; text-transform: uppercase; }
+        .chat-msg.me .chat-bubble strong { color: #e0d4ff; }
+        .chat-msg.them .chat-bubble { background: white; color: #222; border: 1px solid #e4e4ea; border-bottom-left-radius: 4px; }
+        .chat-section-label { font-size: 0.72rem; font-weight: 700; color: #aaa; text-align: center; margin: 0.75rem 0 0.25rem; padding: 0.3rem 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; background: #ededf2; border-radius: 12px; display: inline-block; align-self: center; }
+        @keyframes chatFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .note-date { font-size: 0.875rem; color: #999; margin-top: 1rem; }
         .note-replay-badge { display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
         .note-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 0.75rem; }
@@ -2062,9 +2065,9 @@ function renderChatNote(text, force) {
         if (!msgText) continue;
         const isMe = isMeSpeaker(b.speaker);
         const cls = isMe ? 'me' : 'them';
-        const color = isMe ? '' : `style="background:${speakerColors[b.speaker.toLowerCase()]}22;border-left:3px solid ${speakerColors[b.speaker.toLowerCase()]}"`;
+        const color = isMe ? '' : `style="border-left:3px solid ${speakerColors[b.speaker.toLowerCase()]};border-color:${speakerColors[b.speaker.toLowerCase()]}"`;
         html += `<div class="chat-msg ${cls}">
-            <div class="chat-speaker">${b.speaker}</div>
+            <div class="chat-speaker" ${isMe ? '' : `style="color:${speakerColors[b.speaker.toLowerCase()]}"`}>${b.speaker}</div>
             <div class="chat-bubble" ${color}>${renderMarkdown(msgText)}</div>
         </div>`;
     }
