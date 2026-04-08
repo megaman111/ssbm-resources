@@ -137,7 +137,7 @@
         </section>
 
         <section class="search-box" style="position:relative;">
-            <input type="text" id="searchInput" placeholder="Search notes, matchup sections, tags, concepts..." oninput="filterMatchups()" autocomplete="off">
+            <input type="text" id="searchInput" placeholder="Search tags, concepts... try marth: edgeguard or doubles: positioning" oninput="filterMatchups()" autocomplete="off">
             <div id="searchDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:100;max-height:70vh;overflow-y:auto;background:#1a1a2e;border:1px solid #334;border-radius:0 0 12px 12px;box-shadow:0 12px 40px rgba(0,0,0,0.6);"></div>
         </section>
 
@@ -270,35 +270,74 @@
         fetch('matchup-tags.json').then(r => r.ok ? r.json() : {}).then(d => _matchupTags = d).catch(() => {});
         fetch('search-index.json').then(r => r.ok ? r.json() : []).then(d => _searchIndex = d).catch(() => {});
 
-        // Character display names
-        const charNames = {fox:'Fox',falco:'Falco',marth:'Marth',sheik:'Sheik',peach:'Peach',puff:'Jigglypuff',falcon:'Captain Falcon',samus:'Samus',ics:'Ice Climbers',pikachu:'Pikachu',yoshi:'Yoshi',luigi:'Luigi',ganon:'Ganondorf',doc:'Dr. Mario',dk:'Donkey Kong',doubles:'Doubles'};
+        // Character slug → matchup slugs mapping for prefix filtering
+        const charSlugs = {fox:'fox',falco:'falco',marth:'marth',sheik:'sheik',peach:'peach',puff:'puff',jigglypuff:'puff',falcon:'falcon','captain falcon':'falcon',samus:'samus',ics:'ics','ice climbers':'ics',pikachu:'pikachu',yoshi:'yoshi',luigi:'luigi',ganon:'ganon',ganondorf:'ganon',doc:'doc','dr. mario':'doc','dr mario':'doc',dk:'dk','donkey kong':'dk',doubles:'doubles'};
+
+        /**
+         * Parse search prefix. Supports:
+         *   "doubles: concept" → { scope: 'doubles', query: 'concept' }
+         *   "singles: concept" → { scope: 'singles', query: 'concept' }
+         *   "fox: concept"     → { scope: 'fox', query: 'concept' }
+         *   "marth: concept"   → { scope: 'marth', query: 'concept' }
+         *   "concept"          → { scope: null, query: 'concept' }
+         */
+        function parseSearchQuery(raw) {
+            const m = raw.match(/^([a-z .]+?):\s*(.+)$/i);
+            if (!m) return { scope: null, query: raw.trim().toLowerCase() };
+            const prefix = m[1].trim().toLowerCase();
+            const query = m[2].trim().toLowerCase();
+            if (prefix === 'singles') return { scope: 'singles', query };
+            if (prefix === 'doubles') return { scope: 'doubles', query };
+            const slug = charSlugs[prefix];
+            if (slug) return { scope: slug, query };
+            // Unknown prefix — treat whole thing as query
+            return { scope: null, query: raw.trim().toLowerCase() };
+        }
 
         function filterMatchups() {
-            const filter = document.getElementById('searchInput').value.toLowerCase().trim();
+            const raw = document.getElementById('searchInput').value.trim();
             const dropdown = document.getElementById('searchDropdown');
             const grid = document.getElementById('matchupGrid');
             const cards = grid.getElementsByClassName('matchup-card');
 
-            // Always show all matchup cards
             for (let i = 0; i < cards.length; i++) cards[i].style.display = '';
 
-            if (!filter || filter.length < 2) {
+            if (!raw || raw.length < 2) {
                 dropdown.style.display = 'none';
                 dropdown.innerHTML = '';
                 return;
             }
+
+            const { scope, query } = parseSearchQuery(raw);
+            if (!query || query.length < 2) { dropdown.style.display = 'none'; return; }
+
+            // Scope filter helpers
+            const matchesScope = (matchupSlug) => {
+                if (!scope) return true;
+                if (scope === 'singles') return matchupSlug !== 'doubles';
+                if (scope === 'doubles') return matchupSlug === 'doubles';
+                return matchupSlug === scope;
+            };
+            const noteMatchesScope = (note) => {
+                if (!scope) return true;
+                if (scope === 'singles') return true; // all notes are singles-relevant
+                if (scope === 'doubles') return note.character === 'Fox' && (note.tags || []).some(t => t.includes('doubles') || t.includes('teams'));
+                const charSlug = charSlugs[note.character.toLowerCase()];
+                return charSlug === scope;
+            };
 
             let html = '';
             let count = 0;
 
             // Search player notes
             const noteMatches = _playerNotes.filter(n => {
+                if (!noteMatchesScope(n)) return false;
                 const tags = (n.tags || []).join(' ');
                 const haystack = (n.playerName + ' ' + n.character + ' ' + tags).toLowerCase();
-                return haystack.includes(filter) || (n.tags || []).some(t => t.includes(filter));
+                return haystack.includes(query) || (n.tags || []).some(t => t.includes(query));
             }).slice(0, 5);
             if (noteMatches.length) {
-                html += '<div style="padding:0.4rem 0.8rem;font-size:0.7rem;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #222;">Player Notes</div>';
+                html += '<div style="padding:0.4rem 0.8rem;font-size:0.7rem;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #222;">Player Notes' + (scope ? ' (' + scope + ')' : '') + '</div>';
                 noteMatches.forEach(n => {
                     const tags = (n.tags || []).map(t => '<span style="background:#667eea33;color:#667eea;font-size:0.65rem;padding:0.1rem 0.35rem;border-radius:8px;margin-left:0.3rem;">#' + t + '</span>').join('');
                     html += '<a href="player-notes.html?note=' + n.id + '" style="display:block;padding:0.6rem 0.8rem;text-decoration:none;border-bottom:1px solid #1e1e3a;transition:background 0.1s;" onmouseover="this.style.background=\'#222240\'" onmouseout="this.style.background=\'none\'">' +
@@ -308,18 +347,21 @@
                 });
             }
 
-            // Search matchup section tags
+            // Search matchup section tags (scoped)
             const tagMatches = [];
             for (const [key, tags] of Object.entries(_matchupTags)) {
-                if (tags.some(t => t.includes(filter)) || key.toLowerCase().includes(filter)) {
-                    const parts = key.split('/');
-                    tagMatches.push({ matchup: parts[0], section: parts.slice(1).join('/').replace(/-/g, ' '), tags, key });
+                const parts = key.split('/');
+                const matchup = parts[0];
+                if (!matchesScope(matchup)) continue;
+                if (tags.some(t => t.includes(query)) || key.toLowerCase().includes(query)) {
+                    tagMatches.push({ matchup, section: parts.slice(1).join('/').replace(/-/g, ' '), tags, key });
                 }
             }
 
-            // Search full content index
+            // Search full content index (scoped)
             const contentMatches = _searchIndex.filter(s => {
-                return s.text.includes(filter) || s.h3.toLowerCase().includes(filter) || s.h2.toLowerCase().includes(filter);
+                if (!matchesScope(s.matchup)) return false;
+                return s.text.includes(query) || s.h3.toLowerCase().includes(query) || s.h2.toLowerCase().includes(query);
             }).slice(0, 12);
 
             // Merge tag matches into content matches (tag matches first, deduplicated)
@@ -334,7 +376,7 @@
             });
 
             if (allSections.length) {
-                html += '<div style="padding:0.4rem 0.8rem;font-size:0.7rem;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #222;">Matchup Sections</div>';
+                html += '<div style="padding:0.4rem 0.8rem;font-size:0.7rem;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #222;">Matchup Sections' + (scope ? ' (' + scope + ')' : '') + '</div>';
                 allSections.slice(0, 12).forEach(s => {
                     const tags = (s.matchedTags || []).map(t => '<span style="background:#f59e0b33;color:#f59e0b;font-size:0.65rem;padding:0.1rem 0.35rem;border-radius:8px;margin-left:0.3rem;">#' + t + '</span>').join('');
                     const name = charNames[s.matchup] || s.matchup;
@@ -350,7 +392,7 @@
                 dropdown.innerHTML = html;
                 dropdown.style.display = 'block';
             } else {
-                dropdown.innerHTML = '<div style="padding:1rem;text-align:center;color:#666;">No results for "' + filter + '"</div>';
+                dropdown.innerHTML = '<div style="padding:1rem;text-align:center;color:#666;">No results for "' + (scope ? scope + ': ' : '') + query + '"</div>';
                 dropdown.style.display = 'block';
             }
         }
