@@ -6156,6 +6156,8 @@ buildReplayBrowser();
 updateGhUI();
 
 initSlpKeyCache().then(() => loadNotesFromFile().then(() => {
+    // Rebuild replay browser now that notes (and their VODs) are loaded
+    buildReplayBrowser();
     // Handle ?note=ID (stable) or ?note=INDEX (legacy) share link
     const _noteParam = _urlParams.get('note');
     if (_noteParam !== null) {
