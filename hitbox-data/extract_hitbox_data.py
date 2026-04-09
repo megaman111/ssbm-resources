@@ -2021,6 +2021,17 @@ def compute_animated_bone_positions(bones, anim_tracks, num_frames, referenced_b
             else:
                 world_mat = _mat4_multiply(world_matrices[parent_id], local_mat)
 
+            # Remove root bone translation to avoid double-counting
+            # with the .slp character position. The .slp positionX/positionY
+            # already includes the character's world position, so the animation's
+            # root bone translation would be applied twice otherwise.
+            # This matches Rwing's remove_root_translation() approach.
+            # Zero out Y (index 7) and Z (index 11) translation in the world matrix.
+            # Rwing zeros bone 1; we also zero bone 0 for safety.
+            if bid <= 1:
+                world_mat[7] = 0.0   # Y translation (vertical)
+                world_mat[11] = 0.0  # Z translation (forward/depth → 2D X)
+
             world_matrices[bid] = world_mat
 
         # Extract 2D positions and bone direction for referenced bones.
