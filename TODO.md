@@ -145,7 +145,13 @@ Implementation approach:
 
 ---
 
-## Long-Term Vision: Electron Desktop App
+## Long-Term Vision: Full Desktop App (Phase 4)
+
+### Development Phases
+- **Phase 1** (done): Python extraction pipeline — hitbox/bone data from ISO to JSON
+- **Phase 2** (done): Browser-side 2D rendering — hitbox circles, trails, tooltips, FightCore integration
+- **Phase 3** (in progress): 3D model rendering — dat_extractor → glTF → Three.js in the web viewer
+- **Phase 4** (future): Full Electron desktop app — everything from the website plus native features
 
 The goal is to eventually port this into a full-stack Electron app that bundles all the tools and features from the web version into a native desktop experience. Key advantages over the current GitHub Pages setup:
 
