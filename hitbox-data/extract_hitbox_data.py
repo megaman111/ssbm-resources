@@ -2026,9 +2026,10 @@ def compute_animated_bone_positions(bones, anim_tracks, num_frames, referenced_b
             # already includes the character's world position, so the animation's
             # root bone translation would be applied twice otherwise.
             # This matches Rwing's remove_root_translation() approach.
+            # In our skeleton, bone 2 is the "TransN" bone that carries the
+            # root Y/Z translation (bones 0-1 are at origin).
             # Zero out Y (index 7) and Z (index 11) translation in the world matrix.
-            # Rwing zeros bone 1; we also zero bone 0 for safety.
-            if bid <= 1:
+            if bid == 2:
                 world_mat[7] = 0.0   # Y translation (vertical)
                 world_mat[11] = 0.0  # Z translation (forward/depth → 2D X)
 
