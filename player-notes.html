@@ -475,7 +475,8 @@
                             <button class="ctrl-btn" id="hitboxDataBtn" onclick="toggleHitboxData()" title="Toggle hitbox data (H key)">🎯</button>
                             <button class="ctrl-btn" id="hitboxToggleBtn" onclick="toggleHitboxes()" title="Toggle hitbox circles (Shift+H)">💥</button>
                             <button class="ctrl-btn" id="hurtboxToggleBtn" onclick="toggleHurtboxes()" title="Toggle hurtbox outlines (B key)">🛡️</button>
-                            <button class="ctrl-btn" id="cameraBtn" onclick="toggleCamera()" title="Toggle dynamic camera (C key)">📷</button>
+                            <button class="ctrl-btn active" id="calcAutoPopupBtn" onclick="toggleCalcAutoPopup()" title="Auto-open calculator on hit (C key)">🧮</button>
+                            <button class="ctrl-btn" id="cameraBtn" onclick="toggleCamera()" title="Toggle dynamic camera (Shift+C)">📷</button>
                         </div>
                         <div class="replay-timeline-wrap">
                             <input type="range" class="replay-timeline" id="replayTimeline" min="0" value="0" oninput="seekToFrame(parseInt(this.value))">
@@ -2961,6 +2962,13 @@ window.toggleHurtboxes = () => {
     renderFrame(currentFrame);
 };
 
+window.toggleCalcAutoPopup = () => {
+    calcAutoPopup = !calcAutoPopup;
+    const btn = document.getElementById('calcAutoPopupBtn');
+    if (btn) btn.classList.toggle('active', calcAutoPopup);
+    if (!calcAutoPopup && calcOverlayOpen) toggleCalcOverlay(false);
+};
+
 async function buildCCAsdiPanel() {
     if (!replaySettings) return;
     const panel = document.getElementById('ccAsdiPanel');
@@ -3107,6 +3115,7 @@ const STAGE_ID_TO_KEY = {
 let calcInstance = null;
 let lastCalcHitFrame = -1;
 let calcOverlayOpen = false;
+let calcAutoPopup = true;  // Auto-open calculator on hit detection (toggle with 'c' key)
 
 window.toggleCalcOverlay = (forceState) => {
     const overlay = document.getElementById('calcOverlay');
@@ -3195,6 +3204,7 @@ let _calcHitChoiceIdx = 0;
 
 async function updateCalcFromFrame(frameIdx) {
     if (!replaySettings) return;
+    if (!calcAutoPopup && !calcOverlayOpen) return;  // Skip hit detection when auto-popup is off and calc is closed
     // Search backwards up to 60 frames (1 sec), then forward up to 10
     let allHits = [];
     let hitFrame = frameIdx;
@@ -3229,7 +3239,7 @@ async function applyCalcHit(hitFrame, hit, isTrade) {
     if (!actionName && CHAR_SPECIALS[hit.attackerCharId]) {
         actionName = CHAR_SPECIALS[hit.attackerCharId][hit.actionState] || null;
     }
-    if (!calcOverlayOpen) toggleCalcOverlay(true);
+    if (!calcOverlayOpen && calcAutoPopup) toggleCalcOverlay(true);
     if (!calcInstance) initCalcPanel();
     if (!calcInstance) return;
     const stageKey = STAGE_ID_TO_KEY[replaySettings.stageId] || 'final_destination';
@@ -4660,7 +4670,8 @@ document.addEventListener('keydown', e => {
     }
     else if (e.key === '=' || e.key === '+') zoomIn();
     else if (e.key === '-' || e.key === '_') zoomOut();
-    else if (e.key === 'c' || e.key === 'C') toggleCamera();
+    else if (e.key === 'c') { toggleCalcAutoPopup(); }
+    else if (e.key === 'C') toggleCamera();
     else if (e.key === '?') toggleShortcuts();
     // Number keys: jump to percentage of replay
     else if (e.key >= '0' && e.key <= '9') {
@@ -4695,7 +4706,8 @@ const SHORTCUT_LIST = [
     ['H', 'Toggle hitbox data overlay'],
     ['Shift+H', 'Toggle hitbox circles'],
     ['B', 'Toggle hurtbox outlines'],
-    ['C', 'Toggle dynamic camera'],
+    ['C', 'Toggle calc auto-popup on hit'],
+    ['Shift+C', 'Toggle dynamic camera'],
     ['?', 'Show this shortcuts panel'],
     ['Esc', 'Close shortcuts / Close viewer'],
 ];
