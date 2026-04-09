@@ -4143,10 +4143,6 @@ function renderFrame(frameIdx) {
             // Apply rotation around approximate center (0, 8 game units above feet)
             if (rotation !== 0) {
                 const rotRad = -rotation * Math.PI / 180; // negate: game Y-up → canvas Y-down
-                // Rotate around character torso (~8 game units above feet)
-                // After translate(-500,-369), the SVG feet are at the canvas origin.
-                // 8 game units up = 8/0.1 = 80 SVG units up from feet = SVG Y 369-80 = 289
-                // In canvas space relative to origin: (289-369)*cs = -80*cs = -8*scale
                 const cy8 = -8 * scale; // 8 game units up in canvas space (torso height)
                 ctx.translate(0, cy8);
                 ctx.rotate(rotRad);
@@ -4154,9 +4150,7 @@ function renderFrame(frameIdx) {
             }
             const cs = (CHAR_SCALE_MAP[charId] || 1.0) * 0.1 * scale;
             ctx.scale(renderFacing * cs, cs);
-            // SVG paths are in ~1000x1000 space. Character feet are at Y≈369
-            // (measured median across all Fox animations). Centering X at 500.
-            ctx.translate(-500, -369);
+            ctx.translate(-500, -500);
             const p2d = new Path2D(animFrame.path);
             ctx.fillStyle = color;
             ctx.globalAlpha = 0.92;
