@@ -4,3 +4,16 @@ reference/
 # Dependencies
 node_modules/
 package-lock.json
+
+# Python
+__pycache__/
+
+# Extraction pipeline temp files (extracted DAT files from ISO)
+hitbox-data/.*.dat
+hitbox-data/.*_raw.json
+
+# Never commit ISOs
+*.iso
+
+# Rust build artifacts
+model-extractor/target/
