@@ -2023,7 +2023,7 @@ def compute_animated_bone_positions(bones, anim_tracks, num_frames, referenced_b
 
             world_matrices[bid] = world_mat
 
-        # Extract 2D positions for referenced bones
+        # Extract 2D positions and bone Z-axis direction for referenced bones
         frame_data = {}
         any_changed = False
 
@@ -2032,18 +2032,28 @@ def compute_animated_bone_positions(bones, anim_tracks, num_frames, referenced_b
                 continue
             wm = world_matrices[bid]
             # 2D projection: Z -> X, Y -> Y (same as rest-pose extraction)
-            # wm[3] = X translation (lateral, collapsed in 2D)
             y = round(wm[7], 4)    # translation Y component
             z = round(wm[11], 4)   # translation Z component
 
             pos_x = z  # Z -> restX (forward axis)
             pos_y = y  # Y -> restY (vertical axis)
 
+            # Extract bone's local Z-axis direction projected to 2D.
+            # The Z column of the rotation matrix (indices 2,6,10) gives
+            # the bone's forward direction in world space.
+            # Project: zDir_2d_x = wm[10] (world Z component of bone Z axis)
+            #          zDir_2d_y = wm[6]  (world Y component of bone Z axis)
+            zdir_x = round(wm[10], 4)  # Z component of bone's Z axis
+            zdir_y = round(wm[6], 4)   # Y component of bone's Z axis
+
             prev = prev_positions.get(bid)
             if prev is None or abs(pos_x - prev[0]) > 0.1 or abs(pos_y - prev[1]) > 0.1:
                 any_changed = True
 
-            frame_data[str(bid)] = [round(pos_x, 4), round(pos_y, 4)]
+            # Store [x, y, zDirX, zDirY] — the bone's 2D position and
+            # its local Z-axis direction for rotating hitbox offsets
+            frame_data[str(bid)] = [round(pos_x, 4), round(pos_y, 4),
+                                    zdir_x, zdir_y]
 
         # Always store frame 0; after that, only store if positions changed
         if frame == 0 or any_changed:

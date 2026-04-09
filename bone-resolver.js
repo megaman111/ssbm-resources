@@ -54,9 +54,12 @@ function resolve(charData, subactionId, animFrame) {
     for (const boneIdStr of allBones) {
         const a = posA[boneIdStr] ?? posB[boneIdStr];
         const b = posB[boneIdStr] ?? posA[boneIdStr];
+        const hasDir = a.length >= 4 && b.length >= 4;
         result.set(Number(boneIdStr), {
             x: a[0] + (b[0] - a[0]) * t,
             y: a[1] + (b[1] - a[1]) * t,
+            zDirX: hasDir ? a[2] + (b[2] - a[2]) * t : 1,
+            zDirY: hasDir ? a[3] + (b[3] - a[3]) * t : 0,
         });
     }
 
@@ -74,7 +77,7 @@ function restPose(charData) {
     const result = new Map();
     if (!charData.bones) return result;
     for (const bone of charData.bones) {
-        result.set(bone.id, { x: bone.restX, y: bone.restY });
+        result.set(bone.id, { x: bone.restX, y: bone.restY, zDirX: 1, zDirY: 0 });
     }
     return result;
 }
@@ -92,10 +95,16 @@ function restPose(charData) {
  * @returns {{x: number, y: number}} Projected 2D position in character-local game units
  */
 function transformPoint(bonePositions, boneId, offsetX, offsetY, offsetZ) {
-    const bone = bonePositions.get(boneId) ?? { x: 0, y: 0 };
+    const bone = bonePositions.get(boneId) ?? { x: 0, y: 0, zDirX: 1, zDirY: 0 };
+    // The bone's local Z-axis direction (projected to 2D) tells us which
+    // way "forward along the bone" points. We rotate the hitbox Z offset
+    // by this direction, and the Y offset perpendicular to it.
+    const zdx = bone.zDirX ?? 1;
+    const zdy = bone.zDirY ?? 0;
+    // Perpendicular to Z-axis in 2D (rotated 90° CCW): (-zdy, zdx)
     return {
-        x: bone.x + offsetZ,
-        y: bone.y + offsetY,
+        x: bone.x + offsetZ * zdx + offsetY * (-zdy),
+        y: bone.y + offsetZ * zdy + offsetY * zdx,
     };
 }
 

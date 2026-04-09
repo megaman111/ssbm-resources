@@ -36,9 +36,13 @@ const HURTBOX_INVINCIBLE_COLOR = 'rgba(0,100,255,0.6)';
  * @returns {{worldX:number, worldY:number, radius:number}}
  */
 function resolveHitboxWorld(hitbox, bonePositions, charX, charY, facing, scale) {
-    const bone = bonePositions.get(hitbox.bone) ?? { x: 0, y: 0 };
-    const localX = (bone.x + hitbox.z) * scale;
-    const localY = (bone.y + hitbox.y) * scale;
+    const bone = bonePositions.get(hitbox.bone) ?? { x: 0, y: 0, zDirX: 1, zDirY: 0 };
+    // Use bone's Z-axis direction to rotate the hitbox offset
+    const zdx = bone.zDirX ?? 1;
+    const zdy = bone.zDirY ?? 0;
+    // Z offset goes along bone's forward axis, Y offset perpendicular
+    const localX = (bone.x + hitbox.z * zdx + hitbox.y * (-zdy)) * scale;
+    const localY = (bone.y + hitbox.z * zdy + hitbox.y * zdx) * scale;
     const worldX = charX + localX * facing;
     const worldY = charY + localY;
     const radius = hitbox.size * scale;
@@ -133,9 +137,11 @@ function renderHurtboxes(ctx, charData, bonePositions, charX, charY, facing,
     ctx.lineWidth = 1.5;
 
     for (const hurtbox of charData.hurtboxes) {
-        const bone = bonePositions.get(hurtbox.bone) ?? { x: 0, y: 0 };
-        const localX = (bone.x + hurtbox.z) * scale;
-        const localY = (bone.y + hurtbox.y) * scale;
+        const bone = bonePositions.get(hurtbox.bone) ?? { x: 0, y: 0, zDirX: 1, zDirY: 0 };
+        const zdx = bone.zDirX ?? 1;
+        const zdy = bone.zDirY ?? 0;
+        const localX = (bone.x + hurtbox.z * zdx + hurtbox.y * (-zdy)) * scale;
+        const localY = (bone.y + hurtbox.z * zdy + hurtbox.y * zdx) * scale;
         const worldX = charX + localX * facing;
         const worldY = charY + localY;
         const radius = hurtbox.sizeX * scale;
