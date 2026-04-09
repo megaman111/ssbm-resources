@@ -14,6 +14,7 @@ Usage:
 import argparse
 import json
 import logging
+import math as _math
 import os
 import struct
 import sys
@@ -953,7 +954,7 @@ def extract_bone_tree(dat_file_data):
         world_mat = _mat4_multiply(parent_matrix, local_mat)
 
         # Extract world position from the matrix (translation column)
-        world_x = world_mat[3]   # column 3, row 0
+        # world_mat[3] = X (lateral, collapsed in 2D)
         world_y = world_mat[7]   # column 3, row 1
         world_z = world_mat[11]  # column 3, row 2
 
@@ -963,6 +964,16 @@ def extract_bone_tree(dat_file_data):
             "parent": parent_id,
             "restX": round(world_z, 4),
             "restY": round(world_y, 4),
+            # Store local transform components for animation defaults
+            "_local_rx": rx,
+            "_local_ry": ry,
+            "_local_rz": rz,
+            "_local_sx": sx,
+            "_local_sy": sy,
+            "_local_sz": sz,
+            "_local_tx": tx,
+            "_local_ty": ty,
+            "_local_tz": tz,
         })
 
         # Push sibling first, then child, so child is
@@ -1528,20 +1539,519 @@ def extract_hurtboxes(dat_file_data, bones=None):
 # ---------------------------------------------------------------------------
 # Animation extraction — per-frame bone world transforms
 # ---------------------------------------------------------------------------
-# meleeDat2Json's FigaTree parser only exposes the animation header
-# (numFrames, boneTableOffset, animDataOffset) — it does NOT parse
-# per-bone keyframe tracks. Full FIGATREE binary parsing is complex
-# and out of scope for this task.
+# FIGATREE animation binary format parsing.
 #
-# Strategy: use rest-pose bone positions as the single keyframe
-# (frame 0) for each subaction. This gives the browser-side renderer
-# valid boneFrames data to work with. Animation accuracy can be
-# improved later by implementing full FIGATREE binary parsing.
+# Each subaction's animation is stored as a separate DAT file within the
+# AJ (animation joint) file. The DAT contains a FigaTree root node with:
+#   - A bone table: one byte per skeleton bone, giving the number of
+#     animation tracks for that bone (terminated by 0xFF).
+#   - Track descriptors: 0x0C bytes each, specifying track type
+#     (rotation/translation/scale axis), value/tangent encoding format,
+#     and a pointer to compressed keyframe data.
+#   - Compressed keyframe buffers: packed integers encoding interpolation
+#     type, frame timing, and values.
 #
-# When animation data IS available from meleeDat2Json (the AJ file
-# was provided), we extract numFrames from the FigaTree header to
-# set accurate totalFrames per subaction.
+# We parse this binary data to extract per-bone keyframe tracks, then
+# compute world-space bone positions for each animation frame using
+# hierarchical transform composition (same math as rest-pose, but with
+# animated rotation/translation/scale values).
 # ---------------------------------------------------------------------------
+
+
+# JointTrackType enum values
+_TRACK_ROTX = 1
+_TRACK_ROTY = 2
+_TRACK_ROTZ = 3
+_TRACK_TRAX = 5
+_TRACK_TRAY = 6
+_TRACK_TRAZ = 7
+_TRACK_SCAX = 8
+_TRACK_SCAY = 9
+_TRACK_SCAZ = 10
+
+# GXAnimDataFormat — upper 3 bits of valueFlag/tanFlag
+_FMT_FLOAT = 0x00
+_FMT_S16 = 0x20
+_FMT_U16 = 0x40
+_FMT_S8 = 0x60
+_FMT_U8 = 0x80
+
+# GXInterpolationType — lower 4 bits of packed type/count byte
+_INTERP_NONE = 0
+_INTERP_CON = 1
+_INTERP_LIN = 2
+_INTERP_SPL0 = 3
+_INTERP_SPL = 4
+_INTERP_SLP = 5
+_INTERP_KEY = 6
+
+
+def _read_packed_int(data, offset):
+    """Read a variable-length packed integer from the keyframe buffer.
+
+    Encoding: each byte contributes 7 bits of value. Bit 7 (0x80) is
+    a continuation flag — if set, read the next byte. Bytes are
+    accumulated in little-endian order (first byte = lowest bits).
+
+    Args:
+        data: bytes buffer.
+        offset: current read position.
+
+    Returns:
+        (value, new_offset) tuple.
+    """
+    value = 0
+    shift = 0
+    while offset < len(data):
+        byte = data[offset]
+        offset += 1
+        value |= (byte & 0x7F) << shift
+        shift += 7
+        if not (byte & 0x80):
+            break
+    return value, offset
+
+
+def _parse_track_value(data, offset, fmt_type, scale):
+    """Parse a single value from the keyframe buffer.
+
+    The format is determined by the upper 3 bits of the flag byte.
+    All formats are read in little-endian byte order, matching
+    HSDLib's behavior (BigEndian=false in ParseFloat).
+
+    Args:
+        data: bytes buffer.
+        offset: current read position.
+        fmt_type: format type (upper 3 bits of flag, masked to 0xE0).
+        scale: divisor for integer formats (2^(flag & 0x1F)).
+
+    Returns:
+        (float_value, new_offset) tuple.
+    """
+    if fmt_type == _FMT_FLOAT:
+        if offset + 4 > len(data):
+            return 0.0, offset
+        val = struct.unpack_from('<f', data, offset)[0]
+        return val, offset + 4
+    elif fmt_type == _FMT_S16:
+        if offset + 2 > len(data):
+            return 0.0, offset
+        val = struct.unpack_from('<h', data, offset)[0]
+        return val / scale, offset + 2
+    elif fmt_type == _FMT_U16:
+        if offset + 2 > len(data):
+            return 0.0, offset
+        val = struct.unpack_from('<H', data, offset)[0]
+        return val / scale, offset + 2
+    elif fmt_type == _FMT_S8:
+        if offset + 1 > len(data):
+            return 0.0, offset
+        val = struct.unpack_from('<b', data, offset)[0]
+        return val / scale, offset + 1
+    elif fmt_type == _FMT_U8:
+        if offset + 1 > len(data):
+            return 0.0, offset
+        val = data[offset]
+        return val / scale, offset + 1
+    else:
+        # Unknown format — skip
+        return 0.0, offset
+
+
+def _decode_keyframe_buffer(data, offset, length, value_flag, tan_flag):
+    """Decode a compressed keyframe buffer into a list of (frame, value) pairs.
+
+    The buffer contains packed entries. Each entry starts with a packed
+    integer whose lower 4 bits encode the interpolation type and upper
+    bits encode (count - 1). Depending on the interpolation type,
+    value/tangent/time data follows.
+
+    Args:
+        data: The full data block bytes.
+        offset: Start offset of this track's keyframe buffer.
+        length: Length of the buffer in bytes (used as safety bound).
+        value_flag: The valueFlag byte from the track descriptor.
+        tan_flag: The tanFlag byte from the track descriptor.
+
+    Returns:
+        List of (frame, value) tuples, sorted by frame.
+    """
+    val_fmt = value_flag & 0xE0
+    val_scale = 1 << (value_flag & 0x1F)
+    tan_fmt = tan_flag & 0xE0
+    tan_scale = 1 << (tan_flag & 0x1F)
+
+    end = offset + length if length > 0 else len(data)
+    keyframes = []
+    current_frame = 0.0
+    pos = offset
+
+    while pos < end:
+        # Read packed type/count integer
+        packed, pos = _read_packed_int(data, pos)
+        interp_type = packed & 0x0F
+        count = (packed >> 4) + 1
+
+        if interp_type == _INTERP_NONE:
+            break
+
+        for _ in range(count):
+            if pos >= end:
+                break
+
+            if interp_type == _INTERP_CON:
+                # Constant: read value, then time
+                value, pos = _parse_track_value(data, pos, val_fmt, val_scale)
+                duration, pos = _read_packed_int(data, pos)
+                keyframes.append((current_frame, value))
+                current_frame += duration
+
+            elif interp_type == _INTERP_LIN:
+                # Linear: read value, then time
+                value, pos = _parse_track_value(data, pos, val_fmt, val_scale)
+                duration, pos = _read_packed_int(data, pos)
+                keyframes.append((current_frame, value))
+                current_frame += duration
+
+            elif interp_type == _INTERP_SPL0:
+                # Spline (no tangent): read value, then time
+                value, pos = _parse_track_value(data, pos, val_fmt, val_scale)
+                duration, pos = _read_packed_int(data, pos)
+                keyframes.append((current_frame, value))
+                current_frame += duration
+
+            elif interp_type == _INTERP_SPL:
+                # Spline with tangent: read value, tangent, then time
+                value, pos = _parse_track_value(data, pos, val_fmt, val_scale)
+                _tan, pos = _parse_track_value(data, pos, tan_fmt, tan_scale)
+                duration, pos = _read_packed_int(data, pos)
+                keyframes.append((current_frame, value))
+                current_frame += duration
+
+            elif interp_type == _INTERP_SLP:
+                # Slope only: read tangent (no value, no time advance)
+                _tan, pos = _parse_track_value(data, pos, tan_fmt, tan_scale)
+
+            elif interp_type == _INTERP_KEY:
+                # Single key: read value (no time advance)
+                value, pos = _parse_track_value(data, pos, val_fmt, val_scale)
+                keyframes.append((current_frame, value))
+
+            else:
+                # Unknown interpolation type — stop parsing
+                break
+
+    return keyframes
+
+
+def parse_figatree_animation(anim_dat_bytes):
+    """Parse a FIGATREE animation DAT file into per-bone keyframe tracks.
+
+    Each subaction's animation is a complete DAT file extracted from the
+    AJ file. This function parses the DAT header, finds the FigaTree
+    root node, reads the bone table and track descriptors, and decodes
+    each track's compressed keyframe buffer.
+
+    Args:
+        anim_dat_bytes: Raw bytes of the animation DAT file.
+
+    Returns:
+        Tuple of (num_frames, tracks_dict) where:
+        - num_frames: float, total animation frames from FigaTree header
+        - tracks_dict: dict mapping bone_index (int) to a dict of
+          track_type (int) -> [(frame, value), ...] keyframe lists.
+        Returns (0, {}) on parse failure.
+    """
+    if not anim_dat_bytes or len(anim_dat_bytes) < 0x20:
+        return 0, {}
+
+    try:
+        # Parse DAT file header
+        values = struct.unpack_from(">8I", anim_dat_bytes, 0)
+        data_block_size = values[1]
+        reloc_count = values[2]
+        root_count = values[3]
+        root_count2 = values[4]
+
+        data_offset = 0x20
+        if data_offset + data_block_size > len(anim_dat_bytes):
+            return 0, {}
+        data_block = anim_dat_bytes[data_offset:data_offset + data_block_size]
+
+        # Find the FigaTree root node
+        reloc_table_offset = data_offset + data_block_size
+        root_nodes_offset = reloc_table_offset + reloc_count * 4
+        total_roots = root_count + root_count2
+        string_table_offset = root_nodes_offset + total_roots * 8
+
+        figatree_root_off = None
+        for i in range(total_roots):
+            off = root_nodes_offset + i * 8
+            if off + 8 > len(anim_dat_bytes):
+                break
+            root_off, str_off = struct.unpack_from(">2I", anim_dat_bytes, off)
+
+            name_start = string_table_offset + str_off
+            if name_start >= len(anim_dat_bytes):
+                continue
+            try:
+                name_end = anim_dat_bytes.index(b"\x00", name_start)
+                name = anim_dat_bytes[name_start:name_end].decode("ascii", errors="replace")
+            except ValueError:
+                continue
+
+            if name.endswith("_figatree"):
+                figatree_root_off = root_off
+                break
+
+        if figatree_root_off is None:
+            # Try the first root node as fallback
+            if total_roots > 0:
+                off = root_nodes_offset
+                if off + 8 <= len(anim_dat_bytes):
+                    figatree_root_off = struct.unpack_from(">I", anim_dat_bytes, off)[0]
+
+        if figatree_root_off is None:
+            return 0, {}
+
+        # Parse FigaTree header (0x14 bytes at root offset in data block)
+        if figatree_root_off + 0x14 > len(data_block):
+            return 0, {}
+
+        ft_values = struct.unpack_from(">2If2I", data_block, figatree_root_off)
+        # ft_values[0] = type (usually 1), ft_values[1] = unknown (usually 0)
+        num_frames = ft_values[2]
+        bone_table_offset = ft_values[3]
+        anim_data_offset = ft_values[4]
+
+        if num_frames <= 0:
+            return 0, {}
+
+        # Read bone table (array of bytes, one per bone, terminated by 0xFF)
+        bone_track_counts = []
+        pos = bone_table_offset
+        while pos < len(data_block):
+            byte = data_block[pos]
+            if byte == 0xFF:
+                break
+            bone_track_counts.append(byte)
+            pos += 1
+
+        if not bone_track_counts:
+            return num_frames, {}
+
+        # Read track descriptors (0x0C bytes each)
+        tracks_dict = {}
+        track_idx = 0
+
+        for bone_idx, track_count in enumerate(bone_track_counts):
+            if track_count == 0:
+                continue
+
+            bone_tracks = {}
+            for t in range(track_count):
+                desc_offset = anim_data_offset + track_idx * 0x0C
+                if desc_offset + 0x0C > len(data_block):
+                    track_idx += 1
+                    continue
+
+                track_type = data_block[desc_offset + 4]
+                value_flag = data_block[desc_offset + 5]
+                tan_flag = data_block[desc_offset + 6]
+                # Byte 0x01 contains the buffer data length
+                buf_data_len = data_block[desc_offset + 1]
+                # 0x08-0x0B: buffer pointer (relocated, data-block-relative)
+                buf_offset = struct.unpack_from(">I", data_block, desc_offset + 8)[0]
+                buf_length = buf_data_len if buf_data_len > 0 else 0
+
+                # Decode keyframes from the buffer
+                if buf_offset < len(data_block):
+                    keyframes = _decode_keyframe_buffer(
+                        data_block, buf_offset, buf_length,
+                        value_flag, tan_flag,
+                    )
+                    if keyframes:
+                        bone_tracks[track_type] = keyframes
+
+                track_idx += 1
+
+            if bone_tracks:
+                tracks_dict[bone_idx] = bone_tracks
+
+        return num_frames, tracks_dict
+
+    except Exception as e:
+        logger.debug("FIGATREE parse error: %s", e)
+        return 0, {}
+
+
+def _interpolate_track(keyframes, frame):
+    """Linearly interpolate a track value at a given frame.
+
+    Finds the two surrounding keyframes and interpolates between them.
+    If the frame is before the first keyframe, returns the first value.
+    If after the last, returns the last value.
+
+    Args:
+        keyframes: List of (frame, value) tuples, sorted by frame.
+        frame: The target frame number (float).
+
+    Returns:
+        Interpolated float value.
+    """
+    if not keyframes:
+        return 0.0
+    if len(keyframes) == 1:
+        return keyframes[0][1]
+
+    # Before first keyframe
+    if frame <= keyframes[0][0]:
+        return keyframes[0][1]
+    # After last keyframe
+    if frame >= keyframes[-1][0]:
+        return keyframes[-1][1]
+
+    # Find surrounding keyframes via linear scan (tracks are typically short)
+    for i in range(len(keyframes) - 1):
+        kf_a = keyframes[i]
+        kf_b = keyframes[i + 1]
+        if kf_a[0] <= frame <= kf_b[0]:
+            span = kf_b[0] - kf_a[0]
+            if span <= 0:
+                return kf_a[1]
+            t = (frame - kf_a[0]) / span
+            return kf_a[1] + (kf_b[1] - kf_a[1]) * t
+
+    return keyframes[-1][1]
+
+
+def compute_animated_bone_positions(bones, anim_tracks, num_frames, referenced_bones):
+    """Compute per-frame world-space bone positions using animation tracks.
+
+    For each integer frame in [0, num_frames), interpolates animation
+    track values (rotation, translation, scale) for each bone, builds
+    the local transform matrix, composes with the parent's world matrix,
+    and projects to 2D (Z→X, Y→Y).
+
+    Only stores frames where at least one referenced bone's position
+    changes by more than 0.01 game units from the previous stored frame.
+
+    Args:
+        bones: List of bone dicts from extract_bone_tree. Each must have
+               'id', 'parent', and the original JOBJ rest-pose data is
+               used as defaults for non-animated channels.
+        anim_tracks: Dict from parse_figatree_animation:
+                     {bone_index: {track_type: [(frame, value), ...]}}.
+        num_frames: Total number of animation frames.
+        referenced_bones: Set of bone IDs to include in output.
+
+    Returns:
+        Dict mapping frame_str -> {bone_id_str: [x, y], ...}.
+        Only frames where positions change significantly are included.
+    """
+    if not bones or num_frames <= 0:
+        return {}
+
+    # Build bone info lookup: id -> (parent_id, rest rotation, rest scale, rest translation)
+    # We need the original JOBJ rest-pose values as defaults for non-animated channels.
+    # The bones list only has world-space restX/restY, so we need to re-parse
+    # the JOBJ data. Instead, we use the bone tree structure and default values.
+    # For bones without animation tracks, their rest-pose contribution comes
+    # from the parent chain computation.
+
+    # The bone dicts now include _local_* fields with the original JOBJ
+    # rest-pose local transforms. These are used as defaults for channels
+    # that don't have animation tracks.
+
+    # Default local transform values from JOBJ rest-pose
+    bone_defaults = {}
+    for bone in bones:
+        bone_defaults[bone["id"]] = {
+            "rx": bone.get("_local_rx", 0.0),
+            "ry": bone.get("_local_ry", 0.0),
+            "rz": bone.get("_local_rz", 0.0),
+            "sx": bone.get("_local_sx", 1.0),
+            "sy": bone.get("_local_sy", 1.0),
+            "sz": bone.get("_local_sz", 1.0),
+            "tx": bone.get("_local_tx", 0.0),
+            "ty": bone.get("_local_ty", 0.0),
+            "tz": bone.get("_local_tz", 0.0),
+        }
+
+    bone_parent = {}
+    for bone in bones:
+        bone_parent[bone["id"]] = bone["parent"]
+
+    bone_frames = {}
+    prev_positions = {}  # bone_id -> (x, y) of last stored frame
+
+    num_frames_int = int(_math.ceil(num_frames))
+
+    for frame in range(num_frames_int):
+        # Compute world transforms for all bones at this frame
+        world_matrices = {}
+
+        for bone in bones:
+            bid = bone["id"]
+            parent_id = bone["parent"]
+
+            # Get animated values for this bone, falling back to defaults
+            defaults = bone_defaults[bid]
+            tracks = anim_tracks.get(bid, {})
+
+            rx = _interpolate_track(tracks.get(_TRACK_ROTX, []), frame) if _TRACK_ROTX in tracks else defaults["rx"]
+            ry = _interpolate_track(tracks.get(_TRACK_ROTY, []), frame) if _TRACK_ROTY in tracks else defaults["ry"]
+            rz = _interpolate_track(tracks.get(_TRACK_ROTZ, []), frame) if _TRACK_ROTZ in tracks else defaults["rz"]
+            sx = _interpolate_track(tracks.get(_TRACK_SCAX, []), frame) if _TRACK_SCAX in tracks else defaults["sx"]
+            sy = _interpolate_track(tracks.get(_TRACK_SCAY, []), frame) if _TRACK_SCAY in tracks else defaults["sy"]
+            sz = _interpolate_track(tracks.get(_TRACK_SCAZ, []), frame) if _TRACK_SCAZ in tracks else defaults["sz"]
+            tx = _interpolate_track(tracks.get(_TRACK_TRAX, []), frame) if _TRACK_TRAX in tracks else defaults["tx"]
+            ty = _interpolate_track(tracks.get(_TRACK_TRAY, []), frame) if _TRACK_TRAY in tracks else defaults["ty"]
+            tz = _interpolate_track(tracks.get(_TRACK_TRAZ, []), frame) if _TRACK_TRAZ in tracks else defaults["tz"]
+
+            # Clamp scale to avoid degenerate matrices
+            sx = max(sx, 0.001)
+            sy = max(sy, 0.001)
+            sz = max(sz, 0.001)
+
+            local_mat = _make_local_matrix(rx, ry, rz, sx, sy, sz, tx, ty, tz)
+
+            if parent_id == -1 or parent_id not in world_matrices:
+                world_mat = local_mat
+            else:
+                world_mat = _mat4_multiply(world_matrices[parent_id], local_mat)
+
+            world_matrices[bid] = world_mat
+
+        # Extract 2D positions for referenced bones
+        frame_data = {}
+        any_changed = False
+
+        for bid in referenced_bones:
+            if bid not in world_matrices:
+                continue
+            wm = world_matrices[bid]
+            # 2D projection: Z -> X, Y -> Y (same as rest-pose extraction)
+            # wm[3] = X translation (lateral, collapsed in 2D)
+            y = round(wm[7], 4)    # translation Y component
+            z = round(wm[11], 4)   # translation Z component
+
+            pos_x = z  # Z -> restX (forward axis)
+            pos_y = y  # Y -> restY (vertical axis)
+
+            prev = prev_positions.get(bid)
+            if prev is None or abs(pos_x - prev[0]) > 0.1 or abs(pos_y - prev[1]) > 0.1:
+                any_changed = True
+
+            frame_data[str(bid)] = [round(pos_x, 4), round(pos_y, 4)]
+
+        # Always store frame 0; after that, only store if positions changed
+        if frame == 0 or any_changed:
+            bone_frames[str(frame)] = frame_data
+            for bid_str, pos in frame_data.items():
+                prev_positions[int(bid_str)] = (pos[0], pos[1])
+
+    return bone_frames
 
 
 def _get_referenced_bone_ids(hitbox_data, hurtboxes):
@@ -1633,16 +2143,16 @@ def _get_anim_num_frames(raw_json, sub_idx):
     return None
 
 
-def extract_animations(raw_json, bones, hitbox_data, hurtboxes=None):
+def extract_animations(raw_json, bones, hitbox_data, hurtboxes=None, aj_bytes=None):
     """Extract animation data and compute per-frame bone world transforms.
 
-    For each subaction that has hitboxes, produces a boneFrames dict
-    containing pre-computed bone world positions. Currently uses
-    rest-pose positions as the single keyframe (frame 0) since
-    meleeDat2Json does not expose per-bone FIGATREE keyframe tracks.
+    For each subaction that has hitboxes, parses the FIGATREE animation
+    binary data from the AJ file to get per-bone keyframe tracks, then
+    computes world-space bone positions for each animation frame using
+    hierarchical transform composition.
 
-    When animation data is available (AJ file was provided), extracts
-    numFrames from the FigaTree header to set accurate totalFrames.
+    Falls back to rest-pose positions when AJ bytes are not available
+    or when FIGATREE parsing fails for a particular subaction.
 
     Only includes bones referenced by hitboxes or hurtboxes to
     minimize JSON size.
@@ -1652,6 +2162,8 @@ def extract_animations(raw_json, bones, hitbox_data, hurtboxes=None):
         bones: List of bone dicts from extract_bone_tree.
         hitbox_data: Dict from extract_hitboxes (sub_idx -> subaction data).
         hurtboxes: Optional list of hurtbox dicts from extract_hurtboxes.
+        aj_bytes: Optional raw bytes of the AJ animation file. When
+                  provided, enables full FIGATREE animation parsing.
 
     Returns:
         Dict mapping subaction index (int) to:
@@ -1673,12 +2185,22 @@ def extract_animations(raw_json, bones, hitbox_data, hurtboxes=None):
     if not referenced_bones:
         return {}
 
-    # Build the rest-pose frame (used as fallback / only keyframe)
+    # Build the rest-pose frame (used as fallback)
     rest_frame = _build_rest_pose_frame(bones, referenced_bones)
     if not rest_frame:
         return {}
 
+    # Get subaction list from raw_json for animation offsets
+    subactions_list = None
+    nodes = raw_json.get("nodes", [])
+    for node in nodes:
+        data = node.get("data")
+        if data and "subactions" in data:
+            subactions_list = data["subactions"]
+            break
+
     result = {}
+    anim_parsed_count = 0
 
     for sub_idx, sub_data in hitbox_data.items():
         total_frames = sub_data.get("totalFrames", 1)
@@ -1688,14 +2210,30 @@ def extract_animations(raw_json, bones, hitbox_data, hurtboxes=None):
         if anim_num_frames is not None and anim_num_frames > 0:
             total_frames = max(total_frames, anim_num_frames)
 
-        # Build boneFrames with rest-pose as the only keyframe (frame 0)
-        # Frame 0 is always valid since totalFrames >= 1
-        bone_frames = {"0": rest_frame}
+        # Try FIGATREE parsing if AJ bytes are available
+        bone_frames = None
+        if aj_bytes and subactions_list and sub_idx < len(subactions_list):
+            subaction = subactions_list[sub_idx]
+            anim_offset = subaction.get("animOffset", 0)
+            anim_size = subaction.get("animSize", 0)
+
+            if anim_size > 0 and anim_offset + anim_size <= len(aj_bytes):
+                anim_dat = aj_bytes[anim_offset:anim_offset + anim_size]
+                ft_num_frames, anim_tracks = parse_figatree_animation(anim_dat)
+
+                if anim_tracks and ft_num_frames > 0:
+                    total_frames = max(total_frames, int(_math.ceil(ft_num_frames)))
+                    bone_frames = compute_animated_bone_positions(
+                        bones, anim_tracks, ft_num_frames, referenced_bones,
+                    )
+                    if bone_frames:
+                        anim_parsed_count += 1
+
+        # Fall back to rest-pose if FIGATREE parsing didn't produce frames
+        if not bone_frames:
+            bone_frames = {"0": rest_frame}
 
         # Validate: all bone frame keys must be in [0, totalFrames)
-        # Since we only use frame 0 and totalFrames >= 1, this is
-        # always valid. This validation is here for future expansion
-        # when real animation keyframes are added.
         valid_bone_frames = {}
         for frame_str, frame_data in bone_frames.items():
             frame_num = int(frame_str)
@@ -1706,6 +2244,12 @@ def extract_animations(raw_json, bones, hitbox_data, hurtboxes=None):
             "boneFrames": valid_bone_frames,
             "totalFrames": total_frames,
         }
+
+    if anim_parsed_count > 0:
+        logger.info(
+            "  Parsed FIGATREE animations for %d/%d subaction(s)",
+            anim_parsed_count, len(hitbox_data),
+        )
 
     return result
 
@@ -1959,11 +2503,18 @@ def serialize_character_json(
             "hitboxes": sub_data.get("hitboxes", []),
         }
 
+    # Strip internal _local_* fields from bone dicts for output
+    clean_bones = []
+    for bone in bone_tree:
+        clean_bones.append({
+            k: v for k, v in bone.items() if not k.startswith("_local_")
+        })
+
     return {
         "character": char_name,
         "internalId": CHARACTER_EXTERNAL_ID.get(char_name, 0),
         "scale": CHARACTER_SCALE.get(char_name, 1.0),
-        "bones": bone_tree,
+        "bones": clean_bones,
         "subactions": subactions,
         "hurtboxes": hurtboxes,
         "actionStateMap": action_state_map,
@@ -2120,8 +2671,22 @@ def process_character(
         hurtboxes = []
 
     # Step 6: Extract animations and compute bone world transforms
+    # Load AJ bytes for FIGATREE animation parsing
+    aj_raw_bytes = None
+    if aj_extracted_path and os.path.isfile(aj_extracted_path):
+        try:
+            with open(aj_extracted_path, "rb") as f:
+                aj_raw_bytes = f.read()
+            logger.info("  Loaded AJ bytes for FIGATREE parsing (%s bytes)",
+                        f"{len(aj_raw_bytes):,}")
+        except OSError as e:
+            logger.warning("  Could not read AJ file for animation parsing: %s", e)
+
     try:
-        animations = extract_animations(raw_json, bone_tree, hitbox_data, hurtboxes)
+        animations = extract_animations(
+            raw_json, bone_tree, hitbox_data, hurtboxes,
+            aj_bytes=aj_raw_bytes,
+        )
         if animations:
             # Merge boneFrames into hitbox_data subactions
             for sub_id, anim_data in animations.items():

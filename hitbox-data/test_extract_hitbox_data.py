@@ -1994,5 +1994,551 @@ class TestProcessCharacterEndToEnd(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()
+# ---------------------------------------------------------------------------
+# FIGATREE animation parsing tests
+# ---------------------------------------------------------------------------
+
+
+class TestReadPackedInt(unittest.TestCase):
+    """Test _read_packed_int — LEB128-style variable-length integer."""
+
+    def test_single_byte_value(self):
+        """Single byte < 0x80 is the value itself."""
+        data = bytes([42])
+        val, off = extract._read_packed_int(data, 0)
+        self.assertEqual(val, 42)
+        self.assertEqual(off, 1)
+
+    def test_single_byte_zero(self):
+        """Zero is encoded as a single 0x00 byte."""
+        data = bytes([0])
+        val, off = extract._read_packed_int(data, 0)
+        self.assertEqual(val, 0)
+        self.assertEqual(off, 1)
+
+    def test_single_byte_max(self):
+        """0x7F (127) is the largest single-byte value."""
+        data = bytes([0x7F])
+        val, off = extract._read_packed_int(data, 0)
+        self.assertEqual(val, 127)
+        self.assertEqual(off, 1)
+
+    def test_two_byte_value(self):
+        """Two-byte encoding: first byte has continuation bit set."""
+        # Encode 128: low 7 bits = 0, high bits = 1
+        # First byte: 0x80 | 0 = 0x80, second byte: 1
+        data = bytes([0x80, 0x01])
+        val, off = extract._read_packed_int(data, 0)
+        self.assertEqual(val, 128)
+        self.assertEqual(off, 2)
+
+    def test_two_byte_value_300(self):
+        """Encode 300 = 0b100101100 -> low 7: 0101100=0x2C, high: 10=2."""
+        # First byte: 0x80 | 0x2C = 0xAC, second byte: 0x02
+        data = bytes([0xAC, 0x02])
+        val, off = extract._read_packed_int(data, 0)
+        self.assertEqual(val, 300)
+        self.assertEqual(off, 2)
+
+    def test_offset_parameter(self):
+        """Reads from the specified offset, not from 0."""
+        data = bytes([0xFF, 0xFF, 42])
+        val, off = extract._read_packed_int(data, 2)
+        self.assertEqual(val, 42)
+        self.assertEqual(off, 3)
+
+    def test_empty_data(self):
+        """Returns 0 for empty data."""
+        val, off = extract._read_packed_int(b"", 0)
+        self.assertEqual(val, 0)
+        self.assertEqual(off, 0)
+
+
+class TestParseTrackValue(unittest.TestCase):
+    """Test _parse_track_value — reading values in different formats."""
+
+    def test_float_format(self):
+        """Reads a little-endian float32."""
+        # 1.0 in little-endian float32 = 0x00 0x00 0x80 0x3F
+        data = struct.pack('<f', 1.0)
+        val, off = extract._parse_track_value(data, 0, extract._FMT_FLOAT, 1)
+        self.assertAlmostEqual(val, 1.0)
+        self.assertEqual(off, 4)
+
+    def test_s16_format(self):
+        """Reads a little-endian signed int16 and divides by scale."""
+        data = struct.pack('<h', 256)
+        val, off = extract._parse_track_value(data, 0, extract._FMT_S16, 256)
+        self.assertAlmostEqual(val, 1.0)
+        self.assertEqual(off, 2)
+
+    def test_u16_format(self):
+        """Reads a little-endian unsigned int16 and divides by scale."""
+        data = struct.pack('<H', 512)
+        val, off = extract._parse_track_value(data, 0, extract._FMT_U16, 256)
+        self.assertAlmostEqual(val, 2.0)
+        self.assertEqual(off, 2)
+
+    def test_s8_format(self):
+        """Reads a signed int8 and divides by scale."""
+        data = struct.pack('<b', -64)
+        val, off = extract._parse_track_value(data, 0, extract._FMT_S8, 32)
+        self.assertAlmostEqual(val, -2.0)
+        self.assertEqual(off, 1)
+
+    def test_u8_format(self):
+        """Reads an unsigned int8 and divides by scale."""
+        data = bytes([128])
+        val, off = extract._parse_track_value(data, 0, extract._FMT_U8, 64)
+        self.assertAlmostEqual(val, 2.0)
+        self.assertEqual(off, 1)
+
+    def test_insufficient_data_returns_zero(self):
+        """Returns 0.0 when data is too short for the format."""
+        val, off = extract._parse_track_value(b"", 0, extract._FMT_FLOAT, 1)
+        self.assertEqual(val, 0.0)
+        self.assertEqual(off, 0)
+
+    def test_scale_exponent(self):
+        """Scale is 2^(flag & 0x1F), so scale=4 means divide by 4."""
+        data = struct.pack('<h', 100)
+        val, off = extract._parse_track_value(data, 0, extract._FMT_S16, 4)
+        self.assertAlmostEqual(val, 25.0)
+        self.assertEqual(off, 2)
+
+
+class TestInterpolateTrack(unittest.TestCase):
+    """Test _interpolate_track — linear interpolation between keyframes."""
+
+    def test_empty_keyframes(self):
+        """Returns 0.0 for empty keyframe list."""
+        self.assertAlmostEqual(extract._interpolate_track([], 5.0), 0.0)
+
+    def test_single_keyframe(self):
+        """Returns the single keyframe value regardless of frame."""
+        kf = [(0.0, 3.14)]
+        self.assertAlmostEqual(extract._interpolate_track(kf, 0.0), 3.14)
+        self.assertAlmostEqual(extract._interpolate_track(kf, 100.0), 3.14)
+
+    def test_before_first_keyframe(self):
+        """Returns first value when frame is before first keyframe."""
+        kf = [(5.0, 10.0), (10.0, 20.0)]
+        self.assertAlmostEqual(extract._interpolate_track(kf, 0.0), 10.0)
+
+    def test_after_last_keyframe(self):
+        """Returns last value when frame is after last keyframe."""
+        kf = [(0.0, 10.0), (5.0, 20.0)]
+        self.assertAlmostEqual(extract._interpolate_track(kf, 100.0), 20.0)
+
+    def test_exact_keyframe(self):
+        """Returns exact value at a keyframe."""
+        kf = [(0.0, 10.0), (5.0, 20.0), (10.0, 30.0)]
+        self.assertAlmostEqual(extract._interpolate_track(kf, 5.0), 20.0)
+
+    def test_midpoint_interpolation(self):
+        """Interpolates linearly at the midpoint between keyframes."""
+        kf = [(0.0, 0.0), (10.0, 100.0)]
+        self.assertAlmostEqual(extract._interpolate_track(kf, 5.0), 50.0)
+
+    def test_quarter_interpolation(self):
+        """Interpolates linearly at 25% between keyframes."""
+        kf = [(0.0, 0.0), (4.0, 100.0)]
+        self.assertAlmostEqual(extract._interpolate_track(kf, 1.0), 25.0)
+
+
+class TestDecodeKeyframeBuffer(unittest.TestCase):
+    """Test _decode_keyframe_buffer — decoding compressed keyframe data."""
+
+    def _make_con_buffer(self, value, duration, value_flag=0x00):
+        """Build a buffer with a single CON (constant) keyframe.
+
+        Packed header: interp=1 (CON), count=0 -> packed = (0 << 4) | 1 = 0x01
+        Then: float value (LE), packed duration.
+        """
+        buf = bytes([0x01])  # packed: type=CON(1), count=1
+        if (value_flag & 0xE0) == 0x00:  # float
+            buf += struct.pack('<f', value)
+        buf += bytes([duration])  # packed int duration
+        return buf
+
+    def test_single_con_keyframe(self):
+        """Decodes a single constant keyframe."""
+        buf = self._make_con_buffer(1.5, 10)
+        kf = extract._decode_keyframe_buffer(buf, 0, len(buf), 0x00, 0x00)
+        self.assertEqual(len(kf), 1)
+        self.assertAlmostEqual(kf[0][0], 0.0)  # frame
+        self.assertAlmostEqual(kf[0][1], 1.5)  # value
+
+    def test_lin_keyframe(self):
+        """Decodes a linear keyframe."""
+        # Packed header: interp=2 (LIN), count=0 -> packed = (0 << 4) | 2 = 0x02
+        buf = bytes([0x02])
+        buf += struct.pack('<f', 2.5)
+        buf += bytes([5])  # duration
+        kf = extract._decode_keyframe_buffer(buf, 0, len(buf), 0x00, 0x00)
+        self.assertEqual(len(kf), 1)
+        self.assertAlmostEqual(kf[0][0], 0.0)
+        self.assertAlmostEqual(kf[0][1], 2.5)
+
+    def test_multiple_keys_in_one_group(self):
+        """Decodes multiple keys in a single packed group."""
+        # Packed header: interp=1 (CON), count=2 -> packed = (1 << 4) | 1 = 0x11
+        buf = bytes([0x11])
+        buf += struct.pack('<f', 1.0) + bytes([3])  # key 1: value=1.0, dur=3
+        buf += struct.pack('<f', 2.0) + bytes([5])  # key 2: value=2.0, dur=5
+        kf = extract._decode_keyframe_buffer(buf, 0, len(buf), 0x00, 0x00)
+        self.assertEqual(len(kf), 2)
+        self.assertAlmostEqual(kf[0][0], 0.0)
+        self.assertAlmostEqual(kf[0][1], 1.0)
+        self.assertAlmostEqual(kf[1][0], 3.0)  # 0 + 3
+        self.assertAlmostEqual(kf[1][1], 2.0)
+
+    def test_key_type(self):
+        """Decodes a KEY type (value only, no time advance)."""
+        # Packed header: interp=6 (KEY), count=0 -> packed = (0 << 4) | 6 = 0x06
+        buf = bytes([0x06])
+        buf += struct.pack('<f', 42.0)
+        kf = extract._decode_keyframe_buffer(buf, 0, len(buf), 0x00, 0x00)
+        self.assertEqual(len(kf), 1)
+        self.assertAlmostEqual(kf[0][0], 0.0)
+        self.assertAlmostEqual(kf[0][1], 42.0)
+
+    def test_s16_format_keyframe(self):
+        """Decodes keyframes with S16 value format."""
+        # value_flag = 0x20 (S16) | 0x02 (scale exponent 2 -> scale=4)
+        value_flag = 0x22
+        # Packed header: CON, count=0
+        buf = bytes([0x01])
+        buf += struct.pack('<h', 100)  # S16 value = 100, scale=4 -> 25.0
+        buf += bytes([1])  # duration
+        kf = extract._decode_keyframe_buffer(buf, 0, len(buf), value_flag, 0x00)
+        self.assertEqual(len(kf), 1)
+        self.assertAlmostEqual(kf[0][1], 25.0)
+
+    def test_empty_buffer(self):
+        """Returns empty list for empty buffer."""
+        kf = extract._decode_keyframe_buffer(b"", 0, 0, 0x00, 0x00)
+        self.assertEqual(kf, [])
+
+    def test_none_interp_stops(self):
+        """Interpolation type 0 (NONE) stops parsing."""
+        buf = bytes([0x00])  # type=NONE
+        kf = extract._decode_keyframe_buffer(buf, 0, len(buf), 0x00, 0x00)
+        self.assertEqual(kf, [])
+
+
+# ---------------------------------------------------------------------------
+# Helpers for building synthetic FIGATREE animation DAT files
+# ---------------------------------------------------------------------------
+
+def _build_figatree_dat(num_frames, bone_track_counts, track_descriptors,
+                        keyframe_buffers):
+    """Build a minimal FIGATREE animation DAT file.
+
+    Args:
+        num_frames: float, total animation frames.
+        bone_track_counts: list of ints, one per bone (track count per bone).
+        track_descriptors: list of (track_type, value_flag, tan_flag, buf_idx) tuples.
+        keyframe_buffers: list of bytes objects, one per track.
+
+    Returns:
+        Complete DAT file bytes.
+    """
+    # Layout in data block:
+    # 0x00: FigaTree header (0x14 bytes)
+    # 0x14: bone table (len(bone_track_counts) + 1 bytes, +1 for 0xFF terminator)
+    # aligned: track descriptors (0x0C each)
+    # after descriptors: keyframe buffers
+
+    figatree_header_size = 0x14
+    bone_table_size = len(bone_track_counts) + 1  # +1 for 0xFF
+    # Align to 4 bytes
+    bone_table_padded = (bone_table_size + 3) & ~3
+
+    bone_table_offset = figatree_header_size
+    anim_data_offset = bone_table_offset + bone_table_padded
+
+    num_tracks = sum(bone_track_counts)
+    track_desc_size = num_tracks * 0x0C
+    buffers_start = anim_data_offset + track_desc_size
+
+    # Build keyframe buffer block and compute offsets
+    buf_offsets = []
+    buf_block = b""
+    for buf in keyframe_buffers:
+        buf_offsets.append(buffers_start + len(buf_block))
+        buf_block += buf
+
+    # Build data block
+    data_block = b""
+
+    # FigaTree header
+    data_block += struct.pack(">2If2I",
+        1,              # type
+        0,              # unknown
+        num_frames,     # numFrames
+        bone_table_offset,
+        anim_data_offset,
+    )
+
+    # Bone table
+    bone_table = bytes(bone_track_counts) + bytes([0xFF])
+    bone_table += b"\x00" * (bone_table_padded - len(bone_table))
+    data_block += bone_table
+
+    # Track descriptors — real FIGATREE layout:
+    # 0x00: padding (always 0)
+    # 0x01: buffer data length (1 byte)
+    # 0x02-0x03: padding
+    # 0x04: track_type (1 byte)
+    # 0x05: value_flag (1 byte)
+    # 0x06: tan_flag (1 byte)
+    # 0x07: padding
+    # 0x08: buffer pointer (4 bytes, data-block-relative)
+    for i, (track_type, value_flag, tan_flag, buf_idx) in enumerate(track_descriptors):
+        buf_off = buf_offsets[buf_idx] if buf_idx < len(buf_offsets) else 0
+        buf_len = len(keyframe_buffers[buf_idx]) if buf_idx < len(keyframe_buffers) else 0
+        data_block += struct.pack(">xBxx BBxx I",
+            buf_len,
+            track_type, value_flag,
+            buf_off,
+        )
+
+    # Keyframe buffers
+    data_block += buf_block
+
+    # Build DAT file wrapper
+    data_block_size = len(data_block)
+    reloc_count = 0
+    root_count = 1
+    root_count2 = 0
+
+    root_node = struct.pack(">II", 0, 0)  # root offset=0, string offset=0
+    string_table = b"ACTION_Test_figatree\x00"
+
+    total_size = 0x20 + data_block_size + len(root_node) + len(string_table)
+    header = struct.pack(">8I",
+        total_size, data_block_size, reloc_count,
+        root_count, root_count2, 0, 0, 0,
+    )
+
+    return header + data_block + root_node + string_table
+
+
+class TestParseFigatreeAnimation(unittest.TestCase):
+    """Test parse_figatree_animation — full FIGATREE parsing."""
+
+    def test_empty_bytes_returns_zero(self):
+        """Returns (0, {}) for empty input."""
+        num_frames, tracks = extract.parse_figatree_animation(b"")
+        self.assertEqual(num_frames, 0)
+        self.assertEqual(tracks, {})
+
+    def test_too_small_returns_zero(self):
+        """Returns (0, {}) for data smaller than DAT header."""
+        num_frames, tracks = extract.parse_figatree_animation(b"\x00" * 10)
+        self.assertEqual(num_frames, 0)
+        self.assertEqual(tracks, {})
+
+    def test_single_bone_single_track(self):
+        """Parses a single bone with one constant rotation track."""
+        # Build a CON keyframe buffer: value=1.5, duration=10
+        buf = bytes([0x01])  # packed: CON, count=1
+        buf += struct.pack('<f', 1.5)
+        buf += bytes([10])
+
+        dat = _build_figatree_dat(
+            num_frames=10.0,
+            bone_track_counts=[1],  # bone 0 has 1 track
+            track_descriptors=[(1, 0x00, 0x00, 0)],  # ROTX, float format, buf 0
+            keyframe_buffers=[buf],
+        )
+
+        num_frames, tracks = extract.parse_figatree_animation(dat)
+        self.assertAlmostEqual(num_frames, 10.0)
+        self.assertIn(0, tracks)
+        self.assertIn(1, tracks[0])  # ROTX = 1
+        kf = tracks[0][1]
+        self.assertEqual(len(kf), 1)
+        self.assertAlmostEqual(kf[0][0], 0.0)  # frame
+        self.assertAlmostEqual(kf[0][1], 1.5)  # value
+
+    def test_multiple_bones(self):
+        """Parses multiple bones with different track counts."""
+        # Bone 0: 1 track (ROTX), Bone 1: 2 tracks (ROTX, ROTY)
+        buf0 = bytes([0x01]) + struct.pack('<f', 1.0) + bytes([5])
+        buf1 = bytes([0x01]) + struct.pack('<f', 2.0) + bytes([5])
+        buf2 = bytes([0x01]) + struct.pack('<f', 3.0) + bytes([5])
+
+        dat = _build_figatree_dat(
+            num_frames=5.0,
+            bone_track_counts=[1, 2],
+            track_descriptors=[
+                (1, 0x00, 0x00, 0),  # bone 0: ROTX
+                (1, 0x00, 0x00, 1),  # bone 1: ROTX
+                (2, 0x00, 0x00, 2),  # bone 1: ROTY
+            ],
+            keyframe_buffers=[buf0, buf1, buf2],
+        )
+
+        num_frames, tracks = extract.parse_figatree_animation(dat)
+        self.assertAlmostEqual(num_frames, 5.0)
+        self.assertIn(0, tracks)
+        self.assertIn(1, tracks)
+        self.assertEqual(len(tracks[0]), 1)  # bone 0: 1 track
+        self.assertEqual(len(tracks[1]), 2)  # bone 1: 2 tracks
+
+    def test_bone_with_zero_tracks_skipped(self):
+        """Bones with 0 tracks are skipped in the output."""
+        buf = bytes([0x01]) + struct.pack('<f', 1.0) + bytes([5])
+
+        dat = _build_figatree_dat(
+            num_frames=5.0,
+            bone_track_counts=[0, 1],  # bone 0: 0 tracks, bone 1: 1 track
+            track_descriptors=[
+                (5, 0x00, 0x00, 0),  # bone 1: TRAX
+            ],
+            keyframe_buffers=[buf],
+        )
+
+        num_frames, tracks = extract.parse_figatree_animation(dat)
+        self.assertNotIn(0, tracks)
+        self.assertIn(1, tracks)
+
+    def test_translation_tracks(self):
+        """Parses translation tracks (TRAX=5, TRAY=6, TRAZ=7)."""
+        buf_x = bytes([0x01]) + struct.pack('<f', 10.0) + bytes([5])
+        buf_y = bytes([0x01]) + struct.pack('<f', 20.0) + bytes([5])
+        buf_z = bytes([0x01]) + struct.pack('<f', 30.0) + bytes([5])
+
+        dat = _build_figatree_dat(
+            num_frames=5.0,
+            bone_track_counts=[3],
+            track_descriptors=[
+                (5, 0x00, 0x00, 0),  # TRAX
+                (6, 0x00, 0x00, 1),  # TRAY
+                (7, 0x00, 0x00, 2),  # TRAZ
+            ],
+            keyframe_buffers=[buf_x, buf_y, buf_z],
+        )
+
+        num_frames, tracks = extract.parse_figatree_animation(dat)
+        self.assertIn(0, tracks)
+        self.assertIn(5, tracks[0])  # TRAX
+        self.assertIn(6, tracks[0])  # TRAY
+        self.assertIn(7, tracks[0])  # TRAZ
+        self.assertAlmostEqual(tracks[0][5][0][1], 10.0)
+        self.assertAlmostEqual(tracks[0][6][0][1], 20.0)
+        self.assertAlmostEqual(tracks[0][7][0][1], 30.0)
+
+
+class TestComputeAnimatedBonePositions(unittest.TestCase):
+    """Test compute_animated_bone_positions — per-frame bone world transforms."""
+
+    def test_empty_bones(self):
+        """Returns empty dict for empty bones list."""
+        result = extract.compute_animated_bone_positions([], {}, 10, {0})
+        self.assertEqual(result, {})
+
+    def test_zero_frames(self):
+        """Returns empty dict for zero frames."""
+        bones = [{"id": 0, "parent": -1, "restX": 0.0, "restY": 0.0}]
+        result = extract.compute_animated_bone_positions(bones, {}, 0, {0})
+        self.assertEqual(result, {})
+
+    def test_rest_pose_with_local_transforms(self):
+        """Uses stored local transforms as defaults when no animation tracks."""
+        bones = [
+            {"id": 0, "parent": -1, "restX": 0.0, "restY": 0.0,
+             "_local_rx": 0.0, "_local_ry": 0.0, "_local_rz": 0.0,
+             "_local_sx": 1.0, "_local_sy": 1.0, "_local_sz": 1.0,
+             "_local_tx": 0.0, "_local_ty": 5.0, "_local_tz": 3.0},
+        ]
+        result = extract.compute_animated_bone_positions(
+            bones, {}, 2, {0}
+        )
+        # Frame 0 should always be stored
+        self.assertIn("0", result)
+        self.assertIn("0", result["0"])
+        # With tx=0, ty=5, tz=3 and identity rotation/scale:
+        # restX = Z = 3.0, restY = Y = 5.0
+        self.assertAlmostEqual(result["0"]["0"][0], 3.0, places=2)
+        self.assertAlmostEqual(result["0"]["0"][1], 5.0, places=2)
+
+    def test_animated_translation(self):
+        """Animated translation tracks produce different positions per frame."""
+        bones = [
+            {"id": 0, "parent": -1, "restX": 0.0, "restY": 0.0,
+             "_local_rx": 0.0, "_local_ry": 0.0, "_local_rz": 0.0,
+             "_local_sx": 1.0, "_local_sy": 1.0, "_local_sz": 1.0,
+             "_local_tx": 0.0, "_local_ty": 0.0, "_local_tz": 0.0},
+        ]
+        # Animate TRAY: frame 0 -> 0.0, frame 5 -> 10.0
+        anim_tracks = {
+            0: {
+                6: [(0.0, 0.0), (5.0, 10.0)],  # TRAY
+            }
+        }
+        result = extract.compute_animated_bone_positions(
+            bones, anim_tracks, 6, {0}
+        )
+        # Frame 0 should have Y=0
+        self.assertIn("0", result)
+        self.assertAlmostEqual(result["0"]["0"][1], 0.0, places=2)
+        # Later frames should show movement
+        # At least some frames beyond 0 should be stored
+        frame_keys = sorted(int(k) for k in result.keys())
+        self.assertTrue(len(frame_keys) > 1, "Should have multiple frames")
+
+    def test_only_referenced_bones_included(self):
+        """Only bones in referenced_bones set appear in output."""
+        bones = [
+            {"id": 0, "parent": -1, "restX": 0.0, "restY": 0.0,
+             "_local_rx": 0.0, "_local_ry": 0.0, "_local_rz": 0.0,
+             "_local_sx": 1.0, "_local_sy": 1.0, "_local_sz": 1.0,
+             "_local_tx": 0.0, "_local_ty": 0.0, "_local_tz": 0.0},
+            {"id": 1, "parent": 0, "restX": 1.0, "restY": 2.0,
+             "_local_rx": 0.0, "_local_ry": 0.0, "_local_rz": 0.0,
+             "_local_sx": 1.0, "_local_sy": 1.0, "_local_sz": 1.0,
+             "_local_tx": 0.0, "_local_ty": 2.0, "_local_tz": 1.0},
+        ]
+        result = extract.compute_animated_bone_positions(
+            bones, {}, 2, {1}  # only bone 1
+        )
+        self.assertIn("0", result)
+        self.assertNotIn("0", result["0"])  # bone 0 not referenced
+        self.assertIn("1", result["0"])     # bone 1 is referenced
+
+    def test_frame_zero_always_stored(self):
+        """Frame 0 is always stored regardless of delta threshold."""
+        bones = [
+            {"id": 0, "parent": -1, "restX": 0.0, "restY": 0.0,
+             "_local_rx": 0.0, "_local_ry": 0.0, "_local_rz": 0.0,
+             "_local_sx": 1.0, "_local_sy": 1.0, "_local_sz": 1.0,
+             "_local_tx": 0.0, "_local_ty": 0.0, "_local_tz": 0.0},
+        ]
+        result = extract.compute_animated_bone_positions(
+            bones, {}, 3, {0}
+        )
+        self.assertIn("0", result)
+
+    def test_hierarchical_transform(self):
+        """Child bone position includes parent transform."""
+        bones = [
+            {"id": 0, "parent": -1, "restX": 0.0, "restY": 0.0,
+             "_local_rx": 0.0, "_local_ry": 0.0, "_local_rz": 0.0,
+             "_local_sx": 1.0, "_local_sy": 1.0, "_local_sz": 1.0,
+             "_local_tx": 0.0, "_local_ty": 5.0, "_local_tz": 0.0},
+            {"id": 1, "parent": 0, "restX": 0.0, "restY": 0.0,
+             "_local_rx": 0.0, "_local_ry": 0.0, "_local_rz": 0.0,
+             "_local_sx": 1.0, "_local_sy": 1.0, "_local_sz": 1.0,
+             "_local_tx": 0.0, "_local_ty": 3.0, "_local_tz": 0.0},
+        ]
+        result = extract.compute_animated_bone_positions(
+            bones, {}, 1, {0, 1}
+        )
+        self.assertIn("0", result)
+        # Bone 0: ty=5 -> restY=5
+        self.assertAlmostEqual(result["0"]["0"][1], 5.0, places=2)
+        # Bone 1: parent ty=5 + own ty=3 = 8
+        self.assertAlmostEqual(result["0"]["1"][1], 8.0, places=2)
