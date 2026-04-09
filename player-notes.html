@@ -4131,7 +4131,7 @@ function renderFrame(frameIdx) {
             // SVG paths are in 1000x1000 space. Character feet are at ~y=850.
             // translate(-500, -850) puts the feet at the canvas origin (px, py)
             // which corresponds to the character's gameY (feet position).
-            ctx.translate(-500, -850);
+            ctx.translate(-500, -800);
             const p2d = new Path2D(animFrame.path);
             ctx.fillStyle = color;
             ctx.globalAlpha = 0.92;
