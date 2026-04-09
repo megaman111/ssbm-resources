@@ -5,7 +5,8 @@ edition = "2021"
 description = "Extract 3D character models from Melee ISO for web rendering"
 
 [dependencies]
-dat_extractor = { git = "https://github.com/AlexanderHarrison/dat_extractor.git" }
+dat_tools = { git = "https://github.com/AlexanderHarrison/dat_extractor.git" }
+slp_parser = { git = "https://github.com/AlexanderHarrison/slp_parser.git" }
 glam = "0.29"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

@@ -1,0 +1,14 @@
+C:\Users\jojog\Desktop\WebDev\Melee Website\model-extractor\target\release\deps\serde-3a810fafbeef8b4c.d: C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\jojog\Desktop\WebDev\Melee\ Website\model-extractor\target\release\build\serde-cf39a1f6442d61c3\out/private.rs
+
+C:\Users\jojog\Desktop\WebDev\Melee Website\model-extractor\target\release\deps\libserde-3a810fafbeef8b4c.rlib: C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\jojog\Desktop\WebDev\Melee\ Website\model-extractor\target\release\build\serde-cf39a1f6442d61c3\out/private.rs
+
+C:\Users\jojog\Desktop\WebDev\Melee Website\model-extractor\target\release\deps\libserde-3a810fafbeef8b4c.rmeta: C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs C:\Users\jojog\Desktop\WebDev\Melee\ Website\model-extractor\target\release\build\serde-cf39a1f6442d61c3\out/private.rs
+
+C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\lib.rs:
+C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\integer128.rs:
+C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\mod.rs:
+C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\de.rs:
+C:\Users\jojog\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\serde-1.0.228\src\private\ser.rs:
+C:\Users\jojog\Desktop\WebDev\Melee\ Website\model-extractor\target\release\build\serde-cf39a1f6442d61c3\out/private.rs:
+
+# env-dep:OUT_DIR=C:\\Users\\jojog\\Desktop\\WebDev\\Melee Website\\model-extractor\\target\\release\\build\\serde-cf39a1f6442d61c3\\out

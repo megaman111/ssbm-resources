@@ -1,22 +1,14 @@
 //! Melee Model Extractor
 //!
-//! Extracts 3D character models from a Melee ISO using dat_extractor
+//! Extracts 3D character models from a Melee ISO using dat_tools
 //! (the same library used by Rwing) and outputs them as JSON files
 //! suitable for Three.js rendering in the browser.
-//!
-//! Usage:
-//!   cargo run -- --iso path/to/melee.iso --outdir model-data/
-//!   cargo run -- --iso path/to/melee.iso --char fox --outdir model-data/
 
 use clap::Parser;
-use dat_extractor::dat::{
-    DatFile, HSDRawFile, extract_character_model,
-    extract_anim_from_action,
-};
-use dat_extractor::dat::fighter_data::FighterData;
+use dat_tools::{open_iso, get_fighter_data};
 use serde::Serialize;
+use slp_parser::{Character, CharacterColour, character_colours::*};
 use std::path::PathBuf;
-use std::rc::Rc;
 
 #[derive(Parser)]
 #[command(name = "melee-model-extractor")]
@@ -27,42 +19,41 @@ struct Args {
     iso: PathBuf,
 
     /// Extract only this character (e.g. "fox")
-    #[arg(long)]
-    char: Option<String>,
+    #[arg(long, name = "char")]
+    character: Option<String>,
 
     /// Output directory for model files
     #[arg(long, default_value = "model-data")]
     outdir: PathBuf,
 }
 
-/// Character name -> (DAT prefix, color DAT prefix)
-const CHARACTERS: &[(&str, &str, &str)] = &[
-    ("bowser", "Kp", "Bo"),
-    ("captain_falcon", "Ca", "Ca"),
-    ("donkey_kong", "Dk", "Dk"),
-    ("dr_mario", "Dr", "Dr"),
-    ("falco", "Fc", "Fc"),
-    ("fox", "Fx", "Fx"),
-    ("game_and_watch", "Gw", "Gw"),
-    ("ganondorf", "Gn", "Gn"),
-    ("ice_climbers", "Pp", "Pp"),
-    ("jigglypuff", "Pr", "Pr"),
-    ("kirby", "Kb", "Kb"),
-    ("link", "Lk", "Lk"),
-    ("luigi", "Lg", "Lg"),
-    ("mario", "Mr", "Mr"),
-    ("marth", "Ms", "Ms"),
-    ("mewtwo", "Mt", "Mt"),
-    ("ness", "Ns", "Ns"),
-    ("peach", "Pe", "Pe"),
-    ("pichu", "Pc", "Pc"),
-    ("pikachu", "Pk", "Pk"),
-    ("roy", "Fe", "Fe"),
-    ("samus", "Ss", "Ss"),
-    ("sheik", "Sk", "Sk"),
-    ("yoshi", "Ys", "Ys"),
-    ("young_link", "Cl", "Cl"),
-    ("zelda", "Zd", "Zd"),
+const CHARACTERS: &[(&str, CharacterColour)] = &[
+    ("bowser", CharacterColour::Bowser(BowserColour::Neutral)),
+    ("captain_falcon", CharacterColour::CaptainFalcon(CaptainFalconColour::Neutral)),
+    ("donkey_kong", CharacterColour::DonkeyKong(DonkeyKongColour::Neutral)),
+    ("dr_mario", CharacterColour::DrMario(DrMarioColour::Neutral)),
+    ("falco", CharacterColour::Falco(FalcoColour::Neutral)),
+    ("fox", CharacterColour::Fox(FoxColour::Neutral)),
+    ("game_and_watch", CharacterColour::MrGameAndWatch(MrGameAndWatchColour::Neutral)),
+    ("ganondorf", CharacterColour::Ganondorf(GanondorfColour::Neutral)),
+    ("ice_climbers", CharacterColour::Popo(IceClimbersColour::Neutral)),
+    ("jigglypuff", CharacterColour::Jigglypuff(JigglypuffColour::Neutral)),
+    ("kirby", CharacterColour::Kirby(KirbyColour::Neutral)),
+    ("link", CharacterColour::Link(LinkColour::Neutral)),
+    ("luigi", CharacterColour::Luigi(LuigiColour::Neutral)),
+    ("mario", CharacterColour::Mario(MarioColour::Neutral)),
+    ("marth", CharacterColour::Marth(MarthColour::Neutral)),
+    ("mewtwo", CharacterColour::Mewtwo(MewtwoColour::Neutral)),
+    ("ness", CharacterColour::Ness(NessColour::Neutral)),
+    ("peach", CharacterColour::Peach(PeachColour::Neutral)),
+    ("pichu", CharacterColour::Pichu(PichuColour::Neutral)),
+    ("pikachu", CharacterColour::Pikachu(PikachuColour::Neutral)),
+    ("roy", CharacterColour::Roy(RoyColour::Neutral)),
+    ("samus", CharacterColour::Samus(SamusColour::Neutral)),
+    ("sheik", CharacterColour::Sheik(ZeldaColour::Neutral)),
+    ("yoshi", CharacterColour::Yoshi(YoshiColour::Neutral)),
+    ("young_link", CharacterColour::YoungLink(YoungLinkColour::Neutral)),
+    ("zelda", CharacterColour::Zelda(ZeldaColour::Neutral)),
 ];
 
 #[derive(Serialize)]
@@ -74,12 +65,13 @@ struct ModelOutput {
     indices: Vec<u16>,
     bones: Vec<BoneOutput>,
     bone_weights: Vec<BoneWeightOutput>,
+    inv_bind_matrices: Vec<[f32; 16]>,
 }
 
 #[derive(Serialize)]
 struct BoneOutput {
     parent: Option<u16>,
-    transform: [f32; 16], // 4x4 matrix, column-major for Three.js
+    transform: [f32; 16],
 }
 
 #[derive(Serialize)]
@@ -98,14 +90,11 @@ fn main() {
 
     std::fs::create_dir_all(&args.outdir).expect("Failed to create output directory");
 
-    // Read ISO
-    let iso_data = std::fs::read(&args.iso).expect("Failed to read ISO");
-    let iso_parser = dat_extractor::dat::isoparser::ISOParser::new(&iso_data);
+    let mut iso_files = open_iso(&args.iso).expect("Failed to open ISO");
+    println!("ISO loaded: {}", args.iso.display());
 
-    println!("ISO loaded: {} bytes", iso_data.len());
-
-    for &(char_name, prefix, _color_prefix) in CHARACTERS {
-        if let Some(ref filter) = args.char {
+    for &(char_name, char_colour) in CHARACTERS {
+        if let Some(ref filter) = args.character {
             if char_name != filter {
                 continue;
             }
@@ -113,53 +102,22 @@ fn main() {
 
         println!("\nProcessing {}...", char_name);
 
-        // Find and read the fighter DAT file
-        let dat_filename = format!("Pl{}.dat", prefix);
-        let model_filename = format!("Pl{}Nr.dat", prefix); // Normal color model
-
-        let fighter_dat = match iso_parser.find_file(&dat_filename) {
-            Some(data) => data,
-            None => {
-                eprintln!("  DAT file not found: {}", dat_filename);
-                continue;
-            }
-        };
-
-        let model_dat = match iso_parser.find_file(&model_filename) {
-            Some(data) => data,
-            None => {
-                eprintln!("  Model DAT not found: {}", model_filename);
-                continue;
-            }
-        };
-
-        let fighter_dat_file = DatFile {
-            filename: Rc::from(dat_filename.as_str()),
-            data: Rc::from(fighter_dat),
-        };
-        let model_dat_file = DatFile {
-            filename: Rc::from(model_filename.as_str()),
-            data: Rc::from(model_dat),
-        };
-
-        let parsed_fighter = HSDRawFile::new(&fighter_dat_file);
-        let parsed_model = HSDRawFile::new(&model_dat_file);
-
-        // Extract the 3D model
-        let model = match extract_character_model(&parsed_fighter, &parsed_model) {
-            Ok(m) => m,
+        let fighter_data = match get_fighter_data(&mut iso_files, char_colour) {
+            Ok(fd) => fd,
             Err(e) => {
-                eprintln!("  Failed to extract model: {:?}", e);
+                eprintln!("  Failed to get fighter data: {:?}", e);
                 continue;
             }
         };
+
+        let model = &fighter_data.model;
 
         println!("  Bones: {}", model.bones.len());
         println!("  Vertices: {}", model.vertices.len());
         println!("  Indices: {}", model.indices.len());
         println!("  Textures: {}", model.textures.len());
 
-        // Convert to output format
+        // Convert vertices
         let mut vertices = Vec::with_capacity(model.vertices.len());
         let mut normals = Vec::with_capacity(model.vertices.len());
         let mut uvs = Vec::with_capacity(model.vertices.len());
@@ -181,13 +139,16 @@ fn main() {
             });
         }
 
+        // Convert bones
         let mut bones = Vec::with_capacity(model.bones.len());
+        let mut inv_bind_matrices = Vec::with_capacity(model.bones.len());
+
         for (i, bone) in model.bones.iter().enumerate() {
-            let t = model.base_transforms[i];
             bones.push(BoneOutput {
                 parent: bone.parent,
-                transform: t.to_cols_array(), // column-major for Three.js
+                transform: model.base_transforms[i].to_cols_array(),
             });
+            inv_bind_matrices.push(model.inv_world_transforms[i].to_cols_array());
         }
 
         let output = ModelOutput {
@@ -198,15 +159,14 @@ fn main() {
             indices: model.indices.to_vec(),
             bones,
             bone_weights,
+            inv_bind_matrices,
         };
 
-        // Write output
         let output_path = args.outdir.join(format!("{}.json", char_name));
         let json = serde_json::to_string(&output).expect("Failed to serialize");
         std::fs::write(&output_path, &json).expect("Failed to write output");
 
-        let size = json.len();
-        println!("  Output: {} ({} bytes)", output_path.display(), size);
+        println!("  Output: {} ({} bytes)", output_path.display(), json.len());
     }
 
     println!("\nDone!");
