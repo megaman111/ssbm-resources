@@ -840,14 +840,67 @@ def _count_jobj_tree(data_block, root_offset):
     return count
 
 
+def _make_local_matrix(rx, ry, rz, sx, sy, sz, tx, ty, tz):
+    """Build a 4x4 local transform matrix from JOBJ rotation/scale/translation.
+
+    Melee uses intrinsic XYZ Euler rotation order. The transform is
+    composed as: T * Rz * Ry * Rx * S (applied right-to-left to a point).
+
+    Returns a 16-element list in row-major order (4x4 matrix).
+    """
+    import math
+    cx, sxr = math.cos(rx), math.sin(rx)
+    cy, syr = math.cos(ry), math.sin(ry)
+    cz, szr = math.cos(rz), math.sin(rz)
+
+    # Rotation matrix = Rz * Ry * Rx (intrinsic XYZ = extrinsic ZYX)
+    r00 = cy * cz
+    r01 = sxr * syr * cz - cx * szr
+    r02 = cx * syr * cz + sxr * szr
+    r10 = cy * szr
+    r11 = sxr * syr * szr + cx * cz
+    r12 = cx * syr * szr - sxr * cz
+    r20 = -syr
+    r21 = sxr * cy
+    r22 = cx * cy
+
+    # Apply scale to rotation columns
+    return [
+        r00 * sx, r01 * sy, r02 * sz, tx,
+        r10 * sx, r11 * sy, r12 * sz, ty,
+        r20 * sx, r21 * sy, r22 * sz, tz,
+        0.0,      0.0,      0.0,      1.0,
+    ]
+
+
+def _mat4_multiply(a, b):
+    """Multiply two 4x4 matrices (row-major, 16-element lists)."""
+    result = [0.0] * 16
+    for row in range(4):
+        for col in range(4):
+            s = 0.0
+            for k in range(4):
+                s += a[row * 4 + k] * b[k * 4 + col]
+            result[row * 4 + col] = s
+    return result
+
+
+_IDENTITY_4x4 = [
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0,
+]
+
+
 def extract_bone_tree(dat_file_data):
     """Extract the bone tree from a DAT file's JOBJ hierarchy.
 
     Parses the binary DAT file to find and walk the JOBJ (Joint
     Object) tree. Assigns sequential bone IDs via depth-first
     traversal, ensuring parent index < child index. Computes
-    rest-pose world positions by accumulating translations down
-    the tree.
+    rest-pose world positions using full hierarchical transform
+    composition (rotation + scale + translation).
 
     For 2D projection:
       restX = Z component (forward axis -> 2D X)
@@ -869,15 +922,13 @@ def extract_bone_tree(dat_file_data):
         return []
 
     bones = []
-    # Stack: (jobj_offset, parent_bone_id, parent_world_pos)
-    # parent_world_pos is (worldX, worldY, worldZ)
-    # Use -1 as sentinel for "no offset" since 0 is valid
-    stack = [(jobj_root, -1, (0.0, 0.0, 0.0))]
+    # Stack: (jobj_offset, parent_bone_id, parent_world_matrix)
+    stack = [(jobj_root, -1, list(_IDENTITY_4x4))]
 
     visited = set()
 
     while stack:
-        offset, parent_id, parent_world = stack.pop()
+        offset, parent_id, parent_matrix = stack.pop()
 
         if offset < 0 or offset in visited:
             continue
@@ -891,16 +942,20 @@ def extract_bone_tree(dat_file_data):
             continue
 
         bone_id = len(bones)
+        rx, ry, rz = node["rotation"]
+        sx, sy, sz = node["scale"]
         tx, ty, tz = node["translation"]
 
-        # Compute world position by adding local translation
-        # to parent's world position. For the initial
-        # implementation we use translation only (ignoring
-        # rotation) as the per-frame animation data (task
-        # 2.4) provides actual animated positions.
-        world_x = parent_world[0] + tx
-        world_y = parent_world[1] + ty
-        world_z = parent_world[2] + tz
+        # Build local transform matrix (Scale * Rotate * Translate)
+        local_mat = _make_local_matrix(rx, ry, rz, sx, sy, sz, tx, ty, tz)
+
+        # Compose with parent's world matrix
+        world_mat = _mat4_multiply(parent_matrix, local_mat)
+
+        # Extract world position from the matrix (translation column)
+        world_x = world_mat[3]   # column 3, row 0
+        world_y = world_mat[7]   # column 3, row 1
+        world_z = world_mat[11]  # column 3, row 2
 
         # 2D projection: Z -> restX, Y -> restY
         bones.append({
@@ -910,8 +965,6 @@ def extract_bone_tree(dat_file_data):
             "restY": round(world_y, 4),
         })
 
-        world_pos = (world_x, world_y, world_z)
-
         # Push sibling first, then child, so child is
         # processed first (depth-first). This ensures
         # parent index < child index.
@@ -919,13 +972,13 @@ def extract_bone_tree(dat_file_data):
             stack.append((
                 node["next_offset"],
                 parent_id,
-                parent_world,
+                parent_matrix,
             ))
         if node["child_offset"] != 0:
             stack.append((
                 node["child_offset"],
                 bone_id,
-                world_pos,
+                world_mat,
             ))
 
     return bones
