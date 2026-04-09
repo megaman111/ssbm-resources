@@ -4150,7 +4150,7 @@ function renderFrame(frameIdx) {
             }
             const cs = (CHAR_SCALE_MAP[charId] || 1.0) * 0.1 * scale;
             ctx.scale(renderFacing * cs, cs);
-            ctx.translate(-500, -500);
+            ctx.translate(-500, -350);
             const p2d = new Path2D(animFrame.path);
             ctx.fillStyle = color;
             ctx.globalAlpha = 0.92;

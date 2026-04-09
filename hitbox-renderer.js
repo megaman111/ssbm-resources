@@ -52,12 +52,8 @@ function resolveHitboxWorld(hitbox, bonePositions, charX, charY, facing, scale) 
     // Z offset along bone's forward, Y offset perpendicular (rotated 90° CCW)
     const offX = hitbox.z * ndx + hitbox.y * (-ndy);
     const offY = hitbox.z * ndy + hitbox.y * ndx;
-    // Bone position is already in character-local world space (Y=0 at feet)
-    // The SVG silhouette is centered at gameY (body center ≈ 3.5 units above feet)
-    // so we subtract the offset to align hitboxes with the silhouette
-    const SILHOUETTE_Y_OFFSET = 5.0;
     const localX = (bone.x + offX) * scale;
-    const localY = (bone.y + offY - SILHOUETTE_Y_OFFSET) * scale;
+    const localY = (bone.y + offY) * scale;
     const worldX = charX + localX * facing;
     const worldY = charY + localY;
     const radius = hitbox.size * scale;
@@ -228,7 +224,7 @@ function renderHurtboxes(ctx, charData, bonePositions, charX, charY, facing,
         const offX = hurtbox.z * ndx + hurtbox.y * (-ndy);
         const offY = hurtbox.z * ndy + hurtbox.y * ndx;
         const localX = (bone.x + offX) * scale;
-        const localY = (bone.y + offY - 5.0) * scale;
+        const localY = (bone.y + offY) * scale;
         const worldX = charX + localX * facing;
         const worldY = charY + localY;
         const radius = hurtbox.sizeX * scale;
