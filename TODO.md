@@ -164,6 +164,16 @@ The goal is to eventually port this into a full-stack Electron app that bundles 
 - [ ] Chat-style note rendering + markdown
 
 ### Rwing-inspired features to steal
+(Reference: https://melee.cool/rwing/ — source: AlexanderHarrison/dat_extractor)
+- [ ] 3D model rendering from ISO DAT files (Phase 3 — see below)
+- [ ] Wavedash OSD — show early/late timing, short/fullhop detection
+- [ ] Frame advantage OSD — show +/- frames after hitting shield
+- [ ] Actionable glow — characters glow green when actionable
+- [ ] Notes/diagrams saved into .slp file metadata
+- [ ] SLP compression (10x size reduction, still playable)
+- [ ] Improover — bulk export dpad-down moments as TM savestates
+- [ ] Screenshot export with diagram overlays
+- [ ] Combo finder with Clippi playlist import/export
 - [ ] Replay takeover / overlay on top of Dolphin (Rwing's core feature)
 - [ ] Real-time input display overlay
 - [ ] Auto-clip detection (notable moments: kills, combos, edgeguards)
