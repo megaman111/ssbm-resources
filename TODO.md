@@ -201,13 +201,33 @@ Two-phase approach that works for both the website and the future Electron app:
 **Phase 3 — 3D Model Rendering for Accurate Hitbox Alignment (future)**
 The current 2D SVG silhouettes can't be perfectly aligned with 3D bone-space hitbox positions because different animations project differently to 2D. No single Y offset works for all moves (upair needs hitboxes above, dair below, bair behind). This is why Rwing uses actual 3D model rendering.
 
-Approach options:
-- [ ] Extract 3D character models from ISO DAT files (vertex data, mesh topology, bone weights)
-- [ ] Render 3D models in WebGL/Three.js with the same FIGATREE animation data we already parse
-- [ ] Project hitbox positions in the same 3D→2D pipeline as the model rendering
-- [ ] Alternative: compute per-animation SVG bone positions from the same 3D data and use those as the hitbox reference frame (avoids WebGL but still complex)
-- [ ] Investigate Rwing's approach — it's an Electron app that reads the ISO and renders 3D models with hitbox overlays. Understanding their rendering pipeline would inform our implementation.
-- [ ] Consider using the ISO path (already in .gitignore) for local 3D model extraction in the Electron app version
+Key resource: `AlexanderHarrison/dat_extractor` (https://github.com/AlexanderHarrison/dat_extractor) — the Rust crate used by Rwing. It has complete DAT file parsing including:
+- `extract_mesh.rs` — vertex extraction (position, UV, normals, bone weights/indices), triangle indices, primitive groups, textures
+- `extract_anims.rs` — FIGATREE animation parsing with hermite spline interpolation, root translation removal, animation blending
+- `jobj.rs` — JOBJ skeleton tree with proper Mat4 transforms
+- `fighter_data.rs` — high/low poly model selection per character
+- `textures.rs` — GX texture format decoding (CMPR, I4, I8, IA4, IA8, RGB565, RGB5A3, RGBA8)
+
+Implementation plan:
+- [ ] Build a Rust CLI tool using dat_extractor to extract per-character 3D model data from the ISO
+  - Output: glTF or custom JSON with vertices, indices, bone weights, skeleton, textures
+  - One-time extraction, committed to repo (like current hitbox-data/*.json)
+  - Estimated size: 500KB-2MB per character compressed (mesh + textures)
+- [ ] Add Three.js to the replay viewer (lazy-loaded only when 3D mode is enabled)
+  - Replace the 2D canvas with a Three.js WebGL renderer (or overlay on top)
+  - Side-view camera matching the current 2D perspective
+  - Simple toon/flat shader (no need for full PBR)
+- [ ] Load character meshes and apply FIGATREE animation transforms per frame
+  - Use the existing animation data we already parse, or re-extract with dat_extractor's better hermite interpolation
+  - Skinned mesh rendering with bone weights from the model data
+  - `AnimationFrame::remove_root_translation()` already handled
+- [ ] Render hitbox spheres in the same 3D scene
+  - Hitbox positions are in bone-local space → transform by the same bone matrices → perfect alignment
+  - Semi-transparent colored spheres matching current color scheme
+  - No more 2D projection issues — everything shares the same coordinate system
+- [ ] Stage rendering (optional) — dat_extractor also has `extract_stage()` for stage models
+- [ ] Fallback: keep current 2D SVG rendering for browsers without WebGL or when 3D mode is disabled
+- [ ] Performance target: 2 characters + stage + hitbox spheres at 60fps on modern browsers (trivial for ~5K poly models)
 
 **Spec status:** Phase 1 (extraction pipeline) and Phase 2 (browser rendering) are implemented. Hitbox data is correct (verified against FightCore), bone positions track animations via FIGATREE parsing, trails show previous frame positions. Visual alignment with 2D SVG silhouettes is approximate due to 2D/3D projection mismatch — Phase 3 (3D rendering) needed for pixel-perfect overlay.
 
