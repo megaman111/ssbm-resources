@@ -2023,35 +2023,45 @@ def compute_animated_bone_positions(bones, anim_tracks, num_frames, referenced_b
 
             world_matrices[bid] = world_mat
 
-        # Extract 2D positions and bone Z-axis direction for referenced bones
+        # Extract 2D positions and bone direction for referenced bones.
+        # The bone direction is computed from parent→bone vector, which
+        # represents "along the bone" — the direction hitbox Z offsets follow.
         frame_data = {}
         any_changed = False
 
-        for bid in referenced_bones:
+        # First pass: compute all bone 2D positions
+        bone_2d = {}
+        for bone in bones:
+            bid = bone["id"]
             if bid not in world_matrices:
                 continue
             wm = world_matrices[bid]
-            # 2D projection: Z -> X, Y -> Y (same as rest-pose extraction)
-            y = round(wm[7], 4)    # translation Y component
-            z = round(wm[11], 4)   # translation Z component
+            bone_2d[bid] = (round(wm[11], 4), round(wm[7], 4))  # (z→x, y→y)
 
-            pos_x = z  # Z -> restX (forward axis)
-            pos_y = y  # Y -> restY (vertical axis)
+        for bid in referenced_bones:
+            if bid not in bone_2d:
+                continue
+            pos_x, pos_y = bone_2d[bid]
 
-            # Extract bone's local Z-axis direction projected to 2D.
-            # The Z column of the rotation matrix (indices 2,6,10) gives
-            # the bone's forward direction in world space.
-            # Project: zDir_2d_x = wm[10] (world Z component of bone Z axis)
-            #          zDir_2d_y = wm[6]  (world Y component of bone Z axis)
-            zdir_x = round(wm[10], 4)  # Z component of bone's Z axis
-            zdir_y = round(wm[6], 4)   # Y component of bone's Z axis
+            # Compute bone direction from parent→bone vector
+            parent_id = bone_parent.get(bid, -1)
+            if parent_id >= 0 and parent_id in bone_2d:
+                px, py = bone_2d[parent_id]
+                dx = pos_x - px
+                dy = pos_y - py
+                length = (dx * dx + dy * dy) ** 0.5
+                if length > 0.001:
+                    zdir_x = round(dx / length, 4)
+                    zdir_y = round(dy / length, 4)
+                else:
+                    zdir_x, zdir_y = 1.0, 0.0
+            else:
+                zdir_x, zdir_y = 1.0, 0.0
 
             prev = prev_positions.get(bid)
             if prev is None or abs(pos_x - prev[0]) > 0.1 or abs(pos_y - prev[1]) > 0.1:
                 any_changed = True
 
-            # Store [x, y, zDirX, zDirY] — the bone's 2D position and
-            # its local Z-axis direction for rotating hitbox offsets
             frame_data[str(bid)] = [round(pos_x, 4), round(pos_y, 4),
                                     zdir_x, zdir_y]
 
