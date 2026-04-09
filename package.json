@@ -3,5 +3,9 @@
   "dependencies": {
     "@slippi/slippi-js": "^9.0.0",
     "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "fast-check": "^4.6.0",
+    "vitest": "^4.1.4"
   }
 }

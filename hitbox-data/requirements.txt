@@ -1,0 +1,6 @@
+# Python dependencies for the hitbox extraction pipeline
+# Install with: pip install -r hitbox-data/requirements.txt
+
+# meleeDat2Json - Melee .dat file parser by pfirsich
+# Parses character DAT binary files into JSON (subactions, events, animations)
+meleedat2json @ git+https://github.com/pfirsich/meleeDat2Json.git@master

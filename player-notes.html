@@ -309,6 +309,8 @@
             .replay-controls .ctrl-btn[onclick*="toggleDebug"],
             .replay-controls .ctrl-btn[onclick*="toggleGrid"],
             .replay-controls .ctrl-btn[onclick*="toggleHitboxData"],
+            .replay-controls .ctrl-btn[onclick*="toggleHitboxes"],
+            .replay-controls .ctrl-btn[onclick*="toggleHurtboxes"],
             .replay-controls .ctrl-btn[onclick*="toggleCamera"],
             .replay-controls .ctrl-btn[onclick*="toggleShortcuts"],
             .replay-controls span[style*="color:#555"] { display: none; }
@@ -471,6 +473,8 @@
                             <button class="ctrl-btn" id="debugBtn" onclick="toggleDebug()" title="Debug mode (D key)">🐛</button>
                             <button class="ctrl-btn" id="gridBtn" onclick="toggleGrid()" title="Toggle grid (G key)">⊞</button>
                             <button class="ctrl-btn" id="hitboxDataBtn" onclick="toggleHitboxData()" title="Toggle hitbox data (H key)">🎯</button>
+                            <button class="ctrl-btn" id="hitboxToggleBtn" onclick="toggleHitboxes()" title="Toggle hitbox circles (Shift+H)">💥</button>
+                            <button class="ctrl-btn" id="hurtboxToggleBtn" onclick="toggleHurtboxes()" title="Toggle hurtbox outlines (B key)">🛡️</button>
                             <button class="ctrl-btn" id="cameraBtn" onclick="toggleCamera()" title="Toggle dynamic camera (C key)">📷</button>
                         </div>
                         <div class="replay-timeline-wrap">
@@ -706,6 +710,9 @@ import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
 import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
 import { FightCore } from './fightcore.js?v=3';
 import { embedCalculator } from './ikneedata-ui.js?v=3';
+import HitboxLoader from './hitbox-loader.js';
+import BoneResolver from './bone-resolver.js';
+import HitboxRenderer from './hitbox-renderer.js';
 
 // Savestate WASM module (lazy-loaded only when user clicks download)
 let tmReplayWasm = null;
@@ -2410,9 +2417,12 @@ let dragStartPanX = 0, dragStartPanY = 0;
 let debugMode = false; // Toggle with 'd' key — shows action state, anim name, position
 let gridMode = false;    // Toggle grid overlay (like Slippi Lab)
 let hitboxDataMode = false; // Toggle hitbox frame data overlay
+let showHitboxes = true;    // Independent toggle for hitbox circle rendering
+let showHurtboxes = true;   // Independent toggle for hurtbox outline rendering
 let cameraMode = 'fixed';   // 'fixed' = manual zoom/pan, 'follow' = dynamic camera tracking players
 let camSmoothedX = 0, camSmoothedY = 0, camSmoothedZoom = 1.0; // smoothed camera state
 const fightCore = new FightCore(); // Reusable FightCore module instance
+const hitboxLoader = new HitboxLoader('hitbox-data'); // Loads and caches per-character hitbox JSON
 
 window.openReplayModal = async idx => {
     activeNoteIdx = idx;
@@ -2722,6 +2732,90 @@ replayCanvas.addEventListener('mouseenter', () => {
 });
 replayCanvas.addEventListener('mouseleave', () => {
     if (!isDragging) replayCanvas.style.cursor = 'default';
+    // Hide hitbox tooltip when mouse leaves canvas
+    const tip = document.getElementById('hitboxTooltip');
+    if (tip) tip.style.display = 'none';
+});
+
+// ===== HITBOX HOVER TOOLTIP =====
+replayCanvas.addEventListener('mousemove', e => {
+    const tip = document.getElementById('hitboxTooltip');
+    if (!tip) return;
+    if (!hitboxDataMode || !replayFrames || !replaySettings) {
+        tip.style.display = 'none';
+        return;
+    }
+
+    // Reconstruct game coordinate conversion (same math as renderFrame)
+    const canvas = document.getElementById('replayCanvas');
+    const dpr = window.devicePixelRatio || 1;
+    const W = canvas.width, H = canvas.height;
+    const pad = 50;
+    const stageId = replaySettings.stageId;
+    const stage = STAGE_DATA[stageId] || { x:[-230,230], y:[-150,200] };
+    const [bx0, bx1] = stage.x;
+    const [by0, by1] = stage.y;
+    const stageW = bx1 - bx0, stageH = by1 - by0;
+    const baseScaleX = (W - pad*2) / stageW;
+    const baseScaleY = (H - pad*2) / stageH;
+    const baseScale = Math.min(baseScaleX, baseScaleY);
+    const scale = baseScale * viewZoom;
+    const stageCenterX = (bx0 + bx1) / 2;
+    const stageCenterY = (by0 + by1) / 2;
+    const offX = W/2 - (stageCenterX + viewPanX) * scale;
+    const offY = H/2 + (stageCenterY + viewPanY) * scale;
+    const toGameX = cx => (cx - offX) / scale;
+    const toGameY = cy => -(cy - offY) / scale;
+
+    // Convert mouse position to canvas coords (accounting for DPR and CSS sizing)
+    const rect = canvas.getBoundingClientRect();
+    const canvasX = (e.clientX - rect.left) * (W / rect.width);
+    const canvasY = (e.clientY - rect.top) * (H / rect.height);
+    const gameX = toGameX(canvasX);
+    const gameY = toGameY(canvasY);
+
+    // Check each player's hitboxes
+    const keys = Object.keys(replayFrames).map(Number).sort((a,b)=>a-b);
+    const frameIdx = Math.max(0, Math.min(currentFrame, keys.length - 1));
+    const frame = replayFrames[keys[frameIdx]];
+    if (!frame) { tip.style.display = 'none'; return; }
+
+    const players = replaySettings.players;
+    for (const player of players) {
+        const pFrame = frame.players?.[player.playerIndex];
+        if (!pFrame) continue;
+        const data = pFrame.post || pFrame.pre;
+        if (!data) continue;
+        const pX = data.positionX;
+        const pY = data.positionY;
+        if (pX == null || pY == null) continue;
+
+        const charId = player.characterId;
+        const charData = hitboxLoader.get(charId);
+        if (!charData) continue;
+
+        const actionStateId = data.actionStateId ?? 14;
+        const actionStateCounter = data.actionStateCounter ?? 0;
+        const facing = data.facingDirection ?? 1;
+
+        const subactionId = BoneResolver.mapActionToSubaction(charData, actionStateId);
+        if (subactionId === null) continue;
+
+        const animFrame = Math.floor(actionStateCounter);
+        const bonePositions = BoneResolver.resolve(charData, subactionId, actionStateCounter);
+        const info = HitboxRenderer.getHitboxAtPoint(
+            charData, subactionId, animFrame, bonePositions,
+            pX, pY, facing, gameX, gameY
+        );
+        if (info) {
+            tip.textContent = `Dmg:${info.damage}%  Angle:${info.angle}°  KBG:${info.kbg}  BKB:${info.bkb}`;
+            tip.style.display = 'block';
+            tip.style.left = (e.clientX + 14) + 'px';
+            tip.style.top = (e.clientY + 14) + 'px';
+            return;
+        }
+    }
+    tip.style.display = 'none';
 });
 
 // Zoom control functions
@@ -2850,6 +2944,20 @@ window.toggleHitboxData = () => {
     hitboxDataMode = !hitboxDataMode;
     const btn = document.getElementById('hitboxDataBtn');
     if (btn) btn.classList.toggle('active', hitboxDataMode);
+    renderFrame(currentFrame);
+};
+
+window.toggleHitboxes = () => {
+    showHitboxes = !showHitboxes;
+    const btn = document.getElementById('hitboxToggleBtn');
+    if (btn) btn.classList.toggle('active', showHitboxes);
+    renderFrame(currentFrame);
+};
+
+window.toggleHurtboxes = () => {
+    showHurtboxes = !showHurtboxes;
+    const btn = document.getElementById('hurtboxToggleBtn');
+    if (btn) btn.classList.toggle('active', showHurtboxes);
     renderFrame(currentFrame);
 };
 
@@ -3514,6 +3622,9 @@ async function initReplayFromBuffer(uint8, filename) {
     // Kick off animation loading in background (renders as dots until loaded)
     const charIds = [...new Set(replaySettings.players.map(p => p.characterId))];
     charIds.forEach(id => loadCharAnimations(id));
+
+    // Preload hitbox JSON data for all characters in this replay
+    hitboxLoader.preloadAll(charIds);
 }
 
 function buildInfoBar(settings, filename) {
@@ -4142,111 +4253,144 @@ function renderFrame(frameIdx) {
             ctx.restore();
         }
 
-        // Hitbox & hurtbox overlay (FightCore-style colored circles)
-        // Hurtbox: approximate 3-circle body (yellow=vulnerable, blue=invincible/intangible)
-        // Hitbox: exact geometry from pfirsich's meleeFrameDataExtractor, colored per ID
+        // Hitbox & hurtbox overlay
+        // Uses ISO-extracted data (BoneResolver + HitboxRenderer) when available,
+        // falls back to FightCore approximation when charData is null.
         if (hitboxDataMode) {
-            const cs = (CHAR_SCALE_MAP[charId] || 1.0);
-            // --- HURTBOX: approximate character's vulnerable area as 3 overlapping circles ---
-            const hurtColor = hurtboxState === 0
-                ? {fill:'rgba(255,220,50,0.10)', stroke:'rgba(255,220,50,0.35)'}
-                : {fill:'rgba(50,140,255,0.12)', stroke:'rgba(80,160,255,0.45)'};
-            const bodyH = 12 * cs;
-            const bodyW = 3.5 * cs;
-            const hurtParts = [
-                {ox: 0, oy: bodyH * 0.15, r: bodyW * 1.0},
-                {ox: 0, oy: bodyH * 0.50, r: bodyW * 0.9},
-                {ox: 0, oy: bodyH * 0.82, r: bodyW * 0.7},
-            ];
-            ctx.save();
-            for (const hp of hurtParts) {
-                const hpx = toCanvasX(gameX + hp.ox);
-                const hpy = toCanvasY(gameY + hp.oy);
-                const hpr = hp.r * scale;
-                ctx.beginPath();
-                ctx.arc(hpx, hpy, hpr, 0, Math.PI * 2);
-                ctx.fillStyle = hurtColor.fill;
-                ctx.fill();
-                ctx.strokeStyle = hurtColor.stroke;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-            ctx.restore();
+            try {
+                const charData = hitboxLoader.get(charId);
+                let usedAccurateHitboxes = false;
+                let usedAccurateHurtboxes = false;
 
-            // --- HITBOXES: exact geometry from extractor data ---
-            if (resolvedAnimName) {
-                const moveFrame = Math.floor(actionStateCounter);
-                const hitboxes = fightCore.getHitboxesForFrame(charId, resolvedAnimName, moveFrame);
-                // FightCore hitbox colors: id0=red, id1=green, id2=blue, id3=purple
-                const hbColors = [
-                    {fill:'rgba(255,50,50,0.25)', stroke:'rgba(255,80,80,0.8)'},
-                    {fill:'rgba(50,220,50,0.25)', stroke:'rgba(80,255,80,0.8)'},
-                    {fill:'rgba(50,100,255,0.25)', stroke:'rgba(80,130,255,0.8)'},
-                    {fill:'rgba(180,50,255,0.25)', stroke:'rgba(200,80,255,0.8)'},
-                ];
-                if (hitboxes) {
-                    for (const hb of hitboxes) {
-                        // hb.x is forward (facing dir), hb.y is up, hb.size is radius
-                        const hbGameX = gameX + hb.x * renderFacing;
-                        const hbGameY = gameY + hb.y;
-                        const hx = toCanvasX(hbGameX);
-                        const hy = toCanvasY(hbGameY);
-                        const r = hb.size * scale;
-                        const col = hbColors[hb.id % hbColors.length];
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(hx, hy, r, 0, Math.PI * 2);
-                        ctx.fillStyle = col.fill;
-                        ctx.fill();
-                        ctx.strokeStyle = col.stroke;
-                        ctx.lineWidth = 1.5;
-                        ctx.stroke();
-                        // Show damage number inside hitbox if large enough
-                        if (r > 8 && hb.damage > 0) {
-                            ctx.fillStyle = col.stroke;
-                            ctx.font = `${Math.max(8, Math.min(11, r * 0.6))}px monospace`;
-                            ctx.textAlign = 'center';
-                            ctx.globalAlpha = 0.9;
-                            ctx.fillText(`${hb.damage}%`, hx, hy + 3);
+                if (charData) {
+                    // --- Accurate hitbox rendering via BoneResolver + HitboxRenderer ---
+                    if (showHitboxes) {
+                        const subactionId = BoneResolver.mapActionToSubaction(charData, actionStateId);
+                        if (subactionId !== null) {
+                            const animFrameInt = Math.floor(actionStateCounter);
+                            const bonePositions = BoneResolver.resolve(charData, subactionId, actionStateCounter);
+                            HitboxRenderer.renderHitboxes(
+                                ctx, charData, subactionId, animFrameInt, bonePositions,
+                                gameX, gameY, renderFacing, scale, toCanvasX, toCanvasY
+                            );
+                            usedAccurateHitboxes = true;
                         }
-                        ctx.restore();
                     }
-                } else {
-                    // Fallback: use FightCore data with getHitboxPlacement approximation
-                    const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
-                    if (moveData && moveData.hits) {
-                        const fcName = moveData.normalizedName || '';
-                        const placement = getHitboxPlacement(fcName, cs, renderFacing);
-                        for (const hit of moveData.hits) {
-                            const hStart = hit.start || 0;
-                            const hEnd = hit.end || 0;
-                            if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
-                                const numHb = hit.hitboxes ? hit.hitboxes.length : 0;
-                                for (let hi = 0; hi < numHb; hi++) {
-                                    const hb = hit.hitboxes[hi];
-                                    if (!hb || hb.damage <= 0) continue;
-                                    const gameR = 1.8 + Math.min(hb.damage * 0.1, 2.5);
-                                    const r = gameR * scale;
-                                    const spreadT = numHb > 1 ? hi / (numHb - 1) : 0.5;
-                                    const hbGameX = gameX + placement.baseX + Math.cos(placement.spreadDir) * placement.spreadLen * spreadT * renderFacing;
-                                    const hbGameY = gameY + placement.baseY + Math.sin(placement.spreadDir) * placement.spreadLen * spreadT;
-                                    const hx = toCanvasX(hbGameX);
-                                    const hy = toCanvasY(hbGameY);
-                                    const col = hbColors[hi % hbColors.length];
-                                    ctx.save();
-                                    ctx.beginPath();
-                                    ctx.arc(hx, hy, r, 0, Math.PI * 2);
-                                    ctx.fillStyle = col.fill;
-                                    ctx.fill();
-                                    ctx.strokeStyle = col.stroke;
-                                    ctx.lineWidth = 1.5;
-                                    ctx.stroke();
-                                    ctx.restore();
+
+                    if (showHurtboxes) {
+                        const subForHurt = BoneResolver.mapActionToSubaction(charData, actionStateId);
+                        const bonePositions = BoneResolver.resolve(charData, subForHurt ?? 0, actionStateCounter);
+                        HitboxRenderer.renderHurtboxes(
+                            ctx, charData, bonePositions,
+                            gameX, gameY, renderFacing, scale, toCanvasX, toCanvasY,
+                            hurtboxState
+                        );
+                        usedAccurateHurtboxes = true;
+                    }
+                }
+
+                // --- Fallback: FightCore approximation when charData is null ---
+                if (!usedAccurateHurtboxes && showHurtboxes) {
+                    const cs = (CHAR_SCALE_MAP[charId] || 1.0);
+                    const hurtColor = hurtboxState === 0
+                        ? {fill:'rgba(255,220,50,0.10)', stroke:'rgba(255,220,50,0.35)'}
+                        : {fill:'rgba(50,140,255,0.12)', stroke:'rgba(80,160,255,0.45)'};
+                    const bodyH = 12 * cs;
+                    const bodyW = 3.5 * cs;
+                    const hurtParts = [
+                        {ox: 0, oy: bodyH * 0.15, r: bodyW * 1.0},
+                        {ox: 0, oy: bodyH * 0.50, r: bodyW * 0.9},
+                        {ox: 0, oy: bodyH * 0.82, r: bodyW * 0.7},
+                    ];
+                    ctx.save();
+                    for (const hp of hurtParts) {
+                        const hpx = toCanvasX(gameX + hp.ox);
+                        const hpy = toCanvasY(gameY + hp.oy);
+                        const hpr = hp.r * scale;
+                        ctx.beginPath();
+                        ctx.arc(hpx, hpy, hpr, 0, Math.PI * 2);
+                        ctx.fillStyle = hurtColor.fill;
+                        ctx.fill();
+                        ctx.strokeStyle = hurtColor.stroke;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+
+                if (!usedAccurateHitboxes && showHitboxes && resolvedAnimName) {
+                    const cs = (CHAR_SCALE_MAP[charId] || 1.0);
+                    const moveFrame = Math.floor(actionStateCounter);
+                    const hitboxes = fightCore.getHitboxesForFrame(charId, resolvedAnimName, moveFrame);
+                    const hbColors = [
+                        {fill:'rgba(255,50,50,0.25)', stroke:'rgba(255,80,80,0.8)'},
+                        {fill:'rgba(50,220,50,0.25)', stroke:'rgba(80,255,80,0.8)'},
+                        {fill:'rgba(50,100,255,0.25)', stroke:'rgba(80,130,255,0.8)'},
+                        {fill:'rgba(180,50,255,0.25)', stroke:'rgba(200,80,255,0.8)'},
+                    ];
+                    if (hitboxes) {
+                        for (const hb of hitboxes) {
+                            const hbGameX = gameX + hb.x * renderFacing;
+                            const hbGameY = gameY + hb.y;
+                            const hx = toCanvasX(hbGameX);
+                            const hy = toCanvasY(hbGameY);
+                            const r = hb.size * scale;
+                            const col = hbColors[hb.id % hbColors.length];
+                            ctx.save();
+                            ctx.beginPath();
+                            ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                            ctx.fillStyle = col.fill;
+                            ctx.fill();
+                            ctx.strokeStyle = col.stroke;
+                            ctx.lineWidth = 1.5;
+                            ctx.stroke();
+                            if (r > 8 && hb.damage > 0) {
+                                ctx.fillStyle = col.stroke;
+                                ctx.font = `${Math.max(8, Math.min(11, r * 0.6))}px monospace`;
+                                ctx.textAlign = 'center';
+                                ctx.globalAlpha = 0.9;
+                                ctx.fillText(`${hb.damage}%`, hx, hy + 3);
+                            }
+                            ctx.restore();
+                        }
+                    } else {
+                        const moveData = fightCore.getFrameDataForAction(charId, resolvedAnimName);
+                        if (moveData && moveData.hits) {
+                            const fcName = moveData.normalizedName || '';
+                            const placement = getHitboxPlacement(fcName, cs, renderFacing);
+                            for (const hit of moveData.hits) {
+                                const hStart = hit.start || 0;
+                                const hEnd = hit.end || 0;
+                                if (hStart > 0 && hEnd > 0 && moveFrame >= hStart && moveFrame <= hEnd) {
+                                    const numHb = hit.hitboxes ? hit.hitboxes.length : 0;
+                                    for (let hi = 0; hi < numHb; hi++) {
+                                        const hb = hit.hitboxes[hi];
+                                        if (!hb || hb.damage <= 0) continue;
+                                        const gameR = 1.8 + Math.min(hb.damage * 0.1, 2.5);
+                                        const r = gameR * scale;
+                                        const spreadT = numHb > 1 ? hi / (numHb - 1) : 0.5;
+                                        const hbGameX = gameX + placement.baseX + Math.cos(placement.spreadDir) * placement.spreadLen * spreadT * renderFacing;
+                                        const hbGameY = gameY + placement.baseY + Math.sin(placement.spreadDir) * placement.spreadLen * spreadT;
+                                        const hx = toCanvasX(hbGameX);
+                                        const hy = toCanvasY(hbGameY);
+                                        const col = hbColors[hi % hbColors.length];
+                                        ctx.save();
+                                        ctx.beginPath();
+                                        ctx.arc(hx, hy, r, 0, Math.PI * 2);
+                                        ctx.fillStyle = col.fill;
+                                        ctx.fill();
+                                        ctx.strokeStyle = col.stroke;
+                                        ctx.lineWidth = 1.5;
+                                        ctx.stroke();
+                                        ctx.restore();
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            } catch (err) {
+                console.error('[Hitbox] Rendering error:', err);
             }
         }
 
@@ -4487,7 +4631,11 @@ document.addEventListener('keydown', e => {
     }
     else if (e.key === 'd' || e.key === 'D') { debugMode = !debugMode; renderFrame(currentFrame); }
     else if (e.key === 'g' || e.key === 'G') { toggleGrid(); }
-    else if (e.key === 'h' || e.key === 'H') { toggleHitboxData(); }
+    else if (e.key === 'h' || e.key === 'H') {
+        if (e.shiftKey) { toggleHitboxes(); }
+        else { toggleHitboxData(); }
+    }
+    else if (e.key === 'b' || e.key === 'B') { toggleHurtboxes(); }
     else if (e.key === 'f' || e.key === 'F') {
         const modal = document.getElementById('replayModal');
         if (document.fullscreenElement) document.exitFullscreen();
@@ -4545,6 +4693,8 @@ const SHORTCUT_LIST = [
     ['D', 'Toggle debug overlay'],
     ['G', 'Toggle grid overlay'],
     ['H', 'Toggle hitbox data overlay'],
+    ['Shift+H', 'Toggle hitbox circles'],
+    ['B', 'Toggle hurtbox outlines'],
     ['C', 'Toggle dynamic camera'],
     ['?', 'Show this shortcuts panel'],
     ['Esc', 'Close shortcuts / Close viewer'],
@@ -6187,5 +6337,6 @@ initSlpKeyCache().then(() => loadNotesFromFile().then(() => {
     }
 }));
     </script>
+<div id="hitboxTooltip" style="position:fixed; display:none; pointer-events:none; background:rgba(0,0,0,0.85); color:#fff; padding:6px 10px; border-radius:4px; font:12px monospace; z-index:10000; white-space:nowrap;"></div>
 </body>
 </html>
