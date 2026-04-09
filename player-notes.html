@@ -3601,6 +3601,7 @@ async function initReplayFromBuffer(uint8, filename) {
     if (!totalFrames) throw new Error('No frames found in replay');
     buildFodPlatformMap();
     currentFrame = 0; isPlaying = true;
+    HitboxRenderer.clearTrail();
     // Reset calculator overlay state for new replay
     calcInstance = null; lastCalcHitFrame = -1;
     const calcRoot = document.getElementById('calcRoot');
@@ -4281,7 +4282,8 @@ function renderFrame(frameIdx) {
                             const bonePositions = BoneResolver.resolve(charData, subactionId, actionStateCounter);
                             HitboxRenderer.renderHitboxes(
                                 ctx, charData, subactionId, animFrameInt, bonePositions,
-                                gameX, gameY, renderFacing, scale, toCanvasX, toCanvasY
+                                gameX, gameY, renderFacing, scale, toCanvasX, toCanvasY,
+                                String(player.playerIndex)
                             );
                             usedAccurateHitboxes = true;
                         }
@@ -4615,6 +4617,7 @@ window.stepFrame = delta => {
 window.seekToFrame = idx => {
     currentFrame = Math.max(0, Math.min(totalFrames - 1, idx));
     isPlaying = false;
+    HitboxRenderer.clearTrail();
     document.getElementById('playPauseBtn').textContent = '▶ Play';
     document.getElementById('playPauseBtn').classList.remove('active');
     updateDynamicCamera(currentFrame);

@@ -3,6 +3,11 @@
  * replay viewer canvas. Provides hit-testing for hover tooltips.
  */
 
+// Trail buffer: stores last N frames of hitbox world positions per player
+const _trailBuffer = new Map(); // key: "playerKey_hitboxId" -> [{worldX, worldY, radius, colorIdx}]
+const TRAIL_LENGTH = 4;
+const TRAIL_OPACITIES = [0.15, 0.10, 0.07, 0.04];
+
 /** Fill colors per hitbox ID (semi-transparent) */
 const HITBOX_FILL_COLORS = [
     'rgba(255,0,0,0.4)',     // ID 0: red
@@ -73,7 +78,7 @@ function getActiveHitboxes(charData, subactionId, animFrame) {
 }
 
 /**
- * Draw active hitbox circles for the current frame.
+ * Draw active hitbox circles for the current frame, with optional fading trail.
  *
  * @param {CanvasRenderingContext2D} ctx
  * @param {object} charData - Parsed character JSON
@@ -86,24 +91,50 @@ function getActiveHitboxes(charData, subactionId, animFrame) {
  * @param {number} canvasScale - Canvas scale factor
  * @param {function} toCanvasX - Converts game X → canvas X
  * @param {function} toCanvasY - Converts game Y → canvas Y
+ * @param {string} [playerKey] - Unique key per player for trail tracking (e.g. player index)
  */
 function renderHitboxes(ctx, charData, subactionId, animFrame, bonePositions,
-                        charX, charY, facing, canvasScale, toCanvasX, toCanvasY) {
+                        charX, charY, facing, canvasScale, toCanvasX, toCanvasY,
+                        playerKey) {
     const scale = charData.scale ?? 1;
     const activeHitboxes = getActiveHitboxes(charData, subactionId, animFrame);
-    if (activeHitboxes.length === 0) return;
+
+    // When no hitboxes are active, clear trail entries for this player so
+    // trails don't persist across non-attack frames
+    if (activeHitboxes.length === 0) {
+        if (playerKey != null) {
+            for (const [key] of _trailBuffer) {
+                if (key.startsWith(playerKey + '_')) _trailBuffer.delete(key);
+            }
+        }
+        return;
+    }
 
     ctx.save();
     for (const hitbox of activeHitboxes) {
         const { worldX, worldY, radius } = resolveHitboxWorld(
             hitbox, bonePositions, charX, charY, facing, scale
         );
+        const colorIdx = Math.min(hitbox.id, HITBOX_FILL_COLORS.length - 1);
 
+        // --- Trail: store position and draw previous positions ---
+        if (playerKey != null) {
+            const trailKey = playerKey + '_' + hitbox.id;
+            if (!_trailBuffer.has(trailKey)) _trailBuffer.set(trailKey, []);
+            const buf = _trailBuffer.get(trailKey);
+
+            // Draw trail circles (oldest first = most transparent)
+            renderHitboxTrail(ctx, buf, canvasScale, toCanvasX, toCanvasY);
+
+            // Push current position into buffer
+            buf.push({ worldX, worldY, radius, colorIdx });
+            if (buf.length > TRAIL_LENGTH) buf.shift();
+        }
+
+        // --- Draw current-frame hitbox on top ---
         const cx = toCanvasX(worldX);
         const cy = toCanvasY(worldY);
         const cr = radius * canvasScale;
-
-        const colorIdx = Math.min(hitbox.id, HITBOX_FILL_COLORS.length - 1);
 
         // Filled circle
         ctx.beginPath();
@@ -117,6 +148,47 @@ function renderHitboxes(ctx, charData, subactionId, animFrame, bonePositions,
         ctx.stroke();
     }
     ctx.restore();
+}
+
+/**
+ * Draw faded previous-frame hitbox positions from the trail buffer.
+ *
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {Array<{worldX:number, worldY:number, radius:number, colorIdx:number}>} trailEntries
+ * @param {number} canvasScale
+ * @param {function} toCanvasX
+ * @param {function} toCanvasY
+ */
+function renderHitboxTrail(ctx, trailEntries, canvasScale, toCanvasX, toCanvasY) {
+    if (!trailEntries.length) return;
+    // Draw oldest first (most transparent) → newest last (least transparent)
+    // Opacity index: oldest entry gets the highest index (most transparent)
+    const count = trailEntries.length;
+    for (let i = 0; i < count; i++) {
+        const entry = trailEntries[i];
+        // Oldest entry (i=0) should be most transparent
+        // opacityIdx: count-1 for i=0 (oldest), 0 for i=count-1 (newest)
+        const opacityIdx = count - 1 - i;
+        const opacity = TRAIL_OPACITIES[Math.min(opacityIdx, TRAIL_OPACITIES.length - 1)];
+
+        const cx = toCanvasX(entry.worldX);
+        const cy = toCanvasY(entry.worldY);
+        const cr = entry.radius * canvasScale;
+        const colorIdx = entry.colorIdx;
+
+        // Extract RGB from stroke color and draw with trail opacity
+        ctx.beginPath();
+        ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+        ctx.fillStyle = HITBOX_STROKE_COLORS[colorIdx].replace(/[\d.]+\)$/, opacity + ')');
+        ctx.fill();
+    }
+}
+
+/**
+ * Clear the trail buffer. Call when seeking or loading a new replay.
+ */
+function clearTrail() {
+    _trailBuffer.clear();
 }
 
 /**
@@ -212,5 +284,5 @@ function getHitboxAtPoint(charData, subactionId, animFrame, bonePositions,
     return null;
 }
 
-const HitboxRenderer = { renderHitboxes, renderHurtboxes, getHitboxAtPoint };
+const HitboxRenderer = { renderHitboxes, renderHurtboxes, getHitboxAtPoint, clearTrail };
 export default HitboxRenderer;
