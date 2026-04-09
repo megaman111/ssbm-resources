@@ -1,5 +1,24 @@
 # Megaman's SSBM Resources — TODO / Feature Roadmap
 
+---
+
+## Active Specs & Execution Order
+
+| # | Spec | Status | Priority | Notes |
+|---|------|--------|----------|-------|
+| 1 | **3D Model Rendering** | Tasks ready | 🔴 Next | Replace SVG silhouettes with Three.js 3D models + hitbox spheres. Models extracted. `.kiro/specs/3d-model-rendering/` |
+| 2 | **Accurate Hitbox Rendering** | Phase 1+2 done, Phase 3 = spec #1 | 🟡 Blocked by #1 | 2D hitbox system works (trails, tooltips, data). Alignment needs 3D rendering to fix. `.kiro/specs/accurate-hitbox-rendering/` |
+| 3 | **Modular Matchup Pages** | Spec complete (req + design + tasks) | 🟢 Ready | Convert hardcoded HTML matchup pages to JSON-driven modular blocks. `.kiro/specs/modular-matchup-pages/` |
+| 4 | **IKneeData Calculator** | Requirements only | 🟡 Needs design + tasks | Calculator module improvements. `.kiro/specs/ikneedata-calculator/` |
+
+### Recommended execution order:
+1. **3D Model Rendering** — biggest impact, fixes hitbox alignment, makes the viewer look like Rwing
+2. **Modular Matchup Pages** — independent of #1, can be done in parallel or after
+3. **IKneeData Calculator** — needs design phase completed first
+4. **Accurate Hitbox Rendering** remaining tasks — auto-resolved by #1 (3D rendering eliminates 2D projection issues)
+
+---
+
 ## Replay Viewer Module (slippilab parity + beyond)
 
 ### Rendering Accuracy
@@ -163,7 +182,7 @@ The goal is to eventually port this into a full-stack Electron app that bundles 
 
 ### Features to port/expand
 - [ ] Full notes system with local JSON storage (no GitHub API needed)
-- [ ] Replay viewer (already mostly self-contained, should port cleanly)
+- [ ] Replay viewer (already mostly self-contained as functional proof of concept on a website, should port cleanly)
 - [ ] IKneeData calculator module
 - [ ] VOD linking + embedded player
 - [ ] Matchup pages and Way of Fox guide
