@@ -494,6 +494,7 @@
                             <button class="sidebar-tab" data-tab="clips" onclick="switchSidebarTab('clips')" title="Clips">📋</button>
                             <button class="sidebar-tab" data-tab="ccasdi" onclick="switchSidebarTab('ccasdi')" title="CC / ASDI Down">🛡️</button>
                             <button class="sidebar-tab" data-tab="killpct" onclick="switchSidebarTab('killpct')" title="Kill Percents">💀</button>
+                            <button class="sidebar-tab" data-tab="hitboxlegend" onclick="switchSidebarTab('hitboxlegend')" title="Hitbox Legend">🔴</button>
                             <button class="sidebar-tab" data-tab="stats" onclick="switchSidebarTab('stats')" title="Match Stats">📊</button>
                             <button class="sidebar-tab" data-tab="calc" onclick="toggleCalcOverlay()" title="Calculator">🧮</button>
                         </div>
@@ -518,6 +519,27 @@
                             </div>
                             <div class="sidebar-panel" id="sidebarKillPct">
                                 <div id="killPctPanel" class="clips-panel-inner"></div>
+                            </div>
+                            <div class="sidebar-panel" id="sidebarHitboxLegend">
+                                <div class="clips-panel-inner" style="padding:0.8rem;">
+                                    <div style="font-size:0.9rem;color:#a78bfa;font-weight:700;margin-bottom:0.6rem;">Hitbox ID Colors</div>
+                                    <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                                        <div style="display:flex;align-items:center;gap:0.5rem;"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:rgba(255,0,0,0.7);border:2px solid red;"></span><span style="color:#ccc;font-size:0.8rem;">ID 0 — Red (usually strongest/sweetspot)</span></div>
+                                        <div style="display:flex;align-items:center;gap:0.5rem;"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:rgba(255,165,0,0.7);border:2px solid orange;"></span><span style="color:#ccc;font-size:0.8rem;">ID 1 — Orange</span></div>
+                                        <div style="display:flex;align-items:center;gap:0.5rem;"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:rgba(255,255,0,0.7);border:2px solid yellow;"></span><span style="color:#ccc;font-size:0.8rem;">ID 2 — Yellow</span></div>
+                                        <div style="display:flex;align-items:center;gap:0.5rem;"><span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:rgba(0,255,0,0.7);border:2px solid lime;"></span><span style="color:#ccc;font-size:0.8rem;">ID 3 — Green</span></div>
+                                    </div>
+                                    <div style="margin-top:0.8rem;font-size:0.9rem;color:#a78bfa;font-weight:700;margin-bottom:0.4rem;">Controls</div>
+                                    <div style="display:flex;flex-direction:column;gap:0.3rem;font-size:0.75rem;color:#888;">
+                                        <div><span style="color:#e0e0e0;font-weight:600;">H</span> — Toggle hitbox data overlay</div>
+                                        <div><span style="color:#e0e0e0;font-weight:600;">Shift+H</span> — Toggle hitbox circles</div>
+                                        <div><span style="color:#e0e0e0;font-weight:600;">B</span> — Toggle hurtbox outlines</div>
+                                        <div><span style="color:#e0e0e0;font-weight:600;">Hover</span> — Show damage, angle, KBG, BKB</div>
+                                    </div>
+                                    <div style="margin-top:0.8rem;font-size:0.9rem;color:#a78bfa;font-weight:700;margin-bottom:0.4rem;">Trail</div>
+                                    <div style="font-size:0.75rem;color:#888;">Fading circles show previous 4 frames of hitbox positions. Useful for timing strong vs weak hits.</div>
+                                    <div id="hitboxLegendActive" style="margin-top:0.8rem;"></div>
+                                </div>
                             </div>
                             <div class="sidebar-panel" id="sidebarStats">
                                 <div id="statsPanel" class="clips-panel-inner"></div>
@@ -3090,7 +3112,7 @@ async function buildCCAsdiPanel() {
 window.switchSidebarTab = (tabId) => {
     document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tabId));
     document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
-    const panelMap = { controllers: 'sidebarControllers', clips: 'sidebarClips', ccasdi: 'sidebarCcAsdi', killpct: 'sidebarKillPct', stats: 'sidebarStats' };
+    const panelMap = { controllers: 'sidebarControllers', clips: 'sidebarClips', ccasdi: 'sidebarCcAsdi', killpct: 'sidebarKillPct', hitboxlegend: 'sidebarHitboxLegend', stats: 'sidebarStats' };
     const el = document.getElementById(panelMap[tabId]);
     if (el) el.classList.add('active');
 };
