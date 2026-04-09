@@ -198,7 +198,18 @@ Two-phase approach that works for both the website and the future Electron app:
 - [ ] DI line visualization using real knockback formula + hitbox data
 - [ ] Frame-accurate 3D model rendering using actual character model/animation data from ISO
 
-**Spec status:** Needs its own spec — run the planning agent when ready to implement. The spec should cover the extraction pipeline, JSON data format, bone position resolution algorithm, and renderer integration.
+**Phase 3 — 3D Model Rendering for Accurate Hitbox Alignment (future)**
+The current 2D SVG silhouettes can't be perfectly aligned with 3D bone-space hitbox positions because different animations project differently to 2D. No single Y offset works for all moves (upair needs hitboxes above, dair below, bair behind). This is why Rwing uses actual 3D model rendering.
+
+Approach options:
+- [ ] Extract 3D character models from ISO DAT files (vertex data, mesh topology, bone weights)
+- [ ] Render 3D models in WebGL/Three.js with the same FIGATREE animation data we already parse
+- [ ] Project hitbox positions in the same 3D→2D pipeline as the model rendering
+- [ ] Alternative: compute per-animation SVG bone positions from the same 3D data and use those as the hitbox reference frame (avoids WebGL but still complex)
+- [ ] Investigate Rwing's approach — it's an Electron app that reads the ISO and renders 3D models with hitbox overlays. Understanding their rendering pipeline would inform our implementation.
+- [ ] Consider using the ISO path (already in .gitignore) for local 3D model extraction in the Electron app version
+
+**Spec status:** Phase 1 (extraction pipeline) and Phase 2 (browser rendering) are implemented. Hitbox data is correct (verified against FightCore), bone positions track animations via FIGATREE parsing, trails show previous frame positions. Visual alignment with 2D SVG silhouettes is approximate due to 2D/3D projection mismatch — Phase 3 (3D rendering) needed for pixel-perfect overlay.
 
 ### Rwing Data Mining & Open Source Resources
 - [ ] Investigate what data Rwing extracts — it uses the ISO for hitbox rendering, DI lines, and frame data overlays
