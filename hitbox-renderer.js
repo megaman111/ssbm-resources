@@ -117,17 +117,6 @@ function renderHitboxes(ctx, charData, subactionId, animFrame, bonePositions,
         );
         const colorIdx = Math.min(hitbox.id, HITBOX_FILL_COLORS.length - 1);
 
-        // DEBUG: draw small dot at raw bone position (no offset)
-        const rawBone = bonePositions.get(hitbox.bone);
-        if (rawBone) {
-            const dbx = toCanvasX(charX + rawBone.x * facing);
-            const dby = toCanvasY(charY + rawBone.y);
-            ctx.beginPath();
-            ctx.arc(dbx, dby, 3, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff';
-            ctx.fill();
-        }
-
         // --- Trail: store position and draw previous positions ---
         if (playerKey != null) {
             const trailKey = playerKey + '_' + hitbox.id;
