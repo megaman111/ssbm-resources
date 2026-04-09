@@ -37,12 +37,19 @@ const HURTBOX_INVINCIBLE_COLOR = 'rgba(0,100,255,0.6)';
  */
 function resolveHitboxWorld(hitbox, bonePositions, charX, charY, facing, scale) {
     const bone = bonePositions.get(hitbox.bone) ?? { x: 0, y: 0, zDirX: 1, zDirY: 0 };
-    // Use bone's Z-axis direction to rotate the hitbox offset
+    // Rotate hitbox offset by bone's local Z-axis direction
     const zdx = bone.zDirX ?? 1;
     const zdy = bone.zDirY ?? 0;
-    // Z offset goes along bone's forward axis, Y offset perpendicular
-    const localX = (bone.x + hitbox.z * zdx + hitbox.y * (-zdy)) * scale;
-    const localY = (bone.y + hitbox.z * zdy + hitbox.y * zdx) * scale;
+    // Normalize direction vector (may have scale baked in)
+    const len = Math.sqrt(zdx * zdx + zdy * zdy) || 1;
+    const ndx = zdx / len;
+    const ndy = zdy / len;
+    // Z offset along bone's forward, Y offset perpendicular (rotated 90° CCW)
+    const offX = hitbox.z * ndx + hitbox.y * (-ndy);
+    const offY = hitbox.z * ndy + hitbox.y * ndx;
+    // Bone position is already in character-local world space
+    const localX = (bone.x + offX) * scale;
+    const localY = (bone.y + offY) * scale;
     const worldX = charX + localX * facing;
     const worldY = charY + localY;
     const radius = hitbox.size * scale;
@@ -140,8 +147,13 @@ function renderHurtboxes(ctx, charData, bonePositions, charX, charY, facing,
         const bone = bonePositions.get(hurtbox.bone) ?? { x: 0, y: 0, zDirX: 1, zDirY: 0 };
         const zdx = bone.zDirX ?? 1;
         const zdy = bone.zDirY ?? 0;
-        const localX = (bone.x + hurtbox.z * zdx + hurtbox.y * (-zdy)) * scale;
-        const localY = (bone.y + hurtbox.z * zdy + hurtbox.y * zdx) * scale;
+        const len = Math.sqrt(zdx * zdx + zdy * zdy) || 1;
+        const ndx = zdx / len;
+        const ndy = zdy / len;
+        const offX = hurtbox.z * ndx + hurtbox.y * (-ndy);
+        const offY = hurtbox.z * ndy + hurtbox.y * ndx;
+        const localX = (bone.x + offX) * scale;
+        const localY = (bone.y + offY) * scale;
         const worldX = charX + localX * facing;
         const worldY = charY + localY;
         const radius = hurtbox.sizeX * scale;
