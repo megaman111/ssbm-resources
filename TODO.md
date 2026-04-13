@@ -9,12 +9,12 @@
 | 1 | **3D Model Rendering** | Tasks ready | 🔴 Next | Replace SVG silhouettes with Three.js 3D models + hitbox spheres. Models extracted. `.kiro/specs/3d-model-rendering/` |
 | 2 | **Accurate Hitbox Rendering** | Phase 1+2 done, Phase 3 = spec #1 | 🟡 Blocked by #1 | 2D hitbox system works (trails, tooltips, data). Alignment needs 3D rendering to fix. `.kiro/specs/accurate-hitbox-rendering/` |
 | 3 | **Modular Matchup Pages** | Spec complete (req + design + tasks) | 🟢 Ready | Convert hardcoded HTML matchup pages to JSON-driven modular blocks. `.kiro/specs/modular-matchup-pages/` |
-| 4 | **IKneeData Calculator** | Implemented, bugfixes pending | 🟢 Low | Calculator works on site. Remaining: fix auto-populate on hit, add hitbox visualization. `.kiro/specs/ikneedata-calculator/` |
+| 4 | **IKneeData Calculator** | ✅ Done | 🟢 Low | Calculator works on site. Spec can be archived. `.kiro/specs/ikneedata-calculator/` |
 
 ### Recommended execution order:
 1. **3D Model Rendering** — biggest impact, fixes hitbox alignment, makes the viewer look like Rwing
 2. **Modular Matchup Pages** — independent of #1, can be done in parallel or after
-3. **IKneeData Calculator** — working, just has minor bugfixes (auto-populate on hit frame)
+3. **IKneeData Calculator** — ✅ done, working on site
 4. **Accurate Hitbox Rendering** remaining tasks — auto-resolved by #1 (3D rendering eliminates 2D projection issues)
 
 ---

@@ -673,23 +673,73 @@ canvas.addEventListener('mousemove', (e) => {
 
 ## Correctness Properties
 
-The following properties must hold for the system to be correct:
+*A property is a characteristic or behavior that should hold true across all valid executions of a system — essentially, a formal statement about what the system should do. Properties serve as the bridge between human-readable specifications and machine-verifiable correctness guarantees.*
 
-1. **∀ character c, subaction s, frame f**: If the Melee engine would show a hitbox at position P on frame f of subaction s, the renderer must draw a circle whose center is within 1.0 game unit of P (accounting for 3D→2D projection loss).
+### Property 1: Bone tree ordering invariant
 
-2. **∀ hitbox h in subaction s**: h is rendered if and only if `h.startFrame <= currentFrame <= h.endFrame`. No hitbox is drawn outside its active window.
+*For any* valid Character_JSON, every non-root bone in the Bone_Tree has a parent index strictly less than its own index, guaranteeing that processing bones in array order visits all ancestors before descendants.
 
-3. **∀ bone b in bone tree**: `worldPosition(b) = parentWorldTransform × localTransform(b)`. The bone tree traversal computes correct hierarchical transforms.
+**Validates: Requirement 2.1**
 
-4. **∀ character c**: `hitbox-data/{c}.json` contains data for every subaction that has at least one hitbox event in the character's DAT file. No hitbox-bearing subactions are omitted.
+### Property 2: Bone reference integrity
 
-5. **∀ frame f**: If hitbox data is not available for a character (JSON not loaded or missing), the renderer degrades gracefully to the existing FightCore approximation or shows nothing — it never crashes.
+*For any* valid Character_JSON, every bone ID referenced by a Hitbox_Event or Hurtbox exists in the character's Bone_Tree.
 
-6. **∀ hurtbox h**: Hurtbox position tracks the attached bone's world position correctly across all animation frames, reflecting the character's current pose.
+**Validates: Requirements 2.3, 2.4**
 
-7. **Facing direction**: All hitbox X coordinates are multiplied by the character's facing direction (`1` or `-1`), matching the game's mirroring behavior.
+### Property 3: Character JSON data invariants
 
-8. **Scale**: All positions and radii are multiplied by the character's scale factor (`CHAR_SCALE_MAP[charId]`), matching the game's per-character scaling.
+*For any* valid Character_JSON: every Hitbox_Event has `startFrame <= endFrame`, every Hitbox_Event has `startFrame < totalFrames` for its containing subaction, every Hitbox_Event has `size > 0`, and all Bone_Frame_Data keys are valid frame numbers within `[0, totalFrames)`.
+
+**Validates: Requirements 2.5, 2.6, 2.7, 2.8**
+
+### Property 4: Loader caching idempotence
+
+*For any* character ID, calling `HitboxLoader.load()` twice returns the same object reference on the second call without issuing a second network request.
+
+**Validates: Requirement 4.2**
+
+### Property 5: Keyframe interpolation bounds
+
+*For any* two adjacent sparse keyframes A and B with bone positions, and any interpolation parameter t ∈ [0, 1], the interpolated bone position at t is bounded component-wise by min(A, B) and max(A, B).
+
+**Validates: Requirement 5.2**
+
+### Property 6: Rest pose fallback
+
+*For any* subaction with empty or missing Bone_Frame_Data, the BoneResolver returns the Rest_Pose positions from the Bone_Tree for all bones.
+
+**Validates: Requirements 5.3, 10.3**
+
+### Property 7: 3D to 2D coordinate projection
+
+*For any* 3D bone-local offset (x, y, z) and bone world position (bx, by), the projected 2D position is `(bx + z, by + y)` — the Z axis maps to game X, the Y axis maps to game Y, and the lateral X axis is collapsed.
+
+**Validates: Requirement 5.4**
+
+### Property 8: Action state mapping correctness
+
+*For any* character data and action state ID: if an explicit mapping exists in the Action_State_Map, that mapping is used; if no explicit mapping exists and the ID is less than 341, the ID is used directly as the subaction ID; otherwise null is returned.
+
+**Validates: Requirements 6.1, 6.2, 6.3**
+
+### Property 9: Hitbox active frame filtering
+
+*For any* hitbox with active frame range [startFrame, endFrame] and any animation frame f, the hitbox is rendered if and only if `startFrame <= f <= endFrame`.
+
+**Validates: Requirement 7.1**
+
+### Property 10: Hitbox and hurtbox world position computation
+
+*For any* hitbox or hurtbox with bone attachment, bone-local offset, character position, facing direction, and scale factor, the world position is computed as: `worldX = charX + (bone.x + offset.z) * scale * facing`, `worldY = charY + (bone.y + offset.y) * scale`, and `radius = size * scale`.
+
+**Validates: Requirements 7.3, 7.4, 7.5, 8.1, 8.4**
+
+### Property 11: Hit-test point-in-circle correctness
+
+*For any* active hitbox circle at world position (cx, cy) with radius r, and any test point (px, py): `getHitboxAtPoint` returns the hitbox info if and only if `(px - cx)² + (py - cy)² <= r²`.
+
+**Validates: Requirements 9.1, 9.2**
 
 ## Error Handling
 
