@@ -65,6 +65,18 @@
         .attach-video-btn { background: #2d2d4e; color: #f59e0b; border: 1px solid #f59e0b; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
         .attach-video-btn:hover { background: #3d3d6e; }
         .attach-video-btn.attached { background: #3a2a1a; color: #f59e0b; border-color: #f59e0b; }
+        .attach-img-btn { background: #2d2d4e; color: #34d399; border: 1px solid #34d399; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; }
+        .attach-img-btn:hover { background: #3d3d6e; }
+        .note-images { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+        .note-image-wrap { position: relative; display: inline-block; }
+        .note-image-wrap img { max-width: 180px; max-height: 120px; border-radius: 6px; border: 1px solid #333; cursor: pointer; object-fit: cover; transition: opacity .15s; }
+        .note-image-wrap img:hover { opacity: .85; }
+        .note-image-remove { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.7); color: #f66; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: .7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .note-image-remove:hover { background: rgba(200,0,0,.8); color: #fff; }
+        /* Image lightbox */
+        .img-lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 99999; align-items: center; justify-content: center; cursor: zoom-out; }
+        .img-lightbox.open { display: flex; }
+        .img-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; object-fit: contain; }
         .note-video-badge { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 12px; margin-left: 0.5rem; vertical-align: middle; }
         .video-embed-wrap { position: relative; width: 100%; padding-bottom: 56.25%; margin-bottom: 0.5rem; background: #000; border-radius: 8px; overflow: hidden; }
         .video-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
@@ -1891,6 +1903,89 @@ function migrateToReplayFiles(note) {
 
 let activeReplayIdx = 0; // which replay is currently loaded in the viewer
 
+// ===== Image attachment (stored as base64 data URLs in IndexedDB) =====
+const IMG_STORE = 'noteImages';
+let _imgDb = null;
+
+function openImgDb() {
+    if (_imgDb) return Promise.resolve(_imgDb);
+    return new Promise((resolve, reject) => {
+        const req = indexedDB.open('noteImagesDB', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(IMG_STORE);
+        req.onsuccess = () => { _imgDb = req.result; resolve(_imgDb); };
+        req.onerror = () => reject(req.error);
+    });
+}
+
+function imgKey(note, idx) { return `img_${note.date}_${idx}`; }
+
+async function getAttachedImages(note) {
+    const imgs = note.images || [];
+    if (!imgs.length) return [];
+    try {
+        const db = await openImgDb();
+        const results = await Promise.all(imgs.map((_, i) => new Promise((res, rej) => {
+            const tx = db.transaction(IMG_STORE, 'readonly');
+            const req = tx.objectStore(IMG_STORE).get(imgKey(note, i));
+            req.onsuccess = () => res(req.result || null);
+            req.onerror = () => res(null);
+        })));
+        return results;
+    } catch { return []; }
+}
+
+async function addAttachedImage(note, dataUrl) {
+    if (!note.images) note.images = [];
+    const idx = note.images.length;
+    note.images.push({ idx, addedAt: Date.now() });
+    try {
+        const db = await openImgDb();
+        await new Promise((res, rej) => {
+            const tx = db.transaction(IMG_STORE, 'readwrite');
+            tx.objectStore(IMG_STORE).put(dataUrl, imgKey(note, idx));
+            tx.oncomplete = res; tx.onerror = rej;
+        });
+        return true;
+    } catch (e) { console.error('Failed to save image:', e); return false; }
+}
+
+async function removeAttachedImage(note, idx) {
+    if (!note.images) return;
+    note.images.splice(idx, 1);
+    // Re-key remaining images
+    try {
+        const db = await openImgDb();
+        const tx = db.transaction(IMG_STORE, 'readwrite');
+        const store = tx.objectStore(IMG_STORE);
+        store.delete(imgKey(note, idx));
+        // Shift keys for remaining images
+        for (let i = idx; i < note.images.length; i++) {
+            const data = await new Promise(res => { const r = store.get(imgKey(note, i+1)); r.onsuccess = () => res(r.result); });
+            if (data) { store.put(data, imgKey(note, i)); store.delete(imgKey(note, i+1)); }
+        }
+    } catch (e) { console.error('Failed to remove image:', e); }
+}
+
+let pendingImageNoteIdx = null;
+
+window.triggerAttachImage = idx => {
+    pendingImageNoteIdx = idx;
+    const inp = document.getElementById('attachImageInput');
+    inp.value = '';
+    inp.click();
+};
+
+window.removeNoteImage = async (noteIdx, imgIdx) => {
+    if (!confirm('Remove this image?')) return;
+    await removeAttachedImage(notes[noteIdx], imgIdx);
+    displayNotes();
+};
+
+window.openImageLightbox = (src) => {
+    document.getElementById('imgLightboxImg').src = src;
+    document.getElementById('imgLightbox').classList.add('open');
+};
+
 // ===== Notes state =====
 let currentFilter = 'all';
 let currentTypeFilter = 'all';
@@ -2220,12 +2315,14 @@ function displayNotes() {
             <div class="note-actions">
                 ${attachBtn}
                 <button class="attach-video-btn" onclick="event.stopPropagation();addVodToNote(${idx})">📺 Add VOD</button>
+                <button class="attach-img-btn" onclick="event.stopPropagation();triggerAttachImage(${idx})">🖼️ Add Image</button>
                 <button class="share-btn" onclick="event.stopPropagation();shareNote(${idx})" title="Copy share link">🔗 Share</button>
                 <button class="edit-btn" onclick="event.stopPropagation();editNote(${idx})">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteNote(${idx})">Delete</button>
             </div>
             ${contentHtml}
             ${vodListHtml}
+            <div class="note-images" id="note-images-${idx}"></div>
             ${(note.tags && note.tags.length) ? `<div class="note-tags">${note.tags.map(t => `<span class="note-tag" onclick="event.stopPropagation();setTagFilter('${t}')">#${t}</span>`).join('')}</div>` : ''}
             <div class="edit-form">
                 <input type="text" id="edit-player-${idx}" value="${note.playerName.replace(/"/g,'&quot;')}" placeholder="Player Name">
@@ -2252,9 +2349,36 @@ function displayNotes() {
         inp.addEventListener('change', handleAttachFile);
         document.body.appendChild(inp);
     }
+    // Image input
+    if (!document.getElementById('attachImageInput')) {
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.id = 'attachImageInput'; inp.accept = 'image/*'; inp.multiple = true;
+        inp.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;';
+        inp.addEventListener('change', handleAttachImages);
+        document.body.appendChild(inp);
+    }
+    // Load images async after DOM is ready
+    setTimeout(loadNoteImages, 0);
 }
 
 let pendingAttachIdx = null;
+
+// Async: load and render images for all visible notes after displayNotes runs
+async function loadNoteImages() {
+    for (let i = 0; i < notes.length; i++) {
+        const note = notes[i];
+        if (!note.images?.length) continue;
+        const container = document.getElementById(`note-images-${i}`);
+        if (!container) continue;
+        const imgs = await getAttachedImages(note);
+        if (!imgs.length) continue;
+        container.innerHTML = imgs.map((dataUrl, imgIdx) => dataUrl ? `
+            <div class="note-image-wrap" onclick="event.stopPropagation()">
+                <img src="${dataUrl}" alt="Note image ${imgIdx+1}" onclick="openImageLightbox('${dataUrl.replace(/'/g,"\\'")}')">
+                <button class="note-image-remove" onclick="event.stopPropagation();removeNoteImage(${i},${imgIdx})" title="Remove image">✕</button>
+            </div>` : '').join('');
+    }
+}
 
 window.triggerAttach = idx => {
     pendingAttachIdx = idx;
@@ -2315,6 +2439,25 @@ async function handleAttachFile(event) {
             await setAttachedReplay(note, buffer, newIdx);
             console.log(`Replay #${newIdx + 1} attached as "${safeName}".`);
         } catch(e) { alert('Failed to attach replay: ' + e.message); }
+    }
+    displayNotes();
+}
+
+async function handleAttachImages(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length || pendingImageNoteIdx === null) return;
+    const note = notes[pendingImageNoteIdx];
+    for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        try {
+            const dataUrl = await new Promise((res, rej) => {
+                const reader = new FileReader();
+                reader.onload = e => res(e.target.result);
+                reader.onerror = rej;
+                reader.readAsDataURL(file);
+            });
+            await addAttachedImage(note, dataUrl);
+        } catch(e) { alert('Failed to attach image: ' + e.message); }
     }
     displayNotes();
 }
@@ -6527,5 +6670,8 @@ initSlpKeyCache().then(() => loadNotesFromFile().then(() => {
 }));
     </script>
 <div id="hitboxTooltip" style="position:fixed; display:none; pointer-events:none; background:rgba(0,0,0,0.85); color:#fff; padding:6px 10px; border-radius:4px; font:12px monospace; z-index:10000; white-space:nowrap;"></div>
+<div class="img-lightbox" id="imgLightbox" onclick="document.getElementById('imgLightbox').classList.remove('open')">
+    <img id="imgLightboxImg" src="" alt="">
+</div>
 </body>
 </html>
