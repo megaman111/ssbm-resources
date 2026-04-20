@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Action Dataset Labeling Tool</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d1a;color:#e0e0e0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.top-bar{display:flex;align-items:center;gap:.75rem;padding:.5rem 1rem;background:#1a1a2e;border-bottom:1px solid #2a2a4a;flex-shrink:0;flex-wrap:wrap}
+.top-bar h1{font-size:1rem;color:#a78bfa;font-weight:700}
+.file-btn{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;padding:.4rem 1rem;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600}
+.file-info{color:#888;font-size:.8rem;flex:1}
+.export-btn{background:#2d4a2d;color:#4ade80;border:1px solid #4ade80;padding:.4rem .8rem;border-radius:6px;cursor:pointer;font-size:.8rem}
+.player-btn{padding:.2rem .6rem;border-radius:4px;border:1px solid #444;background:#2d2d4e;color:#aaa;cursor:pointer;font-size:.75rem}
+.player-btn.active{background:#667eea;color:#fff;border-color:#667eea}
+.main{display:flex;flex:1;min-height:0}
+.viewer-panel{flex:1;display:flex;flex-direction:column;min-width:0;border-right:1px solid #2a2a4a}
+.canvas-wrap{flex:1;background:#000;display:flex;align-items:center;justify-content:center;min-height:0}
+#viewerCanvas{max-width:100%;max-height:100%;display:block}
+.controls{display:flex;align-items:center;gap:.4rem;padding:.4rem .6rem;background:#16213e;flex-shrink:0;flex-wrap:wrap}
+.ctrl-btn{background:#2d2d4e;color:#fff;border:none;padding:.35rem .7rem;border-radius:5px;cursor:pointer;font-size:.8rem}
+.ctrl-btn:hover{background:#3d3d6e}
+.ctrl-btn.active{background:#667eea}
+.frame-info{color:#a78bfa;font-size:.8rem;font-weight:600;min-width:90px}
+.speed-sel{background:#2d2d4e;color:#fff;border:1px solid #444;border-radius:5px;padding:.25rem;font-size:.8rem}
+.timeline-bar{padding:.3rem .6rem;background:#111827;flex-shrink:0}
+.timeline-bar input[type=range]{width:100%;accent-color:#667eea}
+.segments-panel{width:400px;display:flex;flex-direction:column;background:#111827;flex-shrink:0}
+.seg-header{padding:.5rem .8rem;background:#1a1a2e;border-bottom:1px solid #2a2a4a;display:flex;align-items:center;gap:.5rem}
+.seg-header h2{font-size:.9rem;color:#a78bfa}
+.seg-filter{background:#2d2d4e;color:#fff;border:1px solid #444;border-radius:5px;padding:.25rem .5rem;font-size:.75rem;flex:1}
+.seg-stats{color:#666;font-size:.7rem;white-space:nowrap}
+.seg-list{flex:1;overflow-y:auto;padding:.3rem}
+.seg-item{display:flex;align-items:center;gap:.4rem;padding:.35rem .5rem;border-radius:5px;cursor:pointer;font-size:.75rem;border:1px solid transparent;margin-bottom:1px}
+.seg-item:hover{background:#1a1a3e;border-color:#333}
+.seg-item.active{background:#1a2a4e;border-color:#667eea}
+.seg-item.in-range{background:#162030;border-color:#334}
+.seg-item.labeled{border-left:3px solid #4ade80}
+.seg-item.auto-grouped{background:#1a1500;border-left:3px solid #f59e0b}
+.seg-item.auto-grouped-inner{background:#141200;border-left:3px solid #78500a;opacity:.85}
+.seg-frames{color:#888;min-width:65px;font-variant-numeric:tabular-nums;font-size:.7rem}
+.seg-dur{color:#555;min-width:28px;text-align:right;font-size:.7rem}
+.seg-state{color:#a78bfa;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg-lbl{color:#4ade80;font-weight:600;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem}
+.seg-facing{font-size:.65rem;color:#555}
+.label-area{padding:.6rem .8rem;background:#16213e;border-top:1px solid #2a2a4a;flex-shrink:0}
+.cur-seg{font-size:.78rem;color:#ccc;margin-bottom:.4rem;line-height:1.4;min-height:2.2em}
+.label-row{display:flex;gap:.4rem}
+.label-input{flex:1;background:#2d2d4e;color:#fff;border:1px solid #444;border-radius:5px;padding:.4rem .6rem;font-size:.85rem}
+.label-input:focus{outline:none;border-color:#667eea}
+.label-save{background:#4ade80;color:#000;border:none;padding:.4rem .8rem;border-radius:5px;cursor:pointer;font-weight:700;font-size:.85rem}
+.label-next{background:#667eea;color:#fff;border:none;padding:.4rem .6rem;border-radius:5px;cursor:pointer;font-size:.85rem}
+.hint{margin-top:.35rem;font-size:.65rem;color:#555}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <h1>🏷️ Labeling Tool</h1>
+  <label class="file-btn">📂 Load .slp<input type="file" accept=".slp" id="slpInput" style="display:none"></label>
+  <span class="file-info" id="fileInfo">Run: npx serve . → open http://localhost:3000/labeling-tool.html</span>
+  <div id="playerSel" style="display:flex;gap:.3rem"></div>
+  <button class="export-btn" id="exportBtnEl" onclick="exportDataset()">💾 Export</button>
+  <button class="export-btn" style="background:#1a2a3a;color:#888;border-color:#555;" onclick="fileHandle=null;exportDataset()" title="Save to a different file">📁</button>
+</div>
+<div class="main">
+  <div class="viewer-panel">
+    <div class="canvas-wrap"><canvas id="viewerCanvas" width="800" height="600"></canvas></div>
+    <div class="timeline-bar"><input type="range" id="timeline" min="0" value="0" oninput="seekTo(parseInt(this.value))"></div>
+    <div class="controls">
+      <button class="ctrl-btn" onclick="stepFrame(-60)">⏮1s</button>
+      <button class="ctrl-btn" onclick="stepFrame(-1)">◀</button>
+      <button class="ctrl-btn active" id="playBtn" onclick="togglePlay()">⏸</button>
+      <button class="ctrl-btn" onclick="stepFrame(1)">▶</button>
+      <button class="ctrl-btn" onclick="stepFrame(60)">1s⏭</button>
+      <span class="frame-info" id="frameInfo">0 / 0</span>
+      <select class="speed-sel" onchange="playSpeed=parseFloat(this.value)">
+        <option value="0.25">0.25x</option><option value="0.5">0.5x</option>
+        <option value="1" selected>1x</option><option value="2">2x</option>
+      </select>
+      <button class="ctrl-btn" id="ctrlToggleBtn" onclick="toggleControllerPanel()" title="Toggle controller overlay">🎮</button>
+      <input type="range" id="ctrlScale" min="80" max="300" value="160" style="width:60px;accent-color:#667eea;" title="Controller size" oninput="setControllerScale(parseInt(this.value))">
+    </div>
+    <div id="controllerArea" style="display:none;background:#111827;border-top:1px solid #2a2a4a;padding:.4rem;overflow-x:auto;flex-shrink:0;"></div>
+  </div>
+  <div class="segments-panel">
+    <div class="seg-header">
+      <h2>Segments</h2>
+      <input class="seg-filter" id="segFilter" placeholder="Filter..." oninput="buildSegList()">
+      <span class="seg-stats" id="segStats">0 segs</span>
+    </div>
+    <div class="seg-list" id="segList"><p style="color:#555;padding:1rem;text-align:center;font-size:.85rem">Load a .slp to begin</p></div>
+    <div class="label-area">
+      <div class="cur-seg" id="segInfo">Select a segment</div>
+      <div id="inputSummary" style="font-size:.7rem;color:#888;margin-bottom:.4rem;font-family:monospace;line-height:1.5;max-height:80px;overflow-y:auto;white-space:pre;background:#0d0d1a;border-radius:4px;padding:.3rem .4rem;"></div>
+      <div class="label-row">
+        <input class="label-input" id="labelInput" placeholder="e.g. wavedash_forward" onkeydown="if(event.key==='Enter')saveLabel()">
+        <button class="label-save" onclick="saveLabel()">✓</button>
+        <button class="label-next" onclick="nextUnlabeled()">Next▶</button>
+      </div>
+      <div class="hint">Enter=save · N=next · ↑↓=navigate · Shift+click=range · Space=play/pause</div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
+import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
+const CHAR_NAMES={0:'Captain Falcon',1:'Donkey Kong',2:'Fox',3:'Game & Watch',4:'Kirby',5:'Bowser',6:'Link',7:'Luigi',8:'Mario',9:'Marth',10:'Mewtwo',11:'Ness',12:'Peach',13:'Pikachu',14:'Ice Climbers',15:'Jigglypuff',16:'Samus',17:'Yoshi',18:'Zelda',19:'Sheik',20:'Falco',21:'Young Link',22:'Dr. Mario',23:'Roy',24:'Pichu',25:'Ganondorf'};
+const CHAR_FILE={0:'captain_falcon',1:'donkey_kong',2:'fox',3:'game_and_watch',4:'kirby',5:'bowser',6:'link',7:'luigi',8:'mario',9:'marth',10:'mewtwo',11:'ness',12:'peach',13:'pikachu',14:'ice_climbers',15:'jigglypuff',16:'samus',17:'yoshi',18:'zelda',19:'sheik',20:'falco',21:'young_link',22:'dr_mario',23:'roy',24:'pichu',25:'ganondorf'};
+const CHAR_SCALE={0:.97,1:1,2:.95,3:1,4:.9,5:1,6:1,7:.92,8:.94,9:1,10:1,11:.9,12:.9,13:.88,14:.92,15:.9,16:1,17:.9,18:1,19:.96,20:.95,21:.9,22:.94,23:1,24:.85,25:1};
+const PORT_COLORS=['#f66','#6af','#fc6','#6f6'];
+const ANIM_BASE='animation-zips';
+const ACTION_NAMES=['DeadDown','DeadLeft','DeadRight','DeadUp','DeadUpStar','DeadUpStarIce','DeadUpFall','DeadUpFallHitCamera','DeadUpFallHitCameraFlat','DeadUpFallIce','DeadUpFallHitCameraIce','Sleep','Rebirth','RebirthWait','Wait','WalkSlow','WalkMiddle','WalkFast','Turn','TurnRun','Dash','Run','RunDirect','RunBrake','KneeBend','JumpF','JumpB','JumpAerialF','JumpAerialB','Fall','FallF','FallB','FallAerial','FallAerialF','FallAerialB','FallSpecial','FallSpecialF','FallSpecialB','DamageFall','Squat','SquatWait','SquatRv','Landing','LandingFallSpecial','Attack11','Attack12','Attack13','Attack100Start','Attack100Loop','Attack100End','AttackDash','AttackS3Hi','AttackS3HiS','AttackS3S','AttackS3LwS','AttackS3Lw','AttackHi3','AttackLw3','AttackS4Hi','AttackS4HiS','AttackS4S','AttackS4LwS','AttackS4Lw','AttackHi4','AttackLw4','AttackAirN','AttackAirF','AttackAirB','AttackAirHi','AttackAirLw','LandingAirN','LandingAirF','LandingAirB','LandingAirHi','LandingAirLw','DamageHi1','DamageHi2','DamageHi3','DamageN1','DamageN2','DamageN3','DamageLw1','DamageLw2','DamageLw3','DamageAir1','DamageAir2','DamageAir3','DamageFlyHi','DamageFlyN','DamageFlyLw','DamageFlyTop','DamageFlyRoll','LightGet','HeavyGet','LightThrowF','LightThrowB','LightThrowHi','LightThrowLw','LightThrowDash','LightThrowDrop','LightThrowAirF','LightThrowAirB','LightThrowAirHi','LightThrowAirLw','HeavyThrowF','HeavyThrowB','HeavyThrowHi','HeavyThrowLw','LightThrowF4','LightThrowB4','LightThrowHi4','LightThrowLw4','LightThrowAirF4','LightThrowAirB4','LightThrowAirHi4','LightThrowAirLw4','HeavyThrowF4','HeavyThrowB4','HeavyThrowHi4','HeavyThrowLw4','SwordSwing1','SwordSwing3','SwordSwing4','SwordSwingDash','BatSwing1','BatSwing3','BatSwing4','BatSwingDash','ParasolSwing1','ParasolSwing3','ParasolSwing4','ParasolSwingDash','HarisenSwing1','HarisenSwing3','HarisenSwing4','HarisenSwingDash','StarRodSwing1','StarRodSwing3','StarRodSwing4','StarRodSwingDash','LipStickSwing1','LipStickSwing3','LipStickSwing4','LipStickSwingDash','ItemParasolOpen','ItemParasolFall','ItemParasolFallSpecial','ItemParasolDamageFall','LGunShoot','LGunShootAir','LGunShootEmpty','LGunShootAirEmpty','FireFlowerShoot','FireFlowerShootAir','ItemScrew','ItemScrewAir','DamageScrew','DamageScrewAir','ItemScopeStart','ItemScopeRapid','ItemScopeFire','ItemScopeEnd','ItemScopeAirStart','ItemScopeAirRapid','ItemScopeAirFire','ItemScopeAirEnd','ItemScopeStartEmpty','ItemScopeRapidEmpty','ItemScopeFireEmpty','ItemScopeEndEmpty','ItemScopeAirStartEmpty','ItemScopeAirRapidEmpty','ItemScopeAirFireEmpty','ItemScopeAirEndEmpty','LiftWait','LiftWalk1','LiftWalk2','LiftTurn','GuardOn','Guard','GuardOff','GuardSetOff','GuardReflect','DownBoundU','DownWaitU','DownDamageU','DownStandU','DownAttackU','DownFowardU','DownBackU','DownSpotU','DownBoundD','DownWaitD','DownDamageD','DownStandD','DownAttackD','DownFowardD','DownBackD','DownSpotD','Passive','PassiveStandF','PassiveStandB','PassiveWall','PassiveWallJump','PassiveCeil','ShieldBreakFly','ShieldBreakFall','ShieldBreakDownU','ShieldBreakDownD','ShieldBreakStandU','ShieldBreakStandD','FuraFura','Catch','CatchPull','CatchDash','CatchDashPull','CatchWait','CatchAttack','CatchCut','ThrowF','ThrowB','ThrowHi','ThrowLw','CapturePulledHi','CaptureWaitHi','CaptureDamageHi','CapturePulledLw','CaptureWaitLw','CaptureDamageLw','CaptureCut','CaptureJump','CaptureNeck','CaptureFoot','EscapeF','EscapeB','Escape','EscapeAir','ReboundStop','Rebound','ThrownF','ThrownB','ThrownHi','ThrownLw','ThrownLwWomen','Pass','Ottotto','OttottoWait','FlyReflectWall','FlyReflectCeil','StopWall','StopCeil','MissFoot','CliffCatch','CliffWait','CliffClimbSlow','CliffClimbQuick','CliffAttackSlow','CliffAttackQuick','CliffEscapeSlow','CliffEscapeQuick','CliffJumpSlow1','CliffJumpSlow2','CliffJumpQuick1','CliffJumpQuick2','AppealR','AppealL','ShoulderedWait','ShoulderedWalkSlow','ShoulderedWalkMiddle','ShoulderedWalkFast','ShoulderedTurn','ThrownFF','ThrownFB','ThrownFHi','ThrownFLw','CaptureCaptain','CaptureYoshi','YoshiEgg','CaptureKoopa','CaptureDamageKoopa','CaptureWaitKoopa','ThrownKoopaF','ThrownKoopaB','CaptureKoopaAir','CaptureDamageKoopaAir','CaptureWaitKoopaAir','ThrownKoopaAirF','ThrownKoopaAirB','CaptureKirby','CaptureWaitKirby','ThrownKirbyStar','ThrownCopyStar','ThrownKirby','BarrelWait','Bury','BuryWait','BuryJump','DamageSong','DamageSongWait','DamageSongRv','DamageBind','CaptureMewtwo','CaptureMewtwoAir','ThrownMewtwo','ThrownMewtwoAir','WarpStarJump','WarpStarFall','HammerWait','HammerWalk','HammerTurn','HammerKneeBend','HammerFall','HammerJump','HammerLanding','KinokoGiantStart','KinokoGiantStartAir','KinokoGiantEnd','KinokoGiantEndAir','KinokoSmallStart','KinokoSmallStartAir','KinokoSmallEnd','KinokoSmallEndAir','Entry','EntryStart','EntryEnd','DamageIce','DamageIceJump','CaptureMasterhand','CapturedamageMasterhand','CapturewaitMasterhand','ThrownMasterhand','CaptureKirbyYoshi','KirbyYoshiEgg','CaptureLeadead','CaptureLikelike','DownReflect','CaptureCrazyhand','CapturedamageCrazyhand','CapturewaitCrazyhand','ThrownCrazyhand','BarrelCannonWait'];
+const AUTO_LABELS={14:'idle',15:'walk_slow',16:'walk_mid',17:'walk_fast',18:'turn',19:'turn_run',20:'dash',21:'run',23:'run_brake',24:'jumpsquat',25:'jump_f',26:'jump_b',27:'double_jump_f',28:'double_jump_b',29:'fall',35:'fall_special',38:'damage_fall',39:'squat',40:'squat_wait',42:'landing',43:'landing_fall_special',44:'jab1',45:'jab2',46:'jab3',50:'dash_attack',53:'ftilt',56:'utilt',57:'dtilt',60:'fsmash',63:'usmash',64:'dsmash',65:'nair',66:'fair',67:'bair',68:'uair',69:'dair',70:'landing_nair',71:'landing_fair',72:'landing_bair',73:'landing_uair',74:'landing_dair',178:'guard_on',179:'guard',182:'guard_reflect',199:'tech_in_place',200:'tech_roll_f',201:'tech_roll_b',212:'grab',214:'dash_grab',219:'fthrow',220:'bthrow',221:'uthrow',222:'dthrow',235:'spotdodge',236:'airdodge',253:'ledge_wait',262:'ledge_jump'};
+const COMMON_ANIM_MAP={'CatchDashPull':'CatchWait','CatchPull':'CatchWait','DamageIceJump':'Fall','EntryEnd':'Entry','EntryStart':'Entry','Escape':'EscapeN','FlyReflectWall':'WallDamage','GuardSetOff':'GuardDamage','KneeBend':'Landing','LandingFallSpecial':'Landing','Rebirth':'Entry','ReboundStop':'Rebound','ShieldBreakDownD':'DownBoundD','ShieldBreakDownU':'DownBoundU','ShieldBreakFall':'DamageFall','ShieldBreakStandD':'DownStandD','ShieldBreakStandU':'DownStandU','SwordSwing1':'Swing1','SwordSwing3':'Swing3','SwordSwing4':'Swing4','SwordSwingDash':'SwingDash','LightThrowAirB4':'LightThrowAirB','LightThrowAirF4':'LightThrowAirF','LightThrowAirHi4':'LightThrowAirHi','LightThrowAirLw4':'LightThrowAirLw','LightThrowB4':'LightThrowB','LightThrowF4':'LightThrowF','LightThrowHi4':'LightThrowHi','LightThrowLw4':'LightThrowLw','BarrelWait':'','Bury':'','BuryJump':'','BuryWait':'','CaptureCaptain':'','CaptureDamageKoopa':'','CaptureDamageKoopaAir':'','CaptureKirby':'','CaptureKirbyYoshi':'','CaptureKoopa':'','CaptureKoopaAir':'','CaptureMewtwo':'','CaptureMewtwoAir':'','CaptureWaitKirby':'','CaptureWaitKoopa':'','CaptureWaitKoopaAir':'','CaptureYoshi':'','DamageBind':'','DamageIce':'','DamageSong':'','DamageSongRv':'','DamageSongWait':'','DeadDown':'','DeadLeft':'','DeadRight':'','DeadUpFallHitCamera':'','DeadUpFallHitCameraIce':'','DeadUpFallIce':'','DeadUpStar':'','DeadUpStarIce':'','DownReflect':'','FlyReflectCeil':'','ItemParasolDamageFall':'','ItemParasolFall':'','ItemParasolFallSpecial':'','ItemParasolOpen':'','KirbyYoshiEgg':'','LiftTurn':'','LiftWait':'','LiftWalk1':'','LiftWalk2':'','RunDirect':'','ShieldBreakFly':'','ShoulderedTurn':'','ShoulderedWait':'','ShoulderedWalkFast':'','ShoulderedWalkMiddle':'','ShoulderedWalkSlow':'','ThrownB':'','ThrownCopyStar':'','ThrownF':'','ThrownFB':'','ThrownFF':'','ThrownFHi':'','ThrownFLw':'','ThrownHi':'','ThrownKirby':'','ThrownKirbyStar':'','ThrownKoopaAirB':'','ThrownKoopaAirF':'','ThrownKoopaB':'','ThrownKoopaF':'','ThrownLw':'','ThrownLwWomen':'','ThrownMewtwo':'','ThrownMewtwoAir':'','YoshiEgg':''};const CHAR_ANIM_EXTRA={0:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4S',AttackS4Hi:'AttackS4Hi',AttackS4HiS:'AttackS4Hi',AttackS4Lw:'AttackS4Lw',AttackS4LwS:'AttackS4Lw',CliffWait:'CliffWait1',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},1:{AppealL:'AppealL',AppealR:'AppealR',AttackS3HiS:'AttackS3Hi',AttackS3LwS:'AttackS3Lw',AttackS4S:'AttackS4S',AttackS4Hi:'AttackS4Hi',AttackS4HiS:'AttackS4Hi',AttackS4Lw:'AttackS4Lw',AttackS4LwS:'AttackS4Lw',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},2:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},3:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},4:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},5:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},6:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},7:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},8:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},9:{AppealL:'Appeal',AppealR:'Appeal',AttackS3S:'AttackS31',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},10:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},11:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},12:{AppealL:'AppealL',AppealR:'AppealR',AttackS3S:'AttackS3',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},13:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},14:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},15:{AppealL:'AppealL',AppealR:'AppealR',AttackS3HiS:'AttackS3Hi',AttackS3LwS:'AttackS3Lw',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},16:{AppealL:'AppealL',AppealR:'AppealR',AttackS4S:'AttackS4S',AttackS4Hi:'AttackS4Hi',AttackS4HiS:'AttackS4HiS',AttackS4Lw:'AttackS4Lw',AttackS4LwS:'AttackS4LwS',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},17:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},18:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},19:{AppealL:'Appeal',AppealR:'Appeal',AttackS3S:'AttackS3',AttackS4S:'AttackS4',GuardReflect:'GuardOn',Wait:'Wait',RebirthWait:'Wait'},20:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},21:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait',RebirthWait:'Wait'},22:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},23:{AppealL:'Appeal',AppealR:'Appeal',AttackS3S:'AttackS31',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},24:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'},25:{AppealL:'Appeal',AppealR:'Appeal',AttackS4S:'AttackS4',GuardReflect:'Guard',Wait:'Wait1',RebirthWait:'Wait1'}};const CHAR_ANIM_MAP={};for(let i=0;i<=25;i++){const m=Object.assign({},COMMON_ANIM_MAP);if(CHAR_ANIM_EXTRA[i])Object.assign(m,CHAR_ANIM_EXTRA[i]);CHAR_ANIM_MAP[i]=m;}const CHAR_SPECIALS={2:{341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',344:'SpecialAirNStart',345:'SpecialAirNLoop',346:'SpecialAirNEnd',347:'SpecialSStart',348:'SpecialS',349:'SpecialSEnd',350:'SpecialAirSStart',351:'SpecialAirS',352:'SpecialAirSEnd',353:'SpecialHiHold',354:'SpecialHiHoldAir',355:'SpecialHi',356:'SpecialHi',357:'SpecialHiLanding',358:'SpecialHiFall',359:'SpecialHiBound',360:'SpecialLwStart',361:'SpecialLwLoop',362:'SpecialLwHit',363:'SpecialLwEnd',364:'SpecialLwLoop',365:'SpecialAirLwStart',366:'SpecialAirLwLoop',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',369:'SpecialAirLwLoop'},20:{341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',344:'SpecialAirNStart',345:'SpecialAirNLoop',346:'SpecialAirNEnd',347:'SpecialSStart',348:'SpecialS',349:'SpecialSEnd',350:'SpecialAirSStart',351:'SpecialAirS',352:'SpecialAirSEnd',353:'SpecialHiHold',354:'SpecialHiHoldAir',355:'SpecialHi',356:'SpecialHi',357:'SpecialHiLanding',358:'SpecialHiFall',359:'SpecialHiBound',360:'SpecialLwStart',361:'SpecialLwLoop',362:'SpecialLwHit',363:'SpecialLwEnd',364:'SpecialLw2',365:'SpecialAirLwStart',366:'SpecialAirLwLoop',367:'SpecialAirLwHit',368:'SpecialAirLwEnd',369:'SpecialAirLwLoop'},9:{341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNEnd',344:'SpecialNEnd',345:'SpecialAirNStart',346:'SpecialAirNLoop',347:'SpecialAirNEnd',348:'SpecialAirNEnd',349:'SpecialS1',350:'SpecialS2Hi',351:'SpecialS2Lw',352:'SpecialS3Hi',353:'SpecialS3S',354:'SpecialS3Lw',355:'SpecialS4Hi',356:'SpecialS4S',357:'SpecialS4Lw',358:'SpecialAirS1',359:'SpecialAirS2Hi',360:'SpecialAirS2Lw',361:'SpecialAirS3Hi',362:'SpecialAirS3S',363:'SpecialAirS3Lw',364:'SpecialAirS4Hi',365:'SpecialAirS4S',366:'SpecialAirS4Lw',367:'SpecialHi',368:'SpecialAirHi',369:'SpecialLw',370:'SpecialLwHit',371:'SpecialAirLw',372:'SpecialAirLwHit'},19:{341:'SpecialNStart',342:'SpecialNLoop',343:'SpecialNCansel',344:'SpecialNEnd',345:'SpecialAirNStart',346:'SpecialAirNLoop',347:'SpecialAirNCansel',348:'SpecialAirNEnd',349:'SpecialSStart',350:'SpecialS',351:'SpecialSEnd',352:'SpecialAirSStart',353:'SpecialAirS',354:'SpecialAirSEnd',355:'SpecialHiStart',357:'SpecialHi',358:'SpecialAirHiStart',360:'SpecialAirHi',361:'SpecialLw',362:'SpecialLw2',363:'SpecialAirLw',364:'SpecialAirLw2'},0:{347:'SpecialN',348:'SpecialAirN',349:'SpecialSStart',350:'SpecialS',351:'SpecialAirSStart',352:'SpecialAirS',353:'SpecialHi',354:'SpecialAirHi',355:'SpecialHiCatch',356:'SpecialHiThrow',357:'SpecialLw',358:'SpecialLwEnd',359:'SpecialAirLw',360:'SpecialAirLwEnd'},15:{341:'JumpAerialF1',342:'JumpAerialF2',343:'JumpAerialF3',344:'JumpAerialF4',345:'JumpAerialF5',346:'SpecialNStartR',347:'SpecialNStartL',348:'SpecialN',352:'SpecialNEndR',353:'SpecialNEndL',354:'SpecialAirNStartR',355:'SpecialAirNStartL',356:'SpecialN',360:'SpecialAirNEndR',361:'SpecialAirNEndL',362:'DamageFall',363:'SpecialS',364:'SpecialAirS',365:'SpecialHiL',366:'SpecialAirHiL',367:'SpecialHiR',368:'SpecialAirHiR',369:'SpecialLwL',370:'SpecialAirLwL',371:'SpecialLwR',372:'SpecialAirLwR'},12:{341:'Fuwafuwa',342:'FallF',343:'FallB',344:'AttackAirN',345:'AttackAirF',346:'AttackAirB',347:'AttackAirHi',348:'AttackAirLw',349:'AttackS4',350:'AttackS4',351:'AttackS4',352:'SpecialN',353:'SpecialAirN',354:'SpecialSStart',355:'SpecialSEnd',357:'SpecialAirSStart',358:'SpecialAirSEnd',359:'SpecialAirS',360:'SpecialSJump',361:'SpecialHiStart',362:'SpecialHiEnd',363:'SpecialAirHiStart',364:'SpecialAirHiEnd',365:'SpecialLw',366:'SpecialLwHit',367:'SpecialAirLw',368:'SpecialAirLwHit',369:'ItemParasolOpen',370:'ItemParasolFall'}};
+const STAGE_DATA={2:{name:'Fountain of Dreams',x:[-198.75,198.75],y:[-146.25,202.5],polygon:[[-63.35,.62],[-53.5,.62],[-51.25,0],[51.25,0],[53.5,.62],[63.35,.62],[63.35,-4.5],[59.33,-15],[56.9,-19.5],[55,-27],[52,-32],[48,-38],[41,-42],[19,-49.5],[13,-54.5],[10,-62],[8.8,-72],[8.8,-150],[-8.8,-150],[-8.8,-72],[-10,-62],[-13,-54.5],[-19,-49.5],[-41,-42],[-48,-38],[-52,-32],[-55,-27],[-56.9,-19.5],[-59.33,-15],[-63.35,-4.5]],platforms:[[[-14.25,42.75],[14.25,42.75]],[[21,22.125],[49.5,22.125]],[[-49.5,16.125],[-21,16.125]]],ground:[[-63.35,.62],[-53.5,.62],[-51.25,0],[51.25,0],[53.5,.62],[63.35,.62]],ledge:[[-66.35,.62],[66.35,.62]]},3:{name:'Pokemon Stadium',x:[-230,230],y:[-111,180],polygon:[[-87.75,0],[87.75,0],[87.75,-4],[73.75,-15],[73.75,-17.75],[60,-17.75],[60,-38],[15,-60],[15,-112],[-15,-112],[-15,-60],[-60,-38],[-60,-17.75],[-73.75,-17.75],[-73.75,-15],[-87.75,-4]],platforms:[[[-55,25],[-25,25]],[[25,25],[55,25]]],ground:[[-87.75,0],[87.75,0]],ledge:[[-87.75,0],[87.75,0]]},8:{name:"Yoshi's Story",x:[-175.7,173.6],y:[-91,168],polygon:[[-56,-3.5],[-39,0],[39,0],[56,-3.5],[56,-7],[55,-8],[54,-11],[53,-12],[53,-27],[54,-28],[54,-30],[53,-31],[53,-46],[54,-47],[54,-100],[-54,-100],[-54,-47],[-53,-46],[-53,-31],[-54,-30],[-54,-28],[-53,-27],[-53,-12],[-54,-11],[-55,-8],[-56,-7]],platforms:[[[-59.5,23.45],[-28,23.45]],[[28,23.45],[59.5,23.45]],[[-15.75,42],[15.75,42]]],ground:[[-56,-3.5],[-39,0],[39,0],[56,-3.5]],ledge:[[-56,-3.5],[56,-3.5]]},28:{name:'Dream Land',x:[-255,255],y:[-123,250],polygon:[[-77.25,0],[77.25,0],[76.5,-11],[65.75,-36],[-65.75,-36],[-76.5,-11]],platforms:[[[-61.393,30.142],[-31.725,30.142]],[[-19.018,51.425],[19.017,51.425]],[[31.704,30.243],[63.075,30.243]]],ground:[[-77.25,0],[77.25,0]],ledge:[[-77.25,0],[77.25,0]]},31:{name:'Battlefield',x:[-224,224],y:[-108.8,200],polygon:[[-68.4,0],[68.4,0],[65,-6],[36,-19],[39,-21],[33,-25],[30,-29],[29,-35],[10,-40],[10,-30],[-10,-30],[-10,-40],[-29,-35],[-30,-29],[-33,-25],[-39,-21],[-36,-19],[-65,-6]],platforms:[[[-57.6,27.2],[-20,27.2]],[[20,27.2],[57.6,27.2]],[[-18.8,54.4],[18.8,54.4]]],ground:[[-68.4,0],[68.4,0]],ledge:[[-68.4,0],[68.4,0]]},32:{name:'Final Destination',x:[-246,246],y:[-140,188],polygon:[[-85.6,0],[85.6,0],[85.6,-10],[65,-20],[65,-30],[60,-47],[50,-55],[45,-56],[-45,-56],[-50,-55],[-60,-47],[-65,-30],[-65,-20],[-85.6,-10]],platforms:[],ground:[[-85.6,0],[85.6,0]],ledge:[[-68.4,0],[68.4,0]]}};
+
+const animCache=new Map(),animLoading=new Map();
+async function loadAnims(charId){
+  if(animLoading.get(charId)==='loaded')return;
+  if(animLoading.get(charId)==='failed')return;
+  if(animLoading.has(charId)){await animLoading.get(charId);return;}
+  const zipName=CHAR_FILE[charId];if(!zipName){animLoading.set(charId,'failed');return;}
+  const p=(async()=>{
+    try{
+      const res=await fetch(`${ANIM_BASE}/${zipName}.zip`);
+      if(!res.ok)throw new Error(res.status);
+      const buf=await res.arrayBuffer();
+      const files=unzipSync(new Uint8Array(buf));
+      const m=new Map();
+      for(const[fn,data]of Object.entries(files)){
+        const name=fn.replace(/^.*\//,'').replace(/\.json$/,'');
+        try{m.set(name,JSON.parse(new TextDecoder().decode(data)));}catch{}
+      }
+      animCache.set(charId,m);animLoading.set(charId,'loaded');
+    }catch(e){animLoading.set(charId,'failed');}
+  })();
+  animLoading.set(charId,p);await p;
+}
+
+function getAnimFrame(charId,stateId,counter){
+  const anims=animCache.get(charId);if(!anims)return null;
+  const actionName=stateId<ACTION_NAMES.length?ACTION_NAMES[stateId]:null;
+  const charMap=CHAR_ANIM_MAP[charId];const specials=CHAR_SPECIALS[charId];
+  let animName=null;
+  // Priority 1: per-character animationMap override
+  if(actionName&&charMap&&charMap[actionName]!==undefined)animName=charMap[actionName];
+  // Priority 2: character-specific specials (341+)
+  if(animName===null&&specials&&specials[stateId]!==undefined)animName=specials[stateId];
+  // Priority 3: raw action name
+  if(animName===null&&actionName)animName=actionName;
+  // Empty string = explicitly no animation, use Wait fallback
+  if(animName==='')animName=null;
+  if(!animName)animName=null;
+  let frames=animName?anims.get(animName):null;
+  // Fallback to Wait if animation not found
+  if(!frames){
+    const w=CHAR_ANIM_EXTRA[charId]?.Wait||'Wait';
+    frames=anims.get(w)||anims.get('Wait1')||anims.get('Wait');
+  }
+  if(!frames||!frames.length)return null;
+  const idx=Math.floor(Math.max(0,counter))%frames.length;
+  let p=frames[idx];
+  if(typeof p==='string'&&p.startsWith('frame')){const ri=parseInt(p.slice(5));if(!isNaN(ri)&&frames[ri])p=frames[ri];}
+  return typeof p==='string'?p:null;
+}
+
+// State
+let game=null,gSettings=null,gFrames=null,gKeys=[];
+let curFrame=0,isPlaying=false,playSpeed=1,animId=null,lastTs=0;
+let selectedPlayer=0,segments=[],activeIdx=-1,rangeEnd=-1,labeledCount=0;
+let loadedDataset=null; // existing action-dataset for the current character
+let compoundPatterns=[]; // [{stateSeq:[stateId,...], name, inputMatcher}]
+
+// Load existing dataset for a character and build compound pattern index
+async function loadDatasetForChar(charId){
+  const charName=CHAR_FILE[charId];if(!charName)return;
+  try{
+    const res=await fetch(`action-dataset/${charName}.json`);
+    if(!res.ok)return;
+    loadedDataset=await res.json();
+    // Build compound patterns from labeled variants that have stateSequence
+    compoundPatterns=[];
+    for(const[name,entry]of Object.entries(loadedDataset.actions||{})){
+      for(const v of(entry.variants||[])){
+        if(v.stateSequence&&v.stateSequence.length>1){
+          // Build an input matcher: extract key distinguishing inputs
+          const matcher=buildInputMatcher(v.inputs,v.stateSequence);
+          compoundPatterns.push({
+            name,
+            stateSeq:v.stateSequence.map(s=>s.stateId),
+            facing:v.context?.facing,
+            matcher,
+          });
+        }
+      }
+    }
+    console.log(`Loaded dataset for ${charName}: ${Object.keys(loadedDataset.actions||{}).length} actions, ${compoundPatterns.length} compound patterns`);
+  }catch(e){console.warn('Could not load existing dataset:',e.message);}
+}
+
+// Extract key distinguishing inputs from a variant (e.g. airdodge angle, button timing)
+function buildInputMatcher(inputs,stateSeq){
+  // Find the frame where L/R trigger is pressed (airdodge input)
+  const airdodgeInput=inputs.find(inp=>inp.trigger>0.5);
+  // Find the peak stick angle
+  const maxMagInput=inputs.reduce((best,inp)=>{
+    const mag=Math.sqrt(inp.stick.x**2+inp.stick.y**2);
+    const bestMag=Math.sqrt(best.stick.x**2+best.stick.y**2);
+    return mag>bestMag?inp:best;
+  },inputs[0]||{stick:{x:0,y:0}});
+  return {
+    airdodgeAngleX:airdodgeInput?.stick.x??null, // positive=forward, negative=back
+    peakStickX:maxMagInput?.stick.x??0,
+    hasJump:inputs.some(inp=>inp.buttons.includes('X')||inp.buttons.includes('Y')),
+    hasTrigger:inputs.some(inp=>inp.trigger>0.5),
+  };
+}
+
+// Match current segment range against compound patterns
+function matchCompoundPattern(segIdx){
+  if(!compoundPatterns.length||!gFrames)return null;
+  const IDLE_STATES=new Set([14,15,16,17,18,19]);
+  // Try matching patterns of length 2-5 starting at segIdx
+  for(const pat of compoundPatterns){
+    const patLen=pat.stateSeq.length;
+    // Collect non-idle states starting at segIdx
+    const actualStates=[];
+    let j=segIdx;
+    while(actualStates.length<patLen&&j<segments.length){
+      if(!IDLE_STATES.has(segments[j].stateId))actualStates.push({idx:j,stateId:segments[j].stateId});
+      j++;
+    }
+    if(actualStates.length<patLen)continue;
+    // Check state sequence match
+    const stateMatch=pat.stateSeq.every((sid,i)=>actualStates[i]?.stateId===sid);
+    if(!stateMatch)continue;
+    // Check facing direction
+    const segFacing=segments[segIdx].facing>0?'right':'left';
+    if(pat.facing&&pat.facing!==segFacing)continue;
+    // Check input matcher against actual inputs
+    const startF=segments[actualStates[0].idx].startFrame;
+    const endF=segments[actualStates[actualStates.length-1].idx].endFrame;
+    const actualInputs=[];
+    for(let f=startF;f<=endF;f++){
+      const pre=gFrames[f]?.players?.[selectedPlayer]?.pre;if(!pre)continue;
+      actualInputs.push({stick:{x:pre.joystickX??0,y:pre.joystickY??0},buttons:decodeButtons(pre.physicalButtons),trigger:Math.max(pre.physicalLTrigger||0,pre.physicalRTrigger||0)});
+    }
+    const actualMatcher=buildInputMatcher(actualInputs,[]);
+    // Score the match
+    let score=0;
+    if(pat.matcher.hasJump===actualMatcher.hasJump)score+=2;
+    if(pat.matcher.hasTrigger===actualMatcher.hasTrigger)score+=2;
+    if(pat.matcher.airdodgeAngleX!==null&&actualMatcher.airdodgeAngleX!==null){
+      // Same direction (both positive or both negative)
+      if(Math.sign(pat.matcher.airdodgeAngleX)===Math.sign(actualMatcher.airdodgeAngleX))score+=3;
+    }
+    if(score>=4){
+      return {
+        name:pat.name,
+        confidence:Math.min(0.95,score/7),
+        rangeEnd:actualStates[actualStates.length-1].idx,
+      };
+    }
+  }
+  return null;
+}
+
+const canvas=document.getElementById('viewerCanvas');
+const ctx=canvas.getContext('2d');
+
+function renderFrame(fi){
+  if(!gFrames||!gSettings)return;
+  const W=canvas.width,H=canvas.height;
+  const stage=STAGE_DATA[gSettings.stageId]||STAGE_DATA[31];
+  const [bx0,bx1]=stage.x,[by0,by1]=stage.y;
+  const stageW=bx1-bx0,stageH=by1-by0;
+  const pad=50;
+  const scale=Math.min((W-pad*2)/stageW,(H-pad*2)/stageH);
+  const stageCenterX=(bx0+bx1)/2,stageCenterY=(by0+by1)/2;
+  const offX=W/2-stageCenterX*scale;
+  const offY=H/2+stageCenterY*scale;
+  const tx=x=>x*scale+offX,ty=y=>-y*scale+offY;
+
+  // Background
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0a0a1a');bg.addColorStop(1,'#0d1a2e');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // Blast zone
+  ctx.save();ctx.strokeStyle='rgba(255,60,60,.2)';ctx.lineWidth=1;ctx.setLineDash([5,4]);
+  ctx.strokeRect(tx(bx0),ty(by1),stageW*scale,stageH*scale);
+  ctx.setLineDash([]);ctx.restore();
+
+  // Stage polygon
+  ctx.save();
+  const poly=stage.polygon||[];
+  if(poly.length>2){
+    ctx.fillStyle='rgba(40,60,120,.35)';ctx.strokeStyle='#3a5a9a';ctx.lineWidth=2;
+    ctx.shadowColor='#667eea';ctx.shadowBlur=8;
+    ctx.beginPath();ctx.moveTo(tx(poly[0][0]),ty(poly[0][1]));
+    for(let i=1;i<poly.length;i++)ctx.lineTo(tx(poly[i][0]),ty(poly[i][1]));
+    ctx.closePath();ctx.fill();ctx.stroke();
+  }
+  // Ground surface
+  const gnd=stage.ground||[];
+  if(gnd.length>1){
+    ctx.strokeStyle='#5a8aee';ctx.lineWidth=3;ctx.shadowColor='#667eea';ctx.shadowBlur=10;
+    ctx.beginPath();ctx.moveTo(tx(gnd[0][0]),ty(gnd[0][1]));
+    for(let i=1;i<gnd.length;i++)ctx.lineTo(tx(gnd[i][0]),ty(gnd[i][1]));
+    ctx.stroke();
+  }
+  // Ledge markers
+  if(stage.ledge){
+    ctx.fillStyle='#ff6b6b';ctx.shadowColor='#ff4444';ctx.shadowBlur=6;
+    stage.ledge.forEach(([lx,ly])=>{ctx.beginPath();ctx.arc(tx(lx),ty(ly),3,0,Math.PI*2);ctx.fill();});
+  }
+  ctx.restore();
+
+  // Platforms
+  ctx.save();ctx.strokeStyle='#4a6aaa';ctx.lineWidth=3;ctx.shadowColor='#667eea';ctx.shadowBlur=6;
+  for(const [[x1,y1],[x2,y2]] of(stage.platforms||[])){
+    ctx.beginPath();ctx.moveTo(tx(x1),ty(y1));ctx.lineTo(tx(x2),ty(y2));ctx.stroke();
+  }
+  ctx.restore();  // Players
+  const frame=gFrames[gKeys[fi]];if(!frame)return;
+  for(const player of(gSettings.players||[])){
+    const pIdx=player.playerIndex;
+    const pf=frame.players?.[pIdx];if(!pf?.post)continue;
+    const post=pf.post;
+    const px=tx(post.positionX),py=ty(post.positionY);
+    const charId=player.characterId;
+    const cs=(CHAR_SCALE[charId]||1)*0.1*scale;
+    const facing=post.facingDirection??1;
+    const pathStr=getAnimFrame(charId,post.actionStateId,post.actionStateCounter??0);
+    if(pathStr){
+      ctx.save();ctx.translate(px,py);ctx.scale(facing*cs,cs);ctx.translate(-500,-500);
+      const isSelected=pIdx===selectedPlayer;
+      ctx.fillStyle=isSelected?(PORT_COLORS[player.port-1]||'#fff'):'rgba(160,160,160,.5)';
+      ctx.fill(new Path2D(pathStr));ctx.restore();
+    }else{
+      ctx.beginPath();ctx.arc(px,py,pIdx===selectedPlayer?12:8,0,Math.PI*2);
+      ctx.fillStyle=pIdx===selectedPlayer?(PORT_COLORS[player.port-1]||'#fff'):'rgba(160,160,160,.4)';ctx.fill();
+    }
+
+    // Shield bubble
+    const animName=getAnimFrame(charId,post.actionStateId,post.actionStateCounter??0);
+    const resolvedName=animName?'':null; // we need the name not the path
+    const stateId=post.actionStateId;
+    // Determine animation name for shield check
+    const actionName=stateId<ACTION_NAMES.length?ACTION_NAMES[stateId]:null;
+    const charMap=CHAR_ANIM_MAP[charId];
+    let resolvedAnimName=null;
+    if(actionName&&charMap&&charMap[actionName]!==undefined)resolvedAnimName=charMap[actionName];
+    if(!resolvedAnimName&&CHAR_SPECIALS[charId]?.[stateId])resolvedAnimName=CHAR_SPECIALS[charId][stateId];
+    if(!resolvedAnimName&&actionName)resolvedAnimName=actionName;
+
+    const isShielding=['GuardOn','Guard','GuardReflect','GuardDamage'].includes(resolvedAnimName);
+    if(isShielding){
+      const pre=pf.pre;
+      const shieldHP=post.shieldSize??60;
+      const lt=pre?.physicalLTrigger??0,rt=pre?.physicalRTrigger??0;
+      let trigStr=Math.max(lt,rt);if(trigStr===0)trigStr=1;
+      const trigMult=1-(0.5*(trigStr-0.3))/0.7;
+      const sizeMult=((shieldHP*trigMult)/60)*0.85+0.15;
+      const shieldR=7.7696875*sizeMult*scale;
+      // Shield offset (approximate — use character-specific if available)
+      const SHIELD_OFFSETS={2:[2.724,9.003],20:[2.724,9.003],9:[0,9.5],19:[0,9],0:[0.2,10.447],12:[0,9],15:[0,8]};
+      const sOff=SHIELD_OFFSETS[charId]||[0,9];
+      let sx=post.positionX+(sOff[0]*facing),sy=post.positionY+sOff[1];
+      // Stick tilt
+      if(pre&&resolvedAnimName!=='GuardDamage'){
+        const stx=pre.joystickX??0,sty=pre.joystickY??0;
+        const smag=Math.sqrt(stx*stx+sty*sty);
+        const sang=Math.atan2(sty,stx);
+        sx+=Math.cos(sang)*smag*3;sy+=Math.sin(sang)*smag*3;
+      }
+      ctx.save();
+      ctx.beginPath();ctx.arc(tx(sx),ty(sy),shieldR,0,Math.PI*2);
+      ctx.fillStyle=PORT_COLORS[player.port-1]||'#fff';ctx.globalAlpha=0.45;ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=1.5;ctx.globalAlpha=0.6;ctx.stroke();
+      ctx.restore();
+    }
+
+    // Fox/Falco shine hexagon
+    const isFoxFalco=(charId===2||charId===20);
+    const isShine=isFoxFalco&&resolvedAnimName&&(resolvedAnimName.includes('SpecialLw'));
+    if(isShine){
+      const shineY=post.positionY+((charId===2?9:9)*3/4);
+      const scx=tx(post.positionX),scy=ty(shineY);
+      const shineR=6*scale;
+      ctx.save();
+      ctx.beginPath();
+      for(let h=0;h<6;h++){const a=(Math.PI/3)*h-Math.PI/2;ctx.lineTo(scx+Math.cos(a)*shineR,scy+Math.sin(a)*shineR);}
+      ctx.closePath();
+      for(let h=5;h>=0;h--){const a=(Math.PI/3)*h-Math.PI/2;ctx.lineTo(scx+Math.cos(a)*shineR*0.6,scy+Math.sin(a)*shineR*0.6);}
+      ctx.closePath();
+      ctx.fillStyle='#8abce9';ctx.globalAlpha=0.75;ctx.fill('evenodd');
+      ctx.restore();
+    }
+  }
+  // Segment highlight — show full selected range
+  const rStart=Math.min(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+  const rEnd=Math.max(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+  if(rStart>=0&&rStart<segments.length){
+    const s0=segments[rStart],s1=segments[rEnd<segments.length?rEnd:rStart];
+    const si=gKeys.indexOf(s0.startFrame),ei=gKeys.indexOf(s1.endFrame);
+    if(fi>=si&&fi<=ei){ctx.fillStyle='rgba(102,126,234,.15)';ctx.fillRect(0,0,W,H);}
+  }
+  // HUD
+  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,18);
+  ctx.fillStyle='#ccc';ctx.font='11px monospace';
+  const absF=gKeys[fi];
+  const pf0=frame.players?.[selectedPlayer];
+  const sid=pf0?.post?.actionStateId??'?';
+  const sname=typeof sid==='number'&&sid<ACTION_NAMES.length?ACTION_NAMES[sid]:`Special_${sid}`;
+  ctx.fillText(`Frame ${absF}  |  State ${sid} (${sname})`,6,13);
+}
+
+// Playback
+function playLoop(ts){
+  if(!isPlaying)return;
+  const elapsed=ts-lastTs;
+  const frameTime=1000/60/playSpeed;
+  if(elapsed>=frameTime){
+    lastTs=ts-(elapsed%frameTime); // keep remainder for smooth timing
+    // If a range is selected, loop within it
+    const rStart=Math.min(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+    const rEnd=Math.max(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+    let loopEnd=gKeys.length-1;
+    if(rStart>=0&&rEnd>=0&&rEnd<segments.length){
+      const endFrameIdx=gKeys.indexOf(segments[rEnd].endFrame);
+      if(endFrameIdx>=0)loopEnd=endFrameIdx;
+    }
+    if(curFrame<loopEnd){
+      curFrame++;renderFrame(curFrame);updateUI();
+    } else if(rangeEnd>=0&&rEnd>rStart&&rStart>=0){
+      // Loop back to start of range
+      const startFrameIdx=gKeys.indexOf(segments[rStart].startFrame);
+      if(startFrameIdx>=0){curFrame=startFrameIdx;renderFrame(curFrame);updateUI();}
+    } else {
+      isPlaying=false;document.getElementById('playBtn').textContent='▶';document.getElementById('playBtn').classList.remove('active');
+    }
+  }
+  animId=requestAnimationFrame(playLoop);
+}
+window.togglePlay=()=>{
+  isPlaying=!isPlaying;
+  const btn=document.getElementById('playBtn');
+  btn.textContent=isPlaying?'⏸':'▶';btn.classList.toggle('active',isPlaying);
+  if(isPlaying){lastTs=performance.now();animId=requestAnimationFrame(playLoop);}
+  else if(animId)cancelAnimationFrame(animId);
+};
+window.stepFrame=n=>{
+  isPlaying=false;document.getElementById('playBtn').textContent='▶';document.getElementById('playBtn').classList.remove('active');
+  curFrame=Math.max(0,Math.min(gKeys.length-1,curFrame+n));
+  renderFrame(curFrame);updateUI();
+};
+window.seekTo=v=>{curFrame=Math.max(0,Math.min(gKeys.length-1,v));renderFrame(curFrame);updateUI();};
+function updateUI(){
+  document.getElementById('frameInfo').textContent=`${gKeys[curFrame]} / ${gKeys[gKeys.length-1]}`;
+  document.getElementById('timeline').value=curFrame;
+  updateControllerArea();
+  // Auto-highlight segment — but don't call selectSeg during playback (it resets range)
+  if(!isPlaying){
+    const af=gKeys[curFrame];
+    for(let i=0;i<segments.length;i++){
+      if(af>=segments[i].startFrame&&af<=segments[i].endFrame){if(i!==activeIdx)selectSeg(i,null,false);break;}
+    }
+  }
+}
+
+// Segments
+function detectSegments(pIdx){
+  const segs=[];let cur=null,start=null;
+  for(const fIdx of gKeys){
+    const pf=gFrames[fIdx]?.players?.[pIdx];if(!pf?.post)continue;
+    const sid=pf.post.actionStateId;
+    if(sid!==cur){
+      if(cur!==null&&(fIdx-1-start)>=2)segs.push({startFrame:start,endFrame:fIdx-1,stateId:cur,stateName:cur<ACTION_NAMES.length?ACTION_NAMES[cur]:`Special_${cur}`,autoLabel:AUTO_LABELS[cur]||null,label:null,facing:gFrames[start]?.players?.[pIdx]?.post?.facingDirection??1});
+      cur=sid;start=fIdx;
+    }
+  }
+  if(cur!==null)segs.push({startFrame:start,endFrame:gKeys[gKeys.length-1],stateId:cur,stateName:cur<ACTION_NAMES.length?ACTION_NAMES[cur]:`Special_${cur}`,autoLabel:AUTO_LABELS[cur]||null,label:null,facing:gFrames[start]?.players?.[selectedPlayer]?.post?.facingDirection??1});
+
+  // Run compound action detection (slippi-js ActionsComputer logic)
+  annotateCompoundActions(segs, pIdx);
+  return segs;
+}
+
+// Detect wavedash/waveland/dash-dance using slippi-js's proven logic
+function annotateCompoundActions(segs, pIdx){
+  const animations=[];
+  const positionsY=[];
+  for(const fIdx of gKeys){
+    const pf=gFrames[fIdx]?.players?.[pIdx];if(!pf?.post)continue;
+    animations.push({frame:fIdx,stateId:pf.post.actionStateId});
+    positionsY.push(pf.post.positionY??0);
+    const len=animations.length;if(len<3)continue;
+    const cur=animations[len-1].stateId;
+
+    // Wavedash/waveland: LandingFallSpecial after KneeBend+AirDodge
+    if(cur===43){
+      const lookback=Math.min(15,len);
+      const recent=animations.slice(-lookback);
+      const recentStates=new Set(recent.map(a=>a.stateId));
+      if(recentStates.has(236)){// AirDodge
+        const kbIdx=recent.findLastIndex(a=>a.stateId===24);// KneeBend
+        if(kbIdx>=0){
+          const recentY=positionsY.slice(-lookback);
+          const changedY=Math.abs(recentY[recentY.length-1]-recentY[kbIdx])>0.1;
+          const jumpFrames=recent.filter(a=>a.stateId>=25&&a.stateId<=28).length;
+          const isWaveland=jumpFrames>=5&&changedY;
+          const startF=recent[kbIdx].frame,endF=animations[len-1].frame;
+          // Find the airdodge frame to determine direction
+          const airDodgeEntry=recent.find(a=>a.stateId===236);
+          let dir='';
+          if(airDodgeEntry){
+            const pre=gFrames[airDodgeEntry.frame]?.players?.[pIdx]?.pre;
+            const sx=pre?.joystickX??0;
+            const facing=gFrames[startF]?.players?.[pIdx]?.post?.facingDirection??1;
+            // Forward = stick in same direction as facing
+            if(Math.abs(sx)<0.1)dir='_inplace';
+            else if(sx*facing>0)dir='_forward';
+            else dir='_back';
+          }
+          const actionName=(isWaveland?'waveland':'wavedash')+dir;
+          // Tag the KneeBend segment with this compound label
+          const kbSeg=segs.find(s=>s.startFrame===startF);
+          const lfsSeg=segs.find(s=>s.startFrame<=endF&&s.endFrame>=endF);
+          if(kbSeg&&!kbSeg.compoundSuggestion){
+            kbSeg.compoundSuggestion={name:actionName,rangeEndFrame:endF,confidence:0.9};
+          }
+        }
+      }
+    }
+
+    // Dash dance: DASH(20) → TURN(18) → DASH(20)
+    if(len>=3){
+      const l3=[animations[len-3].stateId,animations[len-2].stateId,animations[len-1].stateId];
+      if(l3[0]===20&&l3[1]===18&&l3[2]===20){
+        const ddSeg=segs.find(s=>s.startFrame===animations[len-3].frame);
+        if(ddSeg&&!ddSeg.compoundSuggestion)ddSeg.compoundSuggestion={name:'dash_dance',rangeEndFrame:animations[len-1].frame,confidence:0.85};
+      }
+    }
+  }
+}
+
+window.buildSegList=()=>{
+  const list=document.getElementById('segList');
+  const filter=document.getElementById('segFilter').value.toLowerCase();
+  const rStart=Math.min(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+  const rEnd=Math.max(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+
+  // Build a set of segment indices that are part of an auto-detected group
+  const autoGroupMap=new Map(); // segIdx → {name, groupStartIdx, groupEndIdx}
+  for(let i=0;i<segments.length;i++){
+    const s=segments[i];
+    if(s.compoundSuggestion&&!s.label){
+      const endIdx=segments.findIndex((seg,j)=>j>i&&seg.startFrame<=s.compoundSuggestion.rangeEndFrame&&seg.endFrame>=s.compoundSuggestion.rangeEndFrame);
+      if(endIdx>i){
+        for(let j=i;j<=endIdx;j++){
+          autoGroupMap.set(j,{name:s.compoundSuggestion.name,confidence:s.compoundSuggestion.confidence,groupStart:i,groupEnd:endIdx});
+        }
+      }
+    }
+  }
+
+  let html='',shown=0;
+  let skipUntil=-1;
+  for(let i=0;i<segments.length;i++){
+    const s=segments[i];
+    const dur=s.endFrame-s.startFrame+1;
+    const disp=s.label||s.autoLabel||'???';
+    if(filter&&!disp.includes(filter)&&!s.stateName.toLowerCase().includes(filter)){
+      const grp=autoGroupMap.get(i);
+      if(!grp||!grp.name.includes(filter))continue;
+    }
+    shown++;
+
+    const inRange=i>=rStart&&i<=rEnd&&rStart>=0;
+    const isActive=i===activeIdx||i===rangeEnd;
+    const grp=autoGroupMap.get(i);
+
+    if(grp&&!s.label&&i===grp.groupStart){
+      // Render as a grouped block header
+      const groupDur=segments[grp.groupEnd].endFrame-s.startFrame+1;
+      const stateNames=segments.slice(grp.groupStart,grp.groupEnd+1).map(seg=>seg.stateName).join('→');
+      const cls=(isActive?' active':'')+(inRange?' in-range':'');
+      html+=`<div class="seg-item auto-grouped${cls}" onclick="selectAutoGroup(${grp.groupStart},${grp.groupEnd},event)" title="Auto-detected: ${grp.name}">
+        <span class="seg-frames">${s.startFrame}-${segments[grp.groupEnd].endFrame}</span>
+        <span class="seg-dur">${groupDur}f</span>
+        <span class="seg-facing">${s.facing>0?'R':'L'}</span>
+        <span class="seg-state" style="color:#f59e0b">⚡ ${grp.name} <span style="color:#666;font-size:.65rem">(${(grp.confidence*100).toFixed(0)}%)</span></span>
+        <span class="seg-lbl" style="color:#888">${stateNames}</span>
+      </div>`;
+      skipUntil=grp.groupEnd;
+      continue;
+    }
+    if(grp&&!s.label&&i>grp.groupStart&&i<=skipUntil){
+      // Skip inner segments of auto-group (they're shown as part of the header)
+      continue;
+    }
+    skipUntil=-1;
+
+    const cls=(isActive?' active':'')+(inRange&&!isActive?' in-range':'')+(s.label?' labeled':'');
+    const compound=(!s.label&&!filter&&!grp)?matchCompoundPattern(i):null;
+    const compoundHint=compound?` <span style="color:#f59e0b;font-size:.65rem;">⚡${compound.name}(${(compound.confidence*100).toFixed(0)}%)</span>`:'';
+    html+=`<div class="seg-item${cls}" onclick="selectSeg(${i},event)"><span class="seg-frames">${s.startFrame}-${s.endFrame}</span><span class="seg-dur">${dur}f</span><span class="seg-facing">${s.facing>0?'R':'L'}</span><span class="seg-state">${s.stateName}${compoundHint}</span><span class="seg-lbl">${s.label?'✓ '+s.label:(s.autoLabel||'')}</span></div>`;
+  }
+  list.innerHTML=html||'<p style="color:#555;padding:1rem;text-align:center">No matches</p>';
+  document.getElementById('segStats').textContent=`${shown}/${segments.length} | ${labeledCount} labeled`;
+};
+
+window.selectAutoGroup=(startIdx,endIdx,evt)=>{
+  // Select the full auto-detected group as a range
+  activeIdx=startIdx;rangeEnd=endIdx;
+  const s0=segments[startIdx],s1=segments[endIdx];
+  const fi=gKeys.indexOf(s0.startFrame);
+  if(fi>=0){curFrame=fi;isPlaying=false;document.getElementById('playBtn').textContent='▶';document.getElementById('playBtn').classList.remove('active');renderFrame(curFrame);updateUI();}
+  const dur=s1.endFrame-s0.startFrame+1;
+  const stateNames=segments.slice(startIdx,endIdx+1).map(s=>s.stateName).join(' → ');
+  document.getElementById('segInfo').textContent=`Auto-group: Frames ${s0.startFrame}–${s1.endFrame} (${dur}f) | ${stateNames}`;
+  document.getElementById('inputSummary').textContent=buildInputSummary(startIdx,endIdx);
+  // Pre-fill with the auto-detected name
+  const grpName=s0.compoundSuggestion?.name||'';
+  document.getElementById('labelInput').value=grpName;
+  document.getElementById('labelInput').focus();
+  buildSegList();
+  document.querySelector('.seg-item.active')?.scrollIntoView({block:'nearest'});
+};
+
+window.selectSeg=(idx,evt,jump=true)=>{
+  if(evt?.shiftKey&&activeIdx>=0){
+    // Extend range to this segment — do NOT auto-play
+    rangeEnd=idx;
+    // Jump to start of range but don't play
+    const rStart=Math.min(activeIdx,rangeEnd);
+    const fi=gKeys.indexOf(segments[rStart].startFrame);
+    if(fi>=0){
+      curFrame=fi;
+      isPlaying=false;
+      document.getElementById('playBtn').textContent='▶';
+      document.getElementById('playBtn').classList.remove('active');
+      if(animId)cancelAnimationFrame(animId);
+      renderFrame(curFrame);updateUI();
+    }
+    // Update info to show range
+    const s0=segments[Math.min(activeIdx,rangeEnd)];
+    const s1=segments[Math.max(activeIdx,rangeEnd)];
+    const totalDur=s1.endFrame-s0.startFrame+1;
+    const stateNames=[...new Set([s0,segments[Math.min(activeIdx,rangeEnd)+1]||s0,...[s1]].map(s=>s.stateName))].join(' → ');
+    document.getElementById('segInfo').textContent=`Range: Frames ${s0.startFrame}–${s1.endFrame} (${totalDur}f) | ${stateNames}`;
+    document.getElementById('inputSummary').textContent=buildInputSummary(Math.min(activeIdx,rangeEnd),Math.max(activeIdx,rangeEnd));
+    document.getElementById('labelInput').value='';
+    document.getElementById('labelInput').focus();
+  } else {
+    // Single segment select — only reset range if user explicitly clicked (not auto-highlight)
+    if(evt!==false)rangeEnd=-1;
+    activeIdx=idx;
+    const s=segments[idx];
+    if(jump){
+      const fi=gKeys.indexOf(s.startFrame);
+      if(fi>=0){curFrame=fi;isPlaying=false;document.getElementById('playBtn').textContent='▶';document.getElementById('playBtn').classList.remove('active');renderFrame(curFrame);updateUI();}
+    }
+    const dur=s.endFrame-s.startFrame+1;
+    document.getElementById('segInfo').textContent=`#${idx+1}/${segments.length} | Frames ${s.startFrame}–${s.endFrame} (${dur}f) | ${s.stateName} | ${s.facing>0?'Right':'Left'}`;
+    document.getElementById('inputSummary').textContent=buildInputSummary(idx,idx);
+    document.getElementById('labelInput').value=s.label||s.autoLabel||'';
+    // Check for compound pattern match and pre-fill + auto-extend range
+    if(!s.label){
+      // First check slippi-js detected compound action
+      const slippiCompound=s.compoundSuggestion;
+      if(slippiCompound){
+        document.getElementById('labelInput').value=slippiCompound.name;
+        const endIdx=segments.findIndex(seg=>seg.startFrame<=slippiCompound.rangeEndFrame&&seg.endFrame>=slippiCompound.rangeEndFrame);
+        if(endIdx>idx){rangeEnd=endIdx;buildSegList();}
+      } else {
+        const compound=matchCompoundPattern(idx);
+        if(compound){
+          document.getElementById('labelInput').value=compound.name;
+          if(compound.rangeEnd>idx){rangeEnd=compound.rangeEnd;buildSegList();}
+        }
+      }
+    }
+    document.getElementById('labelInput').focus();
+  }
+  buildSegList();
+  document.querySelector('.seg-item.active')?.scrollIntoView({block:'nearest'});
+};
+
+// Build a human-readable input summary for the selected range
+function buildInputSummary(rStart, rEnd){
+  if(rStart<0||!gFrames)return '';
+  const s0=segments[rStart], s1=segments[Math.min(rEnd,segments.length-1)];
+  const startF=s0.startFrame, endF=s1.endFrame;
+  const lines=[];
+  // Sample key frames: first frame of each segment + any frame with button press
+  const keyFrames=new Set();
+  for(let i=rStart;i<=rEnd&&i<segments.length;i++) keyFrames.add(segments[i].startFrame);
+  // Also add frames where buttons change
+  let prevBtns='';
+  for(let f=startF;f<=endF;f++){
+    const pre=gFrames[f]?.players?.[selectedPlayer]?.pre;if(!pre)continue;
+    const btns=decodeButtons(pre.physicalButtons).join('+');
+    if(btns!==prevBtns){keyFrames.add(f);prevBtns=btns;}
+  }
+  for(const f of [...keyFrames].sort((a,b)=>a-b)){
+    const pre=gFrames[f]?.players?.[selectedPlayer]?.pre;if(!pre)continue;
+    const post=gFrames[f]?.players?.[selectedPlayer]?.post;
+    const sx=pre.joystickX?.toFixed(2)??'0';
+    const sy=pre.joystickY?.toFixed(2)??'0';
+    const btns=decodeButtons(pre.physicalButtons);
+    const trig=Math.max(pre.physicalLTrigger||0,pre.physicalRTrigger||0);
+    const sid=post?.actionStateId;
+    const sname=sid!=null&&sid<ACTION_NAMES.length?ACTION_NAMES[sid]:`S${sid}`;
+    const btnStr=btns.length?` [${btns.join('+')}]`:'';
+    const trigStr=trig>0.1?` L${trig.toFixed(2)}`:'';
+    // Direction hint
+    const dir=parseFloat(sx)>0.3?'→':parseFloat(sx)<-0.3?'←':parseFloat(sy)>0.3?'↑':parseFloat(sy)<-0.3?'↓':'·';
+    lines.push(`f${f} ${sname}: ${dir}(${sx},${sy})${btnStr}${trigStr}`);
+  }
+  return lines.join('\n');
+}
+
+window.saveLabel=()=>{
+  if(activeIdx<0)return;
+  const v=document.getElementById('labelInput').value.trim();if(!v)return;
+  const rStart=Math.min(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+  const rEnd=Math.max(activeIdx,rangeEnd>=0?rangeEnd:activeIdx);
+  // Label all segments in range with the same label
+  for(let i=rStart;i<=rEnd;i++){
+    if(!segments[i].label)labeledCount++;
+    segments[i].label=v;
+  }
+  // If it's a range, also store a compound entry flag
+  if(rEnd>rStart){
+    segments[rStart]._rangeEnd=rEnd; // mark as compound action start
+  }
+  rangeEnd=-1;
+  buildSegList();nextUnlabeled();
+};
+
+window.nextUnlabeled=()=>{
+  const skip=new Set(['idle','fall','damage_fall']);
+  for(let i=(activeIdx+1)%segments.length,c=0;c<segments.length;i=(i+1)%segments.length,c++){
+    const s=segments[i];
+    if(!s.label&&!skip.has(s.autoLabel)){selectSeg(i);return;}
+  }
+};
+
+// ===== Controller overlay =====
+let showController = true;
+let controllerSize = 160;
+window.setControllerScale = (v) => { controllerSize = v; updateControllerArea(); };
+const PORT_COLORS_HEX = ['#e74c3c','#3498db','#f1c40f','#2ecc71'];
+function getPlayerColor(i){ return PORT_COLORS_HEX[i]||'#aaa'; }
+
+function buildControllerSVG(pre, color) {
+    const jx=pre?.joystickX??0,jy=pre?.joystickY??0;
+    const cx2=pre?.cStickX??0,cy2=pre?.cStickY??0;
+    const bits=pre?.physicalButtons??0;
+    const a=!!(bits&0x0100),b=!!(bits&0x0200),x=!!(bits&0x0400),y=!!(bits&0x0800);
+    const z=!!(bits&0x0010),lDig=!!(bits&0x0040),rDig=!!(bits&0x0020),start=!!(bits&0x1000);
+    const dUp=!!(bits&0x0008),dDown=!!(bits&0x0004),dLeft=!!(bits&0x0001),dRight=!!(bits&0x0002);
+    const lAn=pre?.physicalLTrigger??0,rAn=pre?.physicalRTrigger??0;
+    const w=p=>p?'white':'';
+    const sCx=104.7+jx*34,sCy=274.5-jy*34;
+    const csCx=395.2+cx2*19.5,csCy=411.6-cy2*19.5;
+    const gCx=104.7,gCy=274.5,gR=69.1,dOff=gR*0.7;
+    const octPts=[[gCx,gCy-gR],[gCx+dOff,gCy-dOff],[gCx+gR,gCy],[gCx+dOff,gCy+dOff],[gCx,gCy+gR],[gCx-dOff,gCy+dOff],[gCx-gR,gCy],[gCx-dOff,gCy-dOff]].map(([px,py])=>`${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
+    const csGCx=395.2,csGCy=411.6,csGR=44.1,csDOff=csGR*0.7;
+    const csOctPts=[[csGCx,csGCy-csGR],[csGCx+csDOff,csGCy-csDOff],[csGCx+csGR,csGCy],[csGCx+csDOff,csGCy+csDOff],[csGCx,csGCy+csGR],[csGCx-csDOff,csGCy+csDOff],[csGCx-csGR,csGCy],[csGCx-csDOff,csGCy-csDOff]].map(([px,py])=>`${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
+    const lPct=Math.min(1,lAn),rPct=Math.min(1,rAn);
+    const lBarH=lPct*40,rBarH=rPct*40;
+    const lBarColor=lDig?'white':(lPct>0?`rgba(180,220,255,${0.4+lPct*0.6})`:'transparent');
+    const rBarColor=rDig?'white':(rPct>0?`rgba(180,220,255,${0.4+rPct*0.6})`:'transparent');
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 585.781 590" style="width:${controllerSize}px;height:auto;">
+        <path fill="${color}" d="M376.4 33.6c-6 0-11.9 3.9-11.1 11.8 1 11.8-2.6 21.8-12.6 28.8-10 7.2-24.4 4.3-35.2 10.2a53.6 53.6 0 0 0-28.1 40.6c-116.9 1.6-160.5 25.4-160.5 25.4-68.1-13.9-77.4 34-77.4 34-67.5 45-47.9 128.2-47.9 128.2-7 84.3-9.5 239.6 46.8 239.6s56-145.5 56-145.5 9.8 16.2 17.3 37.6c7.5 21.3 63.5 79.7 124.1 15.6 60.7-64.1-23-128.2-23-128.2v-10.2c20.2-5.6 68-6.6 68-6.6s48 1 68.2 6.6v10.2s-83.7 64-23 128.2c60.6 64 116.6 5.7 124-15.6 7.6-21.4 17.4-37.6 17.4-37.6s-.3 145.5 56 145.5 53.7-155.3 46.8-239.6c0 0 19.6-83.1-48-128.2 0 0-9.2-47.9-77.3-34 0 0-39.3-21.4-143-25 5-25.9 37.2-20 54.9-32.7a52.6 52.6 0 0 0 21-47.3c-.8-7.8-7.2-11.8-13.4-11.8z"/>
+        <path fill="${dUp||dDown||dLeft||dRight?'#aaa':'gray'}" stroke="black" stroke-width="2.5" d="M202 370.4c0-1.5-1.2-2.7-2.6-2.7h-20.8a2.7 2.7 0 0 0-2.7 2.7v27.9h-28a2.7 2.7 0 0 0-2.6 2.7v20.8c0 1.5 1.2 2.7 2.7 2.7h27.9v27.9c0 1.5 1.2 2.7 2.7 2.7h20.8c1.5 0 2.7-1.2 2.7-2.7v-28H230c1.5 0 2.7-1.1 2.7-2.6V401c0-1.5-1.2-2.7-2.7-2.7h-28z"/>
+        ${dUp?'<rect x="170" y="365" width="18" height="20" fill="white" rx="2"/>':''}
+        ${dDown?'<rect x="170" y="418" width="18" height="20" fill="white" rx="2"/>':''}
+        ${dLeft?'<rect x="143" y="393" width="20" height="18" fill="white" rx="2"/>':''}
+        ${dRight?'<rect x="198" y="393" width="20" height="18" fill="white" rx="2"/>':''}
+        <polygon fill="lightgray" stroke="black" stroke-width="2.5" points="${octPts}"/>
+        <circle fill="gray" stroke="black" stroke-width="2.5" cx="${sCx}" cy="${sCy}" r="35.1"/>
+        <polygon fill="gold" stroke="black" stroke-width="2.5" points="${csOctPts}"/>
+        <circle fill="yellow" stroke="black" stroke-width="2.5" cx="${csCx}" cy="${csCy}" r="24.6"/>
+        <circle fill="${w(start)||'gray'}" stroke="black" stroke-width="2.5" cx="292.9" cy="271.9" r="13.7"/>
+        <circle fill="${w(a)||'green'}" stroke="black" stroke-width="2.5" cx="479.4" cy="279.7" r="33.9"/>
+        <circle fill="${w(b)||'red'}" stroke="black" stroke-width="2.5" cx="410.6" cy="313" r="22.9"/>
+        <path fill="${w(y)||'gray'}" stroke="black" stroke-width="2.5" d="M429.3 229.8a16 16 0 0 0 15.4 4.7c.5-.1 2.3-1 3.7-1.8 3.7-2.1 8.9-5 14.4-6.5 6.7-1.8 15.9-2 19.5-2h.6c3.8-1.1 7-3.6 9-7.1l.2-.3a15.4 15.4 0 0 0-13.9-22.9 17 17 0 0 0-3.9.5l-.8.1c-17 4-17 4-35.6 9.6l-1.2.4a15.6 15.6 0 0 0-11 19 15 15 0 0 0 3.6 6.3z"/>
+        <path fill="${w(x)||'gray'}" stroke="black" stroke-width="2.5" d="M565.1 278c-4-16.9-4-16.9-9.6-35.6l-.3-1c-2.2-8.2-10.9-13.3-19.1-11.1-2.1.6-4 1.6-5.6 2.8-1.6 1.3-3 2.9-4 4.7-1.9 3.4-2.5 7.5-1.4 11.5.1.5 1.1 2.2 1.9 3.6 2.1 3.8 4.9 8.9 6.4 14.4 2 7.4 2 17.8 2 20.1.7 2.4 2 4.4 3.7 6.1 1.5 1.6 3.3 2.8 5.4 3.7 3.1 1.3 6.5 1.7 9.9.8 8.1-2.2 12.9-10.6 10.9-19.1z"/>
+        <path fill="${w(lDig)||'gray'}" stroke="black" stroke-width="2.5" d="m 130,150 l -75,35 l 0,-10 c 0,-55 55,-55 75,-35 l 0,10 z"/>
+        ${lPct>0&&!lDig?`<rect x="60" y="${180-lBarH}" width="65" height="${lBarH}" rx="3" fill="${lBarColor}" opacity="0.9"/>`:''}
+        <path fill="${w(rDig)||'gray'}" stroke="black" stroke-width="2.5" d="m 460,150 l 75,35 l 0,-10 c 0,-55 -55,-55 -75,-35 l 0,10 z"/>
+        ${rPct>0&&!rDig?`<rect x="465" y="${180-rBarH}" width="65" height="${rBarH}" rx="3" fill="${rBarColor}" opacity="0.9"/>`:''}
+        <path fill="${w(z)||'purple'}" stroke="black" stroke-width="2.5" d="M460 155v-15l75 35v15z"/>
+        <rect x="30" y="560" width="200" height="16" rx="5" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>
+        <rect x="30" y="560" width="${200*lPct}" height="16" rx="5" fill="${lDig?'white':(lPct>0?'#6b9fff':'transparent')}"/>
+        <text x="30" y="555" fill="${lPct>0||lDig?'#ddd':'#777'}" font-size="18" font-family="monospace">L:${(lAn*100).toFixed(0)}%${lDig?' HARD':''}</text>
+        <rect x="355" y="560" width="200" height="16" rx="5" fill="#1a1a2e" stroke="#444" stroke-width="1.5"/>
+        <rect x="355" y="560" width="${200*rPct}" height="16" rx="5" fill="${rDig?'white':(rPct>0?'#6b9fff':'transparent')}"/>
+        <text x="355" y="555" fill="${rPct>0||rDig?'#ddd':'#777'}" font-size="18" font-family="monospace">R:${(rAn*100).toFixed(0)}%${rDig?' HARD':''}</text>
+    </svg>`;
+}
+
+function buildStickMapSVG(jx,jy,color){
+    const sz=200,cx=sz/2,cy=sz/2,r=88;
+    const dOff=r*0.7;
+    const octPts=[[cx,cy-r],[cx+dOff,cy-dOff],[cx+r,cy],[cx+dOff,cy+dOff],[cx,cy+r],[cx-dOff,cy+dOff],[cx-r,cy],[cx-dOff,cy-dOff]].map(([px,py])=>`${px.toFixed(1)},${py.toFixed(1)}`).join(' ');
+    const DZ=0.2875,TILT=0.625,TAPJ=0.6625;
+    const dzR=DZ*r,tiltR=TILT*r,tapjR=TAPJ*r;
+    const dotX=cx+jx*r,dotY=cy-jy*r;
+    const mag=Math.sqrt(jx*jx+jy*jy);
+    const angle=Math.atan2(jy,jx)*180/Math.PI;
+    const ax=Math.abs(jx),ay=Math.abs(jy);
+    let lbl='Neutral',lc='#666';
+    if(mag<DZ){lbl='Dead Zone';lc='#555';}
+    else if(ax>=TILT&&ay<DZ){lbl='Dash/Smash';lc='#ff6b6b';}
+    else if(ay>=TAPJ&&ax<DZ){lbl=jy>0?'Tap Jump':'Crouch';lc=jy>0?'#ffd93d':'#6bc5ff';}
+    else if(ax>=TILT){lbl='Diagonal';lc='#ff9f43';}
+    else if(ay>=TAPJ){lbl=jy>0?'Tap Jump':'Crouch';lc=jy>0?'#ffd93d':'#6bc5ff';}
+    else{lbl='Tilt/Walk';lc='#54a0ff';}
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${sz} ${sz}" style="width:${Math.round(controllerSize*0.55)}px;height:${Math.round(controllerSize*0.55)}px;">
+        <circle cx="${cx}" cy="${cy}" r="${r+5}" fill="#0d0d1a" stroke="#333" stroke-width="1"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="#111118" stroke="#444" stroke-width="1.5"/>
+        <polygon points="${octPts}" fill="none" stroke="#555" stroke-width="1.5"/>
+        <line x1="${cx}" y1="${cy-r}" x2="${cx}" y2="${cy+r}" stroke="#333" stroke-width="1"/>
+        <line x1="${cx-r}" y1="${cy}" x2="${cx+r}" y2="${cy}" stroke="#333" stroke-width="1"/>
+        <line x1="${cx-tiltR}" y1="${cy-r}" x2="${cx-tiltR}" y2="${cy+r}" stroke="#ff6b6b" stroke-width="0.6" opacity="0.35" stroke-dasharray="3,2"/>
+        <line x1="${cx+tiltR}" y1="${cy-r}" x2="${cx+tiltR}" y2="${cy+r}" stroke="#ff6b6b" stroke-width="0.6" opacity="0.35" stroke-dasharray="3,2"/>
+        <line x1="${cx-r}" y1="${cy-tapjR}" x2="${cx+r}" y2="${cy-tapjR}" stroke="#ffd93d" stroke-width="0.6" opacity="0.35" stroke-dasharray="3,2"/>
+        <line x1="${cx-r}" y1="${cy+tapjR}" x2="${cx+r}" y2="${cy+tapjR}" stroke="#6bc5ff" stroke-width="0.6" opacity="0.35" stroke-dasharray="3,2"/>
+        <rect x="${cx-dzR}" y="${cy-dzR}" width="${dzR*2}" height="${dzR*2}" fill="rgba(60,60,80,.2)" stroke="#444" stroke-width="0.8" stroke-dasharray="2,2"/>
+        <line x1="${cx}" y1="${cy}" x2="${dotX.toFixed(1)}" y2="${dotY.toFixed(1)}" stroke="${color}" stroke-width="1.5" opacity="0.5"/>
+        <circle cx="${dotX.toFixed(1)}" cy="${dotY.toFixed(1)}" r="4" fill="${color}" stroke="white" stroke-width="1.5"/>
+        <text x="${cx}" y="${sz-3}" fill="${lc}" font-size="9" font-family="monospace" font-weight="bold" text-anchor="middle">${lbl}</text>
+    </svg>`;
+}
+
+function updateControllerArea(){
+    const area=document.getElementById('controllerArea');
+    if(!area||!gFrames||!gSettings)return;
+    if(!showController){area.style.display='none';return;}
+    const frame=gFrames[gKeys[curFrame]];if(!frame){area.style.display='none';return;}
+    let html='<div style="display:flex;gap:.5rem;align-items:flex-start;flex-wrap:wrap;">';
+    for(const player of gSettings.players){
+        const pf=frame.players?.[player.playerIndex];if(!pf)continue;
+        const pre=pf.pre,post=pf.post;
+        const color=getPlayerColor(player.port-1);
+        const sid=post?.actionStateId??14;
+        const sname=sid<ACTION_NAMES.length?ACTION_NAMES[sid]:`S${sid}`;
+        const jx=pre?.joystickX??0,jy=pre?.joystickY??0;
+        html+=`<div style="background:#16213e;border-radius:8px;padding:.4rem;border:1px solid #2a2a4a;">
+            <div style="font-size:.7rem;color:${color};font-weight:700;margin-bottom:.2rem;">P${player.port} ${CHAR_NAMES[player.characterId]||'?'}</div>
+            <div style="font-size:.65rem;color:#888;margin-bottom:.2rem;">${sname} (${sid})</div>
+            <div style="display:flex;gap:.3rem;align-items:center;">
+                ${buildControllerSVG(pre,color)}
+                ${buildStickMapSVG(jx,jy,color)}
+            </div>
+        </div>`;
+    }
+    html+='</div>';
+    area.innerHTML=html;
+    area.style.display='block';
+}
+
+window.toggleControllerPanel=()=>{
+    showController=!showController;
+    document.getElementById('ctrlToggleBtn').classList.toggle('active',showController);
+    updateControllerArea();
+};
+
+// File loading
+document.getElementById('slpInput').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  document.getElementById('fileInfo').textContent=`Loading ${file.name}...`;
+  const buf=await file.arrayBuffer();
+  const uint8=new Uint8Array(buf);
+  game=new SlippiGame(uint8);
+  gSettings=game.getSettings();gFrames=game.getFrames();
+  gKeys=Object.keys(gFrames).map(Number).sort((a,b)=>a-b);
+  curFrame=0;
+  document.getElementById('timeline').max=gKeys.length-1;
+  // Player selector
+  const sel=document.getElementById('playerSel');sel.innerHTML='';
+  for(const p of gSettings.players){
+    const btn=document.createElement('button');btn.className='player-btn'+(p.playerIndex===0?' active':'');
+    btn.textContent=`P${p.port} ${CHAR_NAMES[p.characterId]||'?'}`;
+    btn.onclick=()=>{
+      selectedPlayer=p.playerIndex;
+      sel.querySelectorAll('.player-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+      segments=detectSegments(selectedPlayer);activeIdx=-1;labeledCount=0;buildSegList();renderFrame(curFrame);
+    };
+    sel.appendChild(btn);
+  }
+  selectedPlayer=gSettings.players[0]?.playerIndex??0;
+  // Load existing dataset for pattern matching
+  await loadDatasetForChar(gSettings.players[0]?.characterId);
+  // Load animations
+  for(const p of gSettings.players)await loadAnims(p.characterId);
+  // Debug: verify animations loaded
+  for(const p of gSettings.players){
+    const anims=animCache.get(p.characterId);
+    console.log(`Char ${p.characterId} (${CHAR_NAMES[p.characterId]}): ${anims?anims.size+' anims':'FAILED TO LOAD'}`);
+    if(anims){const sp=CHAR_SPECIALS[p.characterId];if(sp){const k=Object.values(sp)[0];console.log(`  First special anim "${k}": ${anims.has(k)?'found':'MISSING'}`);}}
+  }
+  segments=detectSegments(selectedPlayer);
+  buildSegList();renderFrame(0);updateUI();
+  document.getElementById('fileInfo').textContent=`${file.name} | ${gKeys.length} frames | ${gSettings.players.map(p=>CHAR_NAMES[p.characterId]).join(' vs ')}`;
+});
+
+// Export
+let fileHandle = null; // File System Access API handle for direct saves
+
+window.exportDataset=async ()=>{
+  const charId=gSettings?.players?.find(p=>p.playerIndex===selectedPlayer)?.characterId;
+  const charName=CHAR_FILE[charId]||'unknown';
+  const out={character:charName,actions:{}};
+  let i=0;
+  while(i<segments.length){
+    const seg=segments[i];
+    if(!seg.label){i++;continue;}
+    // Determine range: if this segment has a _rangeEnd, merge through that index
+    const rangeEndIdx=seg._rangeEnd||i;
+    const lastSeg=segments[rangeEndIdx];
+    const startF=seg.startFrame,endF=lastSeg.endFrame;
+    const dur=endF-startF+1;
+    const facing=seg.facing>0?'right':'left';
+    const air=[25,26,27,28,29,30,31,32,33,34,35,36,37,38,65,66,67,68,69,236].includes(seg.stateId);
+    // Collect all inputs across the full range
+    const inputs=[];
+    for(let f=startF;f<=endF;f++){
+      const pre=gFrames[f]?.players?.[selectedPlayer]?.pre;if(!pre)continue;
+      inputs.push({frame:f-startF,stick:{x:Math.round(pre.joystickX*1e4)/1e4,y:Math.round(pre.joystickY*1e4)/1e4},buttons:decodeButtons(pre.physicalButtons),trigger:Math.round(Math.max(pre.physicalLTrigger||0,pre.physicalRTrigger||0)*1e4)/1e4});
+    }
+    // Trim trailing neutral/idle inputs (no buttons, stick near center, no trigger)
+    const isNeutral=inp=>inp.buttons.length===0&&inp.trigger<0.05&&Math.abs(inp.stick.x)<0.1&&Math.abs(inp.stick.y)<0.1;
+    let trimEnd=inputs.length;
+    while(trimEnd>1&&isNeutral(inputs[trimEnd-1]))trimEnd--;
+    const trimmedInputs=dedup(inputs.slice(0,trimEnd));
+    // Collect state sequence — skip leading/trailing Wait/idle states
+    const stateSeq=[];
+    for(let j=i;j<=rangeEndIdx;j++)stateSeq.push({stateId:segments[j].stateId,stateName:segments[j].stateName});
+    // Use first non-idle state as the primary actionStateId
+    const IDLE_STATES=new Set([14,15,16,17]); // Wait, WalkSlow, WalkMiddle, WalkFast
+    const primaryState=stateSeq.find(s=>!IDLE_STATES.has(s.stateId))||stateSeq[0];
+    if(!out.actions[seg.label])out.actions[seg.label]={category:air?'aerial':'ground',description:seg.label.replace(/_/g,' '),variants:[],timing:{}};
+    out.actions[seg.label].variants.push({
+      context:{grounded:!air,facing,fromState:'visual_label'},
+      inputs:trimmedInputs,
+      totalFrames:trimmedInputs.length>0?trimmedInputs[trimmedInputs.length-1].frame+1:dur,
+      actionStateId:primaryState.stateId,
+      stateSequence:stateSeq.length>1?stateSeq:undefined
+    });
+    i=rangeEndIdx+1;
+  }
+  const json=JSON.stringify(out,null,2);
+
+  // Try File System Access API first (Chrome/Edge — lets us save directly to action-dataset/)
+  if(window.showSaveFilePicker){
+    try{
+      if(!fileHandle){
+        fileHandle=await window.showSaveFilePicker({
+          suggestedName:`${out.character}_labeled.json`,
+          startIn:'downloads',
+          types:[{description:'JSON',accept:{'application/json':['.json']}}]
+        });
+      }
+      // Read existing file and MERGE — don't overwrite
+      let merged=out;
+      try{
+        const existing=await fileHandle.getFile();
+        const existingText=await existing.text();
+        const existingData=JSON.parse(existingText);
+        // Merge: append new variants into existing actions
+        merged={...existingData};
+        for(const[name,entry]of Object.entries(out.actions)){
+          if(!merged.actions[name]){
+            merged.actions[name]=entry;
+          }else{
+            merged.actions[name].variants.push(...entry.variants);
+          }
+        }
+      }catch(e){/* file is empty or new — use out as-is */}
+      const writable=await fileHandle.createWritable();
+      await writable.write(JSON.stringify(merged,null,2));
+      await writable.close();
+      const totalVariants=Object.values(merged.actions).reduce((s,a)=>s+a.variants.length,0);
+      const btn=document.getElementById('exportBtnEl');
+      if(btn){const orig=btn.textContent;btn.textContent=`✓ Merged! (${Object.keys(merged.actions).length} actions, ${totalVariants} variants)`;btn.style.background='#2d5a2d';setTimeout(()=>{btn.textContent=orig;btn.style.background='';},2500);}
+      return;
+    }catch(e){
+      if(e.name==='AbortError'){return;}
+      fileHandle=null;
+    }
+  }
+
+  // Fallback: browser download (user merges manually)
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  a.download=`${out.character}_labeled.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);
+};
+
+function decodeButtons(bits){if(!bits)return[];const b=[];if(bits&0x0100)b.push('A');if(bits&0x0200)b.push('B');if(bits&0x0400)b.push('X');if(bits&0x0800)b.push('Y');if(bits&0x0010)b.push('Z');if(bits&0x0040)b.push('L');if(bits&0x0020)b.push('R');return b;}
+function dedup(inputs){if(inputs.length<=1)return inputs;const r=[inputs[0]];for(let i=1;i<inputs.length;i++){const p=inputs[i-1],c=inputs[i];if(c.stick.x!==p.stick.x||c.stick.y!==p.stick.y||c.trigger!==p.trigger||c.buttons.join()!==p.buttons.join())r.push(c);}return r;}
+
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  if(e.key===' '){e.preventDefault();togglePlay();}
+  else if(e.key==='ArrowRight')stepFrame(1);
+  else if(e.key==='ArrowLeft')stepFrame(-1);
+  else if(e.key==='ArrowDown'){
+    e.preventDefault();
+    if(e.shiftKey){
+      // Extend range down
+      const newEnd=(rangeEnd>=0?rangeEnd:activeIdx)+1;
+      if(newEnd<segments.length){rangeEnd=newEnd;selectSeg(activeIdx,{shiftKey:true});}
+    } else {
+      if(activeIdx<segments.length-1)selectSeg(activeIdx+1,null);
+    }
+  }
+  else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    if(e.shiftKey){
+      // Extend range up
+      const newEnd=(rangeEnd>=0?rangeEnd:activeIdx)-1;
+      if(newEnd>=0){rangeEnd=newEnd;selectSeg(activeIdx,{shiftKey:true});}
+    } else {
+      if(activeIdx>0)selectSeg(activeIdx-1,null);
+    }
+  }
+  else if(e.key==='n'||e.key==='N')nextUnlabeled();
+  else if(e.key==='Escape'){rangeEnd=-1;buildSegList();}
+});
+</script>
+</body>
+</html>

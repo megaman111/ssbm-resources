@@ -17,3 +17,9 @@ hitbox-data/.*_raw.json
 
 # Rust build artifacts
 model-extractor/target/
+
+# AI replay generation (not ready for repo yet)
+action-dataset/*.json
+!action-dataset/fox.json
+scan-replays.js
+labeling-tool.js

@@ -10,12 +10,16 @@
 | 2 | **Accurate Hitbox Rendering** | Phase 1+2 done, Phase 3 = spec #1 | 🟡 Blocked by #1 | 2D hitbox system works (trails, tooltips, data). Alignment needs 3D rendering to fix. `.kiro/specs/accurate-hitbox-rendering/` |
 | 3 | **Modular Matchup Pages** | Spec complete (req + design + tasks) | 🟢 Ready | Convert hardcoded HTML matchup pages to JSON-driven modular blocks. `.kiro/specs/modular-matchup-pages/` |
 | 4 | **IKneeData Calculator** | ✅ Done | 🟢 Low | Calculator works on site. Spec can be archived. `.kiro/specs/ikneedata-calculator/` |
+| 5 | **Live USB Slippi Mirroring** | Needs spec | 🟡 Research | Stream live Melee gameplay to the web viewer via USB Slippi mirroring. Needs spec. |
+| 6 | **AI Replay Generation (Prompt→Replay)** | Needs spec | 🟡 Research | Describe a scenario in natural language → generate a playable .slp replay. Needs manual input dataset + LLM integration. Monetizable. |
 
 ### Recommended execution order:
 1. **3D Model Rendering** — biggest impact, fixes hitbox alignment, makes the viewer look like Rwing
 2. **Modular Matchup Pages** — independent of #1, can be done in parallel or after
 3. **IKneeData Calculator** — ✅ done, working on site
 4. **Accurate Hitbox Rendering** remaining tasks — auto-resolved by #1 (3D rendering eliminates 2D projection issues)
+5. **Live USB Slippi Mirroring** — needs a full spec first (research Slippi console mirroring protocol, WebUSB/WebSerial feasibility, relay server design)
+6. **AI Replay Generation** — long-term moonshot, needs manual input dataset first, then LLM fine-tuning/prompting layer
 
 ---
 
@@ -161,6 +165,121 @@ Implementation approach:
 - [ ] Make all modules embeddable on any page (way-of-fox, matchup pages, etc.)
 - [ ] Unified module loading system
 - [ ] Mobile-friendly replay viewer controls
+
+---
+
+## Live USB Slippi Mirroring to Web Viewer (Needs Spec)
+
+Stream live Melee gameplay from a console (via Slippi USB mirroring) directly into the web-based replay viewer. Instead of streaming full video, we only need a minimal data stream — the game is deterministic, so we can reconstruct the full visual state from just the initial conditions + sequential inputs.
+
+### Core Concept
+Melee is deterministic: given the same starting state and the same inputs on the same frames, the game produces identical results. This means we don't need to stream the full game state per frame — we just need:
+1. **RNG seed** — the game's random seed at match start (determines item spawns, Peach turnips, G&W hammer, etc.)
+2. **Starting positions** — character selections, ports, stage, starting positions
+3. **Sequential controller inputs** — per-frame stick/button/trigger data for each player (same data Slippi already captures)
+
+The web viewer already renders characters, stages, hitboxes, and animations from .slp frame data. The live mirroring system would feed the same data format in real-time instead of from a file.
+
+### Why This Needs a Spec
+This is a complex system with multiple unknowns that need research and design:
+
+- [ ] **Slippi console mirroring protocol** — how does Slippi's existing mirror mode work? What data does the Wii send over USB? Is it raw .slp frame data or something else? Reference: `project-slippi/slippi-desktop-app` mirror mode, `project-slippi/Ishiiruka` (Slippi Dolphin) relay code
+- [ ] **Data transport** — WebUSB/WebSerial for direct browser-to-Wii? Or a lightweight local relay server (Node/Python) that reads USB and pushes to the browser via WebSocket?
+- [ ] **Frame data format** — can we reuse the existing .slp frame format (`pre`/`post` frame data) as-is, or do we need a lighter wire format for real-time streaming?
+- [ ] **RNG seed extraction** — where in the Slippi data stream does the RNG seed appear? Is it in the game start payload? Need to verify this is captured and forwarded
+- [ ] **Latency budget** — USB polling → relay → WebSocket → browser render. What's the end-to-end latency? Is sub-100ms achievable?
+- [ ] **Sync model** — the viewer needs to handle frames arriving faster or slower than 60fps. Buffer strategy? Drop frames? Interpolate?
+- [ ] **Rollback / desync handling** — if a frame is missed or arrives out of order, how do we recover? Melee is deterministic but only if we have every input
+- [ ] **Multi-viewer support** — can multiple browser tabs/devices watch the same live stream? Would need a relay server with fan-out
+- [ ] **Security** — if this goes through a relay server, how do we prevent unauthorized access to the stream?
+- [ ] **Electron vs Web** — direct USB access is easier in Electron (node-hid, serialport). Browser-only path is harder (WebUSB/WebSerial permissions, CORS). Spec should cover both paths.
+- [ ] **Integration with existing viewer** — the replay viewer currently expects a complete .slp file. Need to refactor to accept a streaming frame source (iterator/observable pattern) alongside the existing file-based path.
+
+### Key References
+- `project-slippi/slippi-desktop-app` — has console mirroring implementation (Electron + node)
+- `project-slippi/slippi-js` — JS library for parsing .slp data, may have streaming support
+- `vinceau/slippilab` — web-based viewer we've already referenced, file-based only
+- Slippi console relay protocol — the Wii sends data over USB to a connected computer, which Slippi Desktop relays to Dolphin for mirror playback
+- Fizzi's Slippi architecture docs (if available)
+
+### Spec TODO
+- [ ] Create `.kiro/specs/live-slippi-mirroring/` spec directory
+- [ ] Research phase: investigate Slippi's USB mirroring protocol and data format
+- [ ] Requirements doc: define what "live mirroring" means for our viewer (latency targets, supported setups, fallback behavior)
+- [ ] Design doc: relay server architecture, frame streaming protocol, viewer integration points
+- [ ] Tasks: implementation plan with clear milestones
+
+---
+
+## AI Replay Generation: Prompt → Playable .slp (Needs Spec)
+
+Describe a Melee scenario in natural language ("Fox dash dances then nairs Marth at 40%") and generate a frame-perfect .slp replay file that plays back in the viewer. Monetizable via token-based pricing.
+
+### Core Concept
+Melee inputs are deterministic sequences of stick positions, button presses, and trigger values on specific frames. Every action a character can perform maps to a known input sequence with exact frame timings. If we build a complete dataset mapping human-readable actions to frame-level input sequences, an LLM can compose those primitives into full replay scripts.
+
+### Phase 1: Manual Input Dataset (the hard part)
+Build a comprehensive dataset of "action → input sequence" mappings by hand-labeling real Slippi replays:
+
+- [ ] **Atomic action library** — for each character, document every action's input sequence with exact frame timings:
+  - Movement: dash, dash dance, wavedash (angle variants), waveland, walk, crouch, platform drop, shield drop
+  - Aerials: shorthop nair/fair/bair/uair/dair, fullhop variants, rising vs falling, L-cancel timing
+  - Grabs: standing grab, dash grab, JC grab, pivot grab
+  - Specials: per-character (Fox shine, Falco laser, Marth counter, etc.)
+  - Defensive: shield, spotdodge, roll, airdodge (angle variants), tech (in place, left, right), getup options
+  - Advanced: multishines, waveshine, shield drop aerial, ledgedash, haxdash, etc.
+- [ ] **Frame timing data** — for each action: startup frames, active frames, endlag, IASA, landing lag, L-cancel window
+  - Much of this already exists in our hitbox-data JSON and FightCore data
+  - What's missing: the actual controller input sequences (stick + button + trigger per frame) that produce each action
+- [ ] **Context-dependent inputs** — same action requires different inputs depending on state:
+  - Grounded vs airborne, facing left vs right, from shield, from ledge, etc.
+  - DI inputs depend on the hit angle and desired trajectory
+- [ ] **Labeling tool** — build a tool that plays back .slp replays frame-by-frame and lets you tag segments: "frames 120-135: Fox shorthop nair (left-facing)"
+  - Could semi-automate: detect action state transitions from .slp data, then manually label the input intent
+- [ ] **Dataset format** — JSON mapping: `{ action: "shorthop_nair", character: "fox", facing: "right", inputs: [{frame: 0, stick: {x: 0, y: 0.7}, buttons: []}, {frame: 3, stick: {x: 0, y: 0}, buttons: ["A"]}, ...], totalFrames: 28 }`
+
+### Phase 2: Replay Compiler
+A system that takes a sequence of high-level actions and compiles them into a valid .slp file:
+
+- [ ] **Action sequencer** — chain atomic actions together respecting frame timings (can't start a new action during endlag unless IASA)
+- [ ] **Position tracker** — track character position/velocity to know where they'll be when the next action starts
+- [ ] **Interaction resolver** — when two characters interact (hit, grab, clank), compute the outcome using Melee's knockback formula
+  - We already have the knockback calculator (IKneeData) — reuse that math
+- [ ] **SLP writer** — generate valid .slp binary files from computed frame data
+  - Reference: `slippi-js` has SLP parsing, may need to reverse the write path
+  - Or generate the frame data JSON and convert to .slp format
+
+### Phase 3: LLM Prompt Layer
+The natural language → action sequence translation:
+
+- [ ] **Prompt format** — user describes a scenario: "Fox dash dances twice, then wavedashes forward and grabs Marth. Marth DIs behind. Fox up-throws and follows up with an up-air."
+- [ ] **LLM integration** — fine-tuned model or few-shot prompted model that outputs a structured action sequence from the prompt
+  - Could use function calling: LLM calls `dash_dance(count=2)`, `wavedash(direction="forward")`, `grab()`, etc.
+  - The action library from Phase 1 becomes the function schema
+- [ ] **Validation** — verify the generated sequence is physically possible (no impossible frame timings, no actions during hitstun, etc.)
+- [ ] **Iteration** — user watches the generated replay, gives feedback ("make the dash dance wider", "nair earlier"), regenerate
+
+### Monetization
+- Token-based pricing: each replay generation costs tokens based on complexity (number of actions, characters, duration)
+- Free tier: simple single-action demos (show me a Fox wavedash)
+- Paid tier: full scenario generation, multi-character interactions, combo sequences
+- Could also sell the dataset itself to other Melee tool developers
+
+### Key References
+- Slippi .slp file format: `project-slippi/slippi-wiki` (frame data schema)
+- `slippi-js` — JS library for reading/writing .slp data
+- Existing frame data: `hitbox-data/*.json`, FightCore move data, IKneeData calculator
+- Melee decompilation: `doldecomp/melee` — authoritative source for frame timings and game mechanics
+- UnclePunch Training Mode — has input sequence recording/playback, could be a reference for action→input mapping
+
+### Spec TODO
+- [ ] Create `.kiro/specs/ai-replay-generation/` spec directory
+- [ ] Phase 1 first: design the action→input dataset format and build the labeling tool
+- [ ] Research: how does slippi-js handle SLP writing? Can we generate valid .slp files programmatically?
+- [ ] Research: what's the minimum viable dataset size to cover common Fox/Falco/Marth/Sheik actions?
+- [ ] Requirements doc: define scope (which characters first? how complex can scenarios be?)
+- [ ] Design doc: dataset schema, compiler architecture, LLM integration approach
+- [ ] Pricing model: token cost estimation per replay complexity tier
 
 ---
 
