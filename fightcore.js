@@ -368,6 +368,8 @@ export class FightCore {
                 const canCC = (bestHb.angle > 0 && bestHb.angle < 180) || bestHb.angle === 361;
                 const ccMax = canCC ? this._calcMaxPercent(bestHb, defWeight, 80, 2 / 3) : -1;
                 const asdiMax = canCC ? this._calcMaxPercent(bestHb, defWeight, 80, 1.0) : -1;
+                // Break tumble: percent at which the move causes knockdown (KB >= 80) without CC/ASDI
+                const breakTumble = this._calcMaxPercent(bestHb, defWeight, 80, 1.0);
                 const hitLabel = hit.name && hit.name !== 'unknown'
                     ? hit.name
                     : (move.hits.length > 1 ? `Hit ${hi + 1}` : 'unknown');
@@ -383,6 +385,7 @@ export class FightCore {
                     setKnockback: bestHb.setKnockback,
                     ccMaxPercent: ccMax,
                     asdiMaxPercent: asdiMax,
+                    breakTumblePercent: breakTumble,
                 });
             }
         }

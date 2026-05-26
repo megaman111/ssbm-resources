@@ -70,6 +70,7 @@ async function renderPairTable(atkId, defId, atkLabel, defLabel) {
     html += `<th>Dmg</th>`;
     html += `<th class="cc-col">CC Max %</th>`;
     html += `<th class="asdi-col">ASDI↓ Max %</th>`;
+    html += `<th class="tumble-col">Break Tumble %</th>`;
     html += `</tr></thead><tbody>`;
 
     for (const m of sorted) {
@@ -78,6 +79,7 @@ async function renderPairTable(atkId, defId, atkLabel, defLabel) {
         const danger = DANGER_MOVES[dangerKey];
         const ccCls = cellClass(m.ccMaxPercent);
         const asdiCls = cellClass(m.asdiMaxPercent);
+        const tumbleCls = cellClass(m.breakTumblePercent);
         const rowCls = danger ? ' class="cc-danger-row"' : '';
         html += `<tr${rowCls}>`;
         html += `<td class="move-name">${m.moveName}${hitLabel}`;
@@ -86,6 +88,7 @@ async function renderPairTable(atkId, defId, atkLabel, defLabel) {
         html += `<td class="dmg-cell">${m.damage}%</td>`;
         html += `<td class="cc-cell ${ccCls}">${fmtPct(m.ccMaxPercent)}</td>`;
         html += `<td class="asdi-cell ${asdiCls}">${fmtPct(m.asdiMaxPercent)}</td>`;
+        html += `<td class="tumble-cell ${tumbleCls}">${fmtPct(m.breakTumblePercent)}</td>`;
         html += `</tr>`;
     }
     html += `</tbody></table>`;
@@ -131,7 +134,7 @@ export async function buildCCTables(containerId, foxId, opponentId, opponentName
             <span class="cc-legend-item"><span class="cc-swatch cc-zero"></span> Breaks at 0%</span>
             <span class="cc-legend-item"><span class="cc-swatch cc-na"></span> N/A (angle)</span>
         </div>`;
-        html += `<p class="cc-attribution">Calculated from <a href="https://github.com/FightCore/frame-data" target="_blank">FightCore</a> hitbox data using Melee KB formula · CC mult=⅔ · ASDI↓ mult=1.0 · knockdown threshold=80</p>`;
+        html += `<p class="cc-attribution">Calculated from <a href="https://github.com/FightCore/frame-data" target="_blank">FightCore</a> hitbox data using Melee KB formula · CC mult=⅔ · ASDI↓ mult=1.0 · Break Tumble = no CC/ASDI · knockdown threshold=80</p>`;
         container.innerHTML = html;
     } catch (e) {
         console.error('CC table build error:', e);
