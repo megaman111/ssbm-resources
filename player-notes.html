@@ -3358,6 +3358,7 @@ async function buildCCAsdiPanel() {
             html += `<th style="text-align:center;padding:0.25rem;">Dmg</th>`;
             html += `<th style="text-align:center;padding:0.25rem;color:#4f4;">CC%</th>`;
             html += `<th style="text-align:center;padding:0.25rem;color:#4af;">ASDI↓%</th>`;
+            html += `<th style="text-align:center;padding:0.25rem;color:#fa4;">Tumble%</th>`;
             html += `</tr></thead><tbody>`;
 
             for (const m of sorted) {
@@ -3372,6 +3373,7 @@ async function buildCCAsdiPanel() {
                 html += `<td style="text-align:center;padding:0.2rem;color:#faa;">${m.damage}%</td>`;
                 html += `<td style="text-align:center;padding:0.2rem;color:${ccColor(m.ccMaxPercent)};font-weight:600;">${ccLabel(m.ccMaxPercent)}</td>`;
                 html += `<td style="text-align:center;padding:0.2rem;color:${ccColor(m.asdiMaxPercent)};font-weight:600;">${ccLabel(m.asdiMaxPercent)}</td>`;
+                html += `<td style="text-align:center;padding:0.2rem;color:${ccColor(m.breakTumblePercent)};font-weight:600;">${ccLabel(m.breakTumblePercent)}</td>`;
                 html += `</tr>`;
             }
             html += `</tbody></table></div>`;
@@ -3391,7 +3393,7 @@ async function buildCCAsdiPanel() {
         html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#a33;margin-right:3px;vertical-align:middle;"></span>0%</span>`;
         html += `<span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#888;margin-right:3px;vertical-align:middle;"></span>N/A</span>`;
         html += `</div>`;
-        html += `<div style="padding:0.4rem 0.6rem;font-size:0.65rem;color:#555;text-align:center;">Calculated from <a href="https://github.com/FightCore/frame-data" target="_blank" style="color:#667eea;">FightCore</a> hitbox data using Melee KB formula · CC mult=⅔ · ASDI↓ mult=1.0 · knockdown threshold=80</div>`;
+        html += `<div style="padding:0.4rem 0.6rem;font-size:0.65rem;color:#555;text-align:center;">Calculated from <a href="https://github.com/FightCore/frame-data" target="_blank" style="color:#667eea;">FightCore</a> hitbox data using Melee KB formula · CC mult=⅔ · ASDI↓ mult=1.0 · Tumble = no CC/ASDI · knockdown threshold=80</div>`;
         panel.innerHTML = html;
     }
 }
