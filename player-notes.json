@@ -9,7 +9,17 @@
       "positioning",
       "execution"
     ],
-    "date": "2026-06-22T01:58:03.449Z"
+    "date": "2026-06-22T01:58:03.449Z",
+    "vods": [
+      {
+        "label": "Cody Zain Full House Pools",
+        "url": "https://www.youtube.com/watch?v=M6L7CHCjGWg&t=147s"
+      },
+      {
+        "label": "Moky Leffen GX",
+        "url": "https://www.youtube.com/watch?v=I3GH3f845eY"
+      }
+    ]
   },
   {
     "id": "mqgnxriwtcxb1",
