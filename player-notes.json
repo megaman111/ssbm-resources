@@ -1,10 +1,13 @@
 [
   {
     "id": "msefq957hzrs0",
-    "playerName": "Three Levels in Fighting Games -- Emily ",
+    "playerName": "Three Levels in Fighting Games (Plus a Music Analogy) -- Emily ",
     "character": "Fox",
-    "notes": "You are playing a fighting game and are learning to dance. You can dance on rhythm with no music. If you see someone dancing you can make your dance work around someone elses dance. Music is made with the notes you dont play rather than the notes you do play. You can play with other peoples timings.  \n\nLevel 1 is read -- we're forcing a mixup. has to lead to a kill --- its us and our win condition.  Grab is usually really good for level one stuff. I/e fox threatening to grab sheik is a level one option.\nLevel 2 is a reaction -- only moment where we needs to come out when the level 1 doesnt work. I/e Sheik walking forward to beat fox grabbing to beat the timing of fox grab. \nLevel 3 is a reaction to a reaction\n\nThese three levels are a rock paper scissors to each other. ",
-    "tags": [],
+    "notes": "You are playing a fighting game and are learning to dance. You can dance on rhythm with no music. If you see someone dancing you can make your dance work around someone elses dance. Music is made with the notes you dont play rather than the notes you do play. You can play with other peoples timings. The best dancers aren't synchronized because they move at the same time—they're synchronized because they can shape each other's timing.\n\nLevel 1 is read -- we're forcing a mixup. has to lead to a kill --- its us and our win condition.  Grab is usually really good for level one stuff. I/e fox threatening to grab sheik is a level one option.\nLevel 2 is a reaction -- only moment where we needs to come out when the level 1 doesnt work. I/e Sheik walking forward to beat fox grabbing to beat the timing of fox grab. \nLevel 3 is a reaction to a reaction\n\nThink of each level as making a different claim about reality:\n\nLevel 1: \"I think I know what you're going to do.\"\nLevel 2: \"I think I know what you're trying to make me do.\"\nLevel 3: \"I think you'll try to counter my counter.\"\n\nLevel 1 → loses to → Level 2\nLevel 2 → loses to → Level 3\nLevel 3 → loses to → Level 1\n\nLevel 1 beats Level 3 because Level 3 is looking for a reaction that never happens. The direct threat simply arrives first.\nLevel 2 beats Level 1 because it is built specifically to answer the committed threat.\nLevel 3 beats Level 2 because it predicts the answer itself and punishes the commitment to that answer.\n\nThis mirrors partner dancing surprisingly well.\n\nLevel 1: You begin a movement. You lead.\nLevel 2: Your partner matches or redirects your lead.\nLevel 3: You anticipated their adjustment and make their reaction become part of the dance.\n\nThis is also why \"music is made with the notes you don't play.\"\n\nThe silence creates an expectation.\n\nLevel 1 creates expectation.\nLevel 2 fills the expectation.\nLevel 3 manipulates when the expectation is fulfilled.",
+    "tags": [
+      "rps",
+      "fundamentals"
+    ],
     "date": "2026-08-04T09:07:41.131Z"
   },
   {
