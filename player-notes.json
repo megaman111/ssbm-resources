@@ -9,7 +9,18 @@
       "timing",
       "space"
     ],
-    "date": "2026-08-13T04:40:40.838Z"
+    "date": "2026-08-13T04:40:40.838Z",
+    "images": [
+      {
+        "idx": 0,
+        "addedAt": 1786596342768
+      }
+    ],
+    "replayFiles": [
+      "Game_20260801T012630.slp",
+      "Game_20260801T012813.slp",
+      "Game_20260801T013022.slp"
+    ]
   },
   {
     "id": "msqzj6wukdixv",
