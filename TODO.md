@@ -94,6 +94,43 @@
 ### FightCore Integration
 - [x] **FightCore module** (`fightcore.js`) — reusable ES module that loads/caches character move data from FightCore GitHub repo, calculates CC and ASDI Down max percents using Melee knockback formula
 - [x] **CC / ASDI Down quick-reference panel** — collapsible panel in replay viewer showing crouch cancel and ASDI down max percents for every attacker→defender matchup in the current replay
+- [x] **Break Tumble column** — shows the percent at which moves cause knockdown (KB >= 80) without CC/ASDI, added to both matchup page tables and replay viewer CC tab
+
+### Enhanced CC/ASDI Calculator (Using Melee Decomp)
+The current CC/ASDI calculator uses approximate formulas. We can make it **perfectly accurate** by extracting the exact knockback calculation code from the Melee decompilation.
+
+**Key improvements:**
+- [ ] **Extract exact knockback formula from decomp** — the decomp has the authoritative C code for knockback calculation (likely in `src/melee/lb/` or `src/melee/ft/`), including:
+  - Base knockback calculation: `(((p/10 + p*d/20) * (200/(w+100)) * 1.4) + 18) * (kbg/100) + bkb`
+  - Sakurai angle (361°) resolution based on knockback value
+  - Crouch cancel multiplier (2/3)
+  - ASDI down multiplier (1.0)
+  - Weight-dependent KB scaling
+  - Charge smash multiplier
+  - Stale move negation
+  - Electric effect multiplier
+- [ ] **Tumble threshold calculator** — add a "Tumble %" column showing when a move causes tumble (80 KB units) without any defensive option
+  - This is what you just asked for! "Break Tumble" shows when you can't tech and will go into tumble animation
+  - Useful for understanding when moves become unsafe to challenge
+- [ ] **Frame-perfect hitstun calculator** — hitstun frames = `floor(knockback * 0.4)` in Melee
+  - Show exact hitstun duration per move/percent
+  - Combo calculator: "Does Fox upair → upair true combo at 60%?" (check if hitstun > action startup)
+- [ ] **DI multiplier verification** — decomp may have exact DI influence values we can use instead of approximations
+- [ ] **Rage/proration (future-proofing)** — Melee doesn't have rage, but if we expand to Ultimate later, decomp references will help
+- [ ] **Stage-specific KB modifiers** — some stages may have multipliers (needs verification in decomp)
+
+**Implementation plan:**
+1. Search the decomp repo for knockback calculation functions (likely `calc_knockback`, `apply_hitlag`, etc.)
+2. Port the exact C formula to JavaScript in `fightcore.js`
+3. Add unit tests comparing our formula output to known in-game values
+4. Update the CC/ASDI tables with the new accurate formula
+5. Add the "Tumble %" column to show breakpoints (already done!)
+
+**References:**
+- Melee decomp: `https://github.com/doldecomp/melee/` (search for knockback, hitstun, collision)
+- SmashWiki knockback formula: https://www.ssbwiki.com/Knockback (has the Melee formula)
+- Tumble threshold: 80 knockback units (confirmed by community research)
+- Hitstun formula: `floor(KB * 0.4)` frames (Melee-specific, differs from other games)
 
 ### Clips Panel
 - [x] **Clips panel** — collapsible sections for Kill Combos, Grabs, Edgeguards, Crouch Cancels, Missed L-Cancels, Shield Options, Ledge Options
