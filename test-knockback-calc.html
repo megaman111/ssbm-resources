@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Knockback Formula Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        .test { margin: 20px 0; padding: 15px; background: #16213e; border-left: 4px solid #0f3460; }
+        .pass { border-left-color: #4caf50; }
+        .fail { border-left-color: #f44336; }
+        h2 { color: #64ffda; }
+        .expected { color: #888; }
+        .actual { color: #64ffda; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Melee Knockback Formula Verification</h1>
+    
+    <div id="results"></div>
+
+    <script type="module">
+        // Inline the exact formula from fightcore.js
+        function calcKB(damage, percent, weight, kbg, bkb, ccMult) {
+            const p = percent + damage;
+            return ((((((p / 10) + (p * damage / 20)) * (200 / (weight + 100)) * 1.4) + 18) * (kbg / 100)) + bkb) * ccMult;
+        }
+
+        function calcMaxPercent(damage, weight, kbThreshold, kbg, bkb, ccMult) {
+            if (kbg === 0 && bkb === 0) return 999;
+            const kb0 = calcKB(damage, 0, weight, kbg, bkb, ccMult);
+            if (kb0 >= kbThreshold) return -1;
+            const kb999 = calcKB(damage, 999, weight, kbg, bkb, ccMult);
+            if (kb999 < kbThreshold) return 999;
+            let lo = 0, hi = 999;
+            while (lo < hi) {
+                const mid = Math.ceil((lo + hi) / 2);
+                const kb = calcKB(damage, mid, weight, kbg, bkb, ccMult);
+                if (kb < kbThreshold) lo = mid;
+                else hi = mid - 1;
+            }
+            return lo;
+        }
+
+        const tests = [
+            {
+                name: "Fox Shine vs Marth at 0%",
+                damage: 5,
+                percent: 0,
+                weight: 87,
+                kbg: 100,
+                bkb: 80,
+                ccMult: 1.0,
+                expectedKB: 100.62,
+                expectedTumble: false,
+                expectedCCTumble: false, // with CC: 67.08 < 80
+            },
+            {
+                name: "Fox Shine vs Marth at 0% (with CC)",
+                damage: 5,
+                percent: 0,
+                weight: 87,
+                kbg: 100,
+                bkb: 80,
+                ccMult: 2/3,
+                expectedKB: 67.08,
+                expectedTumble: false,
+            },
+            {
+                name: "Marth Fsmash tipper vs Fox at 80%",
+                damage: 20,
+                percent: 80,
+                weight: 75,
+                kbg: 80,
+                bkb: 60,
+                ccMult: 1.0,
+                expectedKB: 215.66,
+                expectedTumble: true,
+            },
+            {
+                name: "Fox Nair (late) vs Falco at 50%",
+                damage: 9,
+                percent: 50,
+                weight: 80,
+                kbg: 100,
+                bkb: 0,
+                ccMult: 1.0,
+                expectedKB: 105.95,
+                expectedTumble: true,
+            },
+            {
+                name: "Fox Nair (late) vs Falco at 50% (with CC)",
+                damage: 9,
+                percent: 50,
+                weight: 80,
+                kbg: 100,
+                bkb: 0,
+                ccMult: 2/3,
+                expectedKB: 70.63,
+                expectedTumble: false, // 70.63 < 80
+            },
+            {
+                name: "Falco Dair (spike) vs Fox at 30%",
+                damage: 13,
+                percent: 30,
+                weight: 75,
+                kbg: 100,
+                bkb: 80,
+                ccMult: 1.0,
+                expectedKB: 174.36,
+                expectedTumble: true,
+            },
+        ];
+
+        const resultsDiv = document.getElementById('results');
+
+        tests.forEach(test => {
+            const actualKB = calcKB(test.damage, test.percent, test.weight, test.kbg, test.bkb, test.ccMult);
+            const actualTumble = actualKB >= 80;
+            const kbMatch = Math.abs(actualKB - test.expectedKB) < 0.1;
+            const tumbleMatch = test.expectedTumble === undefined || actualTumble === test.expectedTumble;
+            const pass = kbMatch && tumbleMatch;
+
+            // Calculate CC and ASDI max percents
+            const ccMaxPct = calcMaxPercent(test.damage, test.weight, 80, test.kbg, test.bkb, 2/3);
+            const asdiMaxPct = calcMaxPercent(test.damage, test.weight, 80, test.kbg, test.bkb, 1.0);
+            const tumbleMaxPct = calcMaxPercent(test.damage, test.weight, 80, test.kbg, test.bkb, 1.0);
+
+            resultsDiv.innerHTML += `
+                <div class="test ${pass ? 'pass' : 'fail'}">
+                    <h2>${pass ? '✅' : '❌'} ${test.name}</h2>
+                    <div>Damage: ${test.damage}%, Percent: ${test.percent}%, Weight: ${test.weight}</div>
+                    <div>KBG: ${test.kbg}, BKB: ${test.bkb}, Multiplier: ${test.ccMult.toFixed(3)}×</div>
+                    <hr style="border-color: #0f3460; margin: 10px 0;">
+                    <div>
+                        <span class="expected">Expected KB: ${test.expectedKB.toFixed(2)}</span><br>
+                        <span class="actual">Actual KB: ${actualKB.toFixed(2)}</span>
+                    </div>
+                    ${test.expectedTumble !== undefined ? `
+                    <div style="margin-top: 8px;">
+                        <span class="expected">Expected Tumble: ${test.expectedTumble}</span><br>
+                        <span class="actual">Actual Tumble: ${actualTumble} (threshold = 80)</span>
+                    </div>` : ''}
+                    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #0f3460;">
+                        <strong>Max Percents (for this move vs this weight):</strong><br>
+                        CC Max %: <span style="color: #4caf50;">${ccMaxPct === 999 ? 'Never' : ccMaxPct === -1 ? 'N/A' : ccMaxPct + '%'}</span><br>
+                        ASDI↓ Max %: <span style="color: #2196f3;">${asdiMaxPct === 999 ? 'Never' : asdiMaxPct === -1 ? 'N/A' : asdiMaxPct + '%'}</span><br>
+                        Break Tumble %: <span style="color: #ff9800;">${tumbleMaxPct === 999 ? 'Never' : tumbleMaxPct === -1 ? 'N/A' : tumbleMaxPct + '%'}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Summary
+        const passed = tests.filter((t, i) => {
+            const actualKB = calcKB(t.damage, t.percent, t.weight, t.kbg, t.bkb, t.ccMult);
+            const kbMatch = Math.abs(actualKB - t.expectedKB) < 0.1;
+            const tumbleMatch = t.expectedTumble === undefined || (actualKB >= 80) === t.expectedTumble;
+            return kbMatch && tumbleMatch;
+        }).length;
+
+        resultsDiv.innerHTML += `
+            <div class="test ${passed === tests.length ? 'pass' : 'fail'}">
+                <h2>Summary: ${passed}/${tests.length} tests passed</h2>
+                <div>Formula Status: ${passed === tests.length ? '✅ VERIFIED CORRECT' : '❌ NEEDS REVIEW'}</div>
+            </div>
+        `;
+    </script>
+</body>
+</html>
