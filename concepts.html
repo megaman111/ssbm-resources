@@ -47,14 +47,15 @@
     </style>
 </head>
 <body>
-    <video id="video-background" autoplay loop muted playsinline>
+    <video id="video-background" loop muted playsinline preload="none" poster="img/menu-poster.jpg">
         <source src="MainMenuLoop720p24fps.webm" type="video/webm">
     </video>
+    <script src="bg-video.js" defer></script>
     <div id="video-overlay"></div>
     
     <header>
         <div class="container">
-            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Concepts & Lessons</h1>
+            <h1><img src="img/stocks/fox.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"> Concepts & Lessons</h1>
             <p>Coaching notes and fundamental concepts from Zamu, Billybopeep, Chem, and top players</p>
             <a href="way-of-fox.html" class="back-link">← Back to The Way of Fox</a>
         </div>

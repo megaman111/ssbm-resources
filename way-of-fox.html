@@ -118,14 +118,15 @@
     </style>
 </head>
 <body>
-    <video id="video-background" autoplay loop muted playsinline>
+    <video id="video-background" loop muted playsinline preload="none" poster="img/menu-poster.jpg">
         <source src="MainMenuLoop720p24fps.webm" type="video/webm">
     </video>
+    <script src="bg-video.js" defer></script>
     <div id="video-overlay"></div>
     
     <header>
         <div class="container">
-            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 36px; height: 36px; vertical-align: middle; margin-right: 0.5rem;"> The Way of Fox</h1>
+            <h1><img src="img/stocks/fox.png" alt="Fox" style="width: 36px; height: 36px; vertical-align: middle; margin-right: 0.5rem;"> The Way of Fox</h1>
             <p>Comprehensive Fox matchup knowledge from top players</p>
             <a href="index.html" class="back-link">← Back to Resources Hub</a>
         </div>
@@ -160,79 +161,79 @@
         
         <div class="matchup-grid" id="matchupGrid">
             <a href="matchups/fox.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" class="stock-icon"> Fox</h3>
+                <h3><img src="img/stocks/fox.png" alt="Fox" class="stock-icon"> Fox</h3>
                 <p>Ditto neutral, punish, edgeguarding, defense, recovery, and stage-specific strategies</p>
             </a>
             <a href="matchups/falco.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/dbyctg5.png" alt="Falco" class="stock-icon"> Falco</h3>
+                <h3><img src="img/stocks/falco.png" alt="Falco" class="stock-icon"> Falco</h3>
                 <p>Lasers, shield pressure, punish game, edgeguarding, DI, and rules from Fiction, Billy, and Druggedfox</p>
             </a>
             <a href="matchups/marth.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/HJT5ZTS.png" alt="Marth" class="stock-icon"> Marth</h3>
+                <h3><img src="img/stocks/marth.png" alt="Marth" class="stock-icon"> Marth</h3>
                 <p>Whiff punishing, juggling, edgeguarding, Marth killer setups, range management, and Billy/Fiction ideas</p>
             </a>
             <a href="matchups/sheik.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/0TAZZIy.png" alt="Sheik" class="stock-icon"> Sheik</h3>
+                <h3><img src="img/stocks/sheik.png" alt="Sheik" class="stock-icon"> Sheik</h3>
                 <p>Chaingrab, grab follow-ups, needle avoidance, edgeguarding, Fiction's neutral/punish/defense strategies</p>
             </a>
             <a href="matchups/puff.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/AzFEkw2.png" alt="Jigglypuff" class="stock-icon"> Jigglypuff</h3>
+                <h3><img src="img/stocks/jigglypuff.png" alt="Jigglypuff" class="stock-icon"> Jigglypuff</h3>
 <p>Rest punishes, percent thresholds, upthrow upair guide, neutral/defense/kills from Zuppy and Fiction</p>
             </a>
             <a href="matchups/falcon.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/fcaKRdi.png" alt="Captain Falcon" class="stock-icon"> Captain Falcon</h3>
+                <h3><img src="img/stocks/captain_falcon.png" alt="Captain Falcon" class="stock-icon"> Captain Falcon</h3>
                 <p>Combo game, threat zones, percent-based punish, edgeguarding, and rules from Fiction, Billy, and lowercasehero</p>
             </a>
             <a href="matchups/peach.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/fFLSjd8.png" alt="Peach" class="stock-icon"> Peach</h3>
+                <h3><img src="img/stocks/peach.png" alt="Peach" class="stock-icon"> Peach</h3>
                 <p>CC, float heights, turnips, waveshine flowchart, percent-based concepts, and rules from Billy, Fiction, Druggedfox</p>
             </a>
             <a href="matchups/ics.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/iHFuxww.png" alt="Ice Climbers" class="stock-icon"> Ice Climbers</h3>
+                <h3><img src="img/stocks/ice_climbers.png" alt="Ice Climbers" class="stock-icon"> Ice Climbers</h3>
                 <p>Nana AI behavior, desyncs, separation strategies, playstyles, and situational goals</p>
             </a>
             <a href="matchups/samus.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/Yd9DP9r.png" alt="Samus" class="stock-icon"> Samus</h3>
+                <h3><img src="img/stocks/samus.png" alt="Samus" class="stock-icon"> Samus</h3>
                 <p>CC counterplay, neutral approaches, edgeguarding, and ideas from Pipsqueak, Billy, and Fiction</p>
             </a>
             <a href="matchups/luigi.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/uM1DTyz.png" alt="Luigi" class="stock-icon"> Luigi</h3>
+                <h3><img src="img/stocks/luigi.png" alt="Luigi" class="stock-icon"> Luigi</h3>
                 <p>Wavedash mixups, down-smash counterplay, and concepts from Cookbook and Siddward</p>
             </a>
             <a href="matchups/pikachu.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/0GZF02r.png" alt="Pikachu" class="stock-icon"> Pikachu</h3>
+                <h3><img src="img/stocks/pikachu.png" alt="Pikachu" class="stock-icon"> Pikachu</h3>
                 <p>Quick attack edgeguarding, up-throw setups, and Cookbook concepts</p>
             </a>
             <a href="matchups/yoshi.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/XskW1p3.png" alt="Yoshi" class="stock-icon"> Yoshi</h3>
+                <h3><img src="img/stocks/yoshi.png" alt="Yoshi" class="stock-icon"> Yoshi</h3>
                 <p>Double jump armor, neutral, combos, DI, edgeguarding, and percent charts</p>
             </a>
             <a href="matchups/ganon.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/l9xQfyT.png" alt="Ganondorf" class="stock-icon"> Ganondorf</h3>
+                <h3><img src="img/stocks/ganondorf.png" alt="Ganondorf" class="stock-icon"> Ganondorf</h3>
                 <p>Edgeguarding, power move counterplay, and Cookbook concepts</p>
             </a>
             <a href="matchups/doc.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/okOuokD.png" alt="Dr. Mario" class="stock-icon"> Dr. Mario</h3>
+                <h3><img src="img/stocks/dr_mario.png" alt="Dr. Mario" class="stock-icon"> Dr. Mario</h3>
                 <p>Pill counterplay, cape recovery mixups, and SFAT's matchup philosophy</p>
             </a>
             <a href="matchups/dk.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/2hdsXlA.png" alt="Donkey Kong" class="stock-icon"> Donkey Kong</h3>
+                <h3><img src="img/stocks/donkey_kong.png" alt="Donkey Kong" class="stock-icon"> Donkey Kong</h3>
                 <p>Cargo throw DI, camping strategies, neutral, edgeguarding, and Zuppy's punish game</p>
             </a>
             <a href="matchups/doubles.html" class="matchup-card" style="text-decoration: none; color: inherit;">
-                <h3><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" class="stock-icon"><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" class="stock-icon"> Doubles</h3>
+                <h3><img src="img/stocks/fox.png" alt="Fox" class="stock-icon"><img src="img/stocks/fox.png" alt="Fox" class="stock-icon"> Doubles</h3>
                 <p>Team combos, 2v1 situations, and doubles-specific strategies</p>
             </a>
             <a href="player-notes.html" class="matchup-card" style="text-decoration: none; color: inherit; border: 3px solid #764ba2;">
-                <h3><img src="https://i.imgur.com/2WVNM7m.png" alt="Player Notes" class="stock-icon"> 📝 Personal Notes, VOD Analysis, and Replay Visualization</h3>
+                <h3><img src="img/stocks/fox.png" alt="Player Notes" class="stock-icon"> 📝 Personal Notes, VOD Analysis, and Replay Visualization</h3>
                 <p>Megaman's player notes, gameplans, and South Bay Melee Slippi replay archives</p>
             </a>
             <a href="concepts.html" class="matchup-card" style="text-decoration: none; color: inherit; border: 3px solid #4CAF50;">
-                <h3><img src="https://i.imgur.com/2WVNM7m.png" alt="Concepts" class="stock-icon"> 💡 Concepts & Lessons</h3>
+                <h3><img src="img/stocks/fox.png" alt="Concepts" class="stock-icon"> 💡 Concepts & Lessons</h3>
                 <p>Coaching notes and fundamental concepts from Zamu, Billybopeep, Chem, and top players</p>
             </a>
             <a href="videos.html" class="matchup-card" style="text-decoration: none; color: inherit; border: 3px solid #FF5722;">
-                <h3><img src="https://i.imgur.com/2WVNM7m.png" alt="Videos" class="stock-icon"> 🎥 Video Resources</h3>
+                <h3><img src="img/stocks/fox.png" alt="Videos" class="stock-icon"> 🎥 Video Resources</h3>
                 <p>Curated video guides from Hax$, KJH, Zuppy, Fiction, Pipsqueak, Setchi, and SSBM Tutorials</p>
             </a>
         </div>

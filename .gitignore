@@ -23,3 +23,7 @@ action-dataset/*.json
 !action-dataset/fox.json
 scan-replays.js
 labeling-tool.js
+
+# Local logs / deploy state
+*.log
+.netlify/

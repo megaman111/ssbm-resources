@@ -137,6 +137,22 @@
         .filter-section select { padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; margin-right: 1rem; }
         .character-icons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
         .char-filter-btn { padding: 0.5rem 1rem; border: 2px solid #667eea; background: #ededf0; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; font-weight: 500; }
+        /* Visitors see notes read-only; see isOwner() */
+        body:not(.is-owner) .owner-only,
+        body:not(.is-owner) .note-actions > :not(.share-btn),
+        body:not(.is-owner) .note-vod-remove,
+        body:not(.is-owner) .note-image-remove { display: none !important; }
+        /* Keep note cards inside the screen on phones */
+        .notes-container { grid-template-columns: minmax(0, 1fr); }
+        .note-card, .note-content, .chat-bubble { min-width: 0; overflow-wrap: anywhere; }
+        .note-header { flex-wrap: wrap; }
+        @media (max-width: 600px) {
+            .note-card, .add-note-form, .filter-section, .export-section { padding: 1rem; }
+            .export-section a, .export-btn, .import-btn { display: block !important; margin: 0.5rem 0 !important; text-align: center; }
+            .note-actions { justify-content: flex-start; }
+        }
+        .char-filter-btn { display: inline-flex; align-items: center; gap: 0.35rem; }
+        .char-filter-icon { width: 20px; height: 20px; }
         .char-filter-btn:hover { background: rgba(102, 126, 234, 0.15); }
         .char-filter-btn.active { background: #667eea; color: white; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4); }
         .slp-hint { font-size: 0.8rem; color: #888; margin-top: 0.25rem; }
@@ -431,9 +447,10 @@
     </style>
 </head>
 <body>
-    <video id="video-background" autoplay loop muted playsinline>
+    <video id="video-background" loop muted playsinline preload="none" poster="img/menu-poster.jpg">
         <source src="MainMenuLoop720p24fps.webm" type="video/webm">
     </video>
+    <script src="bg-video.js" defer></script>
     <div id="video-overlay"></div>
 
     <!-- REPLAY MODAL -->
@@ -584,7 +601,7 @@
 
     <header>
         <div class="container">
-            <h1><img src="https://i.imgur.com/2WVNM7m.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"><span class="notes-title"> Personal Notes, VOD Analysis, and Replay Visualization</span><span class="viewer-title"> Replay Visualizer</span></h1>
+            <h1><img src="img/stocks/fox.png" alt="Fox" style="width: 48px; height: 48px; vertical-align: middle; margin-right: 0.5rem;"><span class="notes-title"> Personal Notes, VOD Analysis, and Replay Visualization</span><span class="viewer-title"> Replay Visualizer</span></h1>
             <p class="notes-title">Personal notes, gameplans, VOD analysis, and replay visualization</p>
             <p class="viewer-title">Watch and analyze .slp replays with hitbox data, controller display, and frame-by-frame controls</p>
             <a href="way-of-fox.html" class="back-link notes-only">← Back to The Way of Fox</a>
@@ -640,7 +657,7 @@
                 </details>
             </div>
         </div>
-        <div class="export-section notes-only" id="githubSyncSection">
+        <div class="export-section notes-only owner-only" id="githubSyncSection">
             <h3>☁️ GitHub Sync</h3>
             <div id="ghSyncStatus" style="margin-bottom:1rem;"></div>
             <div id="ghSetupArea">
@@ -660,7 +677,7 @@
             </div>
         </div>
 
-        <div class="export-section notes-only">
+        <div class="export-section notes-only owner-only">
             <h3>💾 Manual Backup</h3>
             <p style="color: #666; margin-bottom: 1rem; font-size:0.9rem;">Download a local backup or import from a JSON file.</p>
             <button class="export-btn" onclick="exportNotes()">📥 Export JSON</button>
@@ -668,7 +685,7 @@
             <input type="file" id="fileInput" accept=".json" onchange="importNotes(event)">
         </div>
 
-        <div class="add-note-form notes-only">
+        <div class="add-note-form notes-only owner-only">
             <h2>Add New Player Note</h2>
             <form id="noteForm">
                 <div class="form-group">
@@ -679,22 +696,6 @@
                     <label for="character">Character</label>
                     <select id="character" required>
                         <option value="">Select Character</option>
-                        <option value="Fox">Fox</option>
-                        <option value="Falco">Falco</option>
-                        <option value="Marth">Marth</option>
-                        <option value="Sheik">Sheik</option>
-                        <option value="Peach">Peach</option>
-                        <option value="Jigglypuff">Jigglypuff</option>
-                        <option value="Captain Falcon">Captain Falcon</option>
-                        <option value="Samus">Samus</option>
-                        <option value="Ice Climbers">Ice Climbers</option>
-                        <option value="Pikachu">Pikachu</option>
-                        <option value="Yoshi">Yoshi</option>
-                        <option value="Luigi">Luigi</option>
-                        <option value="Ganondorf">Ganondorf</option>
-                        <option value="Dr. Mario">Dr. Mario</option>
-                        <option value="Donkey Kong">Donkey Kong</option>
-                        <option value="Link">Link</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -721,18 +722,7 @@
             <h3>Filter by Tags</h3>
             <div class="tag-filter-wrap" id="tagFilterWrap"></div>
             <h3 style="margin-top:1rem;">Filter by Character</h3>
-            <div class="character-icons">
-                <button class="char-filter-btn active" data-char="all">All</button>
-                <button class="char-filter-btn" data-char="Fox">Fox</button>
-                <button class="char-filter-btn" data-char="Falco">Falco</button>
-                <button class="char-filter-btn" data-char="Marth">Marth</button>
-                <button class="char-filter-btn" data-char="Sheik">Sheik</button>
-                <button class="char-filter-btn" data-char="Peach">Peach</button>
-                <button class="char-filter-btn" data-char="Jigglypuff">Puff</button>
-                <button class="char-filter-btn" data-char="Captain Falcon">Falcon</button>
-                <button class="char-filter-btn" data-char="Samus">Samus</button>
-                <button class="char-filter-btn" data-char="Ice Climbers">ICs</button>
-            </div>
+            <div class="character-icons" id="charFilterWrap"></div>
         </div>
 
         <div class="notes-container notes-only" id="notesContainer"></div>
@@ -749,11 +739,12 @@
 // ===== slippi-js + fflate via esm.sh =====
 import { SlippiGame } from 'https://esm.sh/@slippi/slippi-js@9.0.0';
 import { unzipSync } from 'https://esm.sh/fflate@0.8.2';
-import { FightCore } from './fightcore.js?v=3';
+import { FightCore } from './fightcore.js?v=4';
 import { embedCalculator } from './ikneedata-ui.js?v=3';
 import HitboxLoader from './hitbox-loader.js';
 import BoneResolver from './bone-resolver.js';
 import HitboxRenderer from './hitbox-renderer.js';
+import { CHARACTERS, CHARACTERS_MENU, charIcon } from './characters.js';
 
 // Savestate WASM module (lazy-loaded only when user clicks download)
 let tmReplayWasm = null;
@@ -898,16 +889,7 @@ function showEnforcerResult(playerIndex, result, message) {
 const ANIM_BASE = './animation-zips';
 
 // ===== Character data =====
-const characterIcons = {
-    'Fox': 'https://i.imgur.com/2WVNM7m.png', 'Falco': 'https://i.imgur.com/dbyctg5.png',
-    'Marth': 'https://i.imgur.com/HJT5ZTS.png', 'Sheik': 'https://i.imgur.com/0TAZZIy.png',
-    'Peach': 'https://i.imgur.com/fFLSjd8.png', 'Jigglypuff': 'https://i.imgur.com/AzFEkw2.png',
-    'Captain Falcon': 'https://i.imgur.com/fcaKRdi.png', 'Samus': 'https://i.imgur.com/Yd9DP9r.png',
-    'Ice Climbers': 'https://i.imgur.com/iHFuxww.png', 'Pikachu': 'https://i.imgur.com/0GZF02r.png',
-    'Yoshi': 'https://i.imgur.com/XskW1p3.png', 'Luigi': 'https://i.imgur.com/uM1DTyz.png',
-    'Ganondorf': 'https://i.imgur.com/l9xQfyT.png', 'Dr. Mario': 'https://i.imgur.com/okOuokD.png',
-    'Donkey Kong': 'https://i.imgur.com/2hdsXlA.png'
-};
+const characterIcons = Object.fromEntries(CHARACTERS.map(c => [c.name, charIcon(c.name)]));
 
 // Slippi internal character IDs -> name
 const CHAR_NAMES = {
@@ -2086,7 +2068,14 @@ function setGhStatus(msg, color) {
     if (el) el.innerHTML = msg ? `<span style="color:${color};font-size:0.9rem;">${msg}</span>` : '';
 }
 
+// Owner mode: editing controls only show when a GitHub token is connected,
+// when running locally, or with ?edit=1 in the URL (to connect on a new device).
+function isOwner() {
+    const local = ['localhost', '127.0.0.1', ''].includes(location.hostname) || location.protocol === 'file:';
+    return !!getGhToken() || local || new URLSearchParams(location.search).has('edit');
+}
 function updateGhUI() {
+    document.body.classList.toggle('is-owner', isOwner());
     const token = getGhToken();
     const setup = document.getElementById('ghSetupArea');
     const connected = document.getElementById('ghConnectedArea');
@@ -2263,6 +2252,19 @@ function displayNotes() {
     else if (currentTypeFilter === 'chats') filtered = filtered.filter(n => isChatNote(n));
     if (currentTagFilter) filtered = filtered.filter(n => (n.tags || []).includes(currentTagFilter));
 
+    // Build character filter UI (only characters that have notes, with counts)
+    const charWrap = document.getElementById('charFilterWrap');
+    if (charWrap) {
+        const counts = {};
+        notes.forEach(n => { if (n.character) counts[n.character] = (counts[n.character] || 0) + 1; });
+        const withNotes = CHARACTERS_MENU.filter(c => counts[c.name]);
+        const extra = Object.keys(counts).filter(name => !CHARACTERS_MENU.some(c => c.name === name));
+        const btn = (value, label, icon) => `<button class="char-filter-btn ${currentFilter === value ? 'active' : ''}" data-char-filter="${value.replace(/"/g, '&quot;')}">${icon ? `<img src="${icon}" alt="" class="char-filter-icon">` : ''}${label}</button>`;
+        charWrap.innerHTML = btn('all', `All (${notes.length})`) +
+            withNotes.map(c => btn(c.name, `${c.short} (${counts[c.name]})`, charIcon(c.name))).join('') +
+            extra.map(name => btn(name, `${name} (${counts[name]})`)).join('');
+    }
+
     // Build tag filter UI
     const allTags = new Map();
     notes.forEach(n => (n.tags || []).forEach(t => allTags.set(t, (allTags.get(t) || 0) + 1)));
@@ -2328,7 +2330,7 @@ function displayNotes() {
             <div class="edit-form">
                 <input type="text" id="edit-player-${idx}" value="${note.playerName.replace(/"/g,'&quot;')}" placeholder="Player Name">
                 <select id="edit-char-${idx}">
-                    ${['Fox','Falco','Marth','Sheik','Peach','Jigglypuff','Captain Falcon','Samus','Ice Climbers','Pikachu','Yoshi','Luigi','Ganondorf','Dr. Mario','Donkey Kong'].map(c=>`<option value="${c}" ${note.character===c?'selected':''}>${c}</option>`).join('')}
+                    ${[...CHARACTERS_MENU.map(c => c.name), ...(CHARACTERS_MENU.some(c => c.name === note.character) ? [] : [note.character])].map(c=>`<option value="${c}" ${note.character===c?'selected':''}>${c}</option>`).join('')}
                 </select>
                 <textarea id="edit-notes-${idx}">${note.notes}</textarea>
                 <input type="text" id="edit-tags-${idx}" value="${(note.tags || []).join(', ')}" placeholder="Tags (comma-separated)" style="font-size:0.9rem;">
@@ -2641,6 +2643,19 @@ document.querySelectorAll('.char-filter-btn').forEach(btn => {
         displayNotes();
     });
 });
+
+document.getElementById('charFilterWrap')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-char-filter]');
+    if (!b) return;
+    currentFilter = b.dataset.charFilter;
+    displayNotes();
+});
+
+(function populateCharacterSelect() {
+    const sel = document.getElementById('character');
+    if (!sel) return;
+    sel.insertAdjacentHTML('beforeend', CHARACTERS_MENU.map(c => `<option value="${c.name}">${c.name}</option>`).join(''));
+})();
 
 // ===== REPLAY VIEWER =====
 let replayGame = null;

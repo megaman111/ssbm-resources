@@ -157,7 +157,11 @@ function getBonePos(boneId) {
 }
 
 const FC_DATA_BASE = "https://raw.githubusercontent.com/FightCore/frame-data/main/data";
-const EXTRACTOR_BASE = "https://melee.theshoemaker.de/framedata-json-fullhitboxes";
+// pfirsich's extractor output is hosted at melee.theshoemaker.de, but that server
+// sends no CORS headers, so browsers block it from GitHub Pages. Load a local copy
+// instead (see framedata/README.md). If the files aren't there, this optional
+// fallback is simply skipped; the viewer's own hitbox-data/ is the primary source.
+const EXTRACTOR_BASE = new URL("./framedata", import.meta.url).href;
 
 export class FightCore {
     constructor() {
@@ -261,7 +265,7 @@ export class FightCore {
                 this._extLoading.delete(charId);
                 return result;
             } catch (e) {
-                console.warn("FightCore: failed to load extractor data for char " + charId, e);
+                console.debug("FightCore: no local extractor data for char " + charId + " (optional)");
                 this._extCache.set(charId, null);
                 this._extLoading.delete(charId);
                 return null;
